@@ -1,725 +1,1206 @@
-<!DOCTYPE html>
+refined_html = """<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>醫院調劑台即時點藥與助理一趟流系統</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title>醫院調劑台即時點藥系統</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase Compatibility SDKs for optional cloud connection -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <style>
     :root {
       --primary-green: #2e7d32;
-      --active-blue: #2563eb;
-      --warn-red: #dc2626;
-      --paper-bg: #fdfdfd;
+      --accent-blue: #1565c0;
+      --bg-color: #eef2f5;
+      --paper-bg: #ffffff;
+      --border-color: #333333;
+      --selected-bg: #e3f2fd;
+      --max-border: #f57c00;
+      --max-bg: #fff3e0;
+      --disabled-bg: #f5f5f5;
+      --warn-color: #c62828;
+      --warn-bg: #ffebee;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
-      touch-action: manipulation;
-      background-color: #f1f5f9;
-      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      font-family: var(--font-stack);
+      color: #222;
+      padding-bottom: 90px;
     }
 
-    /* 劃記格子與點擊風格 */
-    .med-row {
-      user-select: none;
-      -webkit-user-select: none;
-      transition: all 0.12s ease;
+    /* 頂部導航列 */
+    .nav-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--paper-bg);
+      border-bottom: 2px solid var(--border-color);
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
-    .med-row.selected {
-      background-color: #eff6ff !important;
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .med-row.at-max {
-      background-color: #fff7ed !important;
-      border-color: #f97316 !important;
+    .app-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--primary-green);
     }
 
-    /* 鋼筆手寫劃記感數字徽章 */
-    .count-badge {
-      font-family: 'Arial Black', sans-serif;
-      text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+    .station-select {
+      font-size: 14px;
+      font-weight: bold;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1.5px solid var(--primary-green);
+      background: #fff;
+      color: #1b5e20;
     }
 
-    .writing-vertical {
-      writing-mode: vertical-lr;
-      text-orientation: mixed;
+    .mode-tabs {
+      display: flex;
+      gap: 4px;
+      background: #e0e0e0;
+      padding: 3px;
+      border-radius: 8px;
     }
 
-    /* 助理表格鋸齒動線引導 */
+    .mode-tab {
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #555;
+    }
+
+    .mode-tab.active {
+      background: #fff;
+      color: var(--primary-green);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      font-size: 19px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 8px auto;
+      padding: 0 8px;
+    }
+
+    /* 菜單主標題（與台號連動） */
+    .sheet-title {
+      text-align: center;
+      font-size: 21px;
+      font-weight: 900;
+      margin: 8px 0 10px;
+      color: var(--primary-green);
+      letter-spacing: 1px;
+    }
+
+    /* 3 欄式紙本版面 */
+    .grid-3col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .col-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .med-block {
+      border: 1.5px solid var(--border-color);
+      background: #fff;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .block-header {
+      background: #f0f0f0;
+      font-size: 12.5px;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-bottom: 1.5px solid var(--border-color);
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .block-header.warn {
+      background: var(--warn-bg);
+      color: var(--warn-color);
+    }
+
+    .med-item {
+      display: flex;
+      align-items: center;
+      min-height: 42px;
+      border-bottom: 1px solid #e2e2e2;
+      cursor: pointer;
+      transition: background-color 0.1s;
+      position: relative;
+    }
+
+    .med-item:last-child {
+      border-bottom: none;
+    }
+
+    .med-item.selected {
+      background-color: var(--selected-bg);
+    }
+
+    .med-item.at-max {
+      background-color: var(--max-bg);
+      outline: 2px solid var(--max-border);
+      outline-offset: -2px;
+    }
+
+    .med-item.disabled {
+      background-color: var(--disabled-bg);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .med-name {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 6px;
+      line-height: 1.25;
+      color: #222;
+      word-break: break-word;
+    }
+
+    /* 說明與狀態圖示欄位 */
+    .med-status-icons {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-right: 4px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1.2;
+    }
+
+    .badge-pkg {
+      background: #fff8e1;
+      color: #b78103;
+      border: 1px solid #ffe082;
+    }
+
+    .badge-shortage {
+      background: #ede7f6;
+      color: #512da8;
+      border: 1px solid #d1c4e9;
+    }
+
+    .badge-ban {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    .med-unit-badge {
+      font-size: 11px;
+      color: #666;
+      padding: 1px 4px;
+      background: #f5f5f5;
+      border-radius: 3px;
+      margin-right: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .med-badge {
+      width: 44px;
+      height: 42px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-left: 1.5px solid var(--border-color);
+      background: #fafafa;
+      font-weight: 900;
+      font-size: 18px;
+      color: var(--accent-blue);
+    }
+
+    .med-item.selected .med-badge {
+      background: #cbe5fe;
+    }
+
+    .med-item.at-max .med-badge {
+      background: #ffe0b2;
+      color: #e65100;
+    }
+
+    .max-hint {
+      font-size: 9px;
+      color: #888;
+      font-weight: normal;
+      line-height: 1;
+    }
+
+    /* 助理動線揀貨矩陣 */
+    .matrix-card {
+      background: #fff;
+      border-radius: 8px;
+      border: 1.5px solid var(--border-color);
+      overflow-x: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 700px;
+    }
+
     .matrix-table th, .matrix-table td {
-      border: 1px solid #cbd5e1;
+      border: 1px solid #ddd;
+      padding: 7px 6px;
+      text-align: center;
     }
 
-    .picked-row {
-      opacity: 0.4;
-      background-color: #f8fafc !important;
+    .matrix-table th {
+      background: #f5f5f5;
+      font-weight: 900;
+      color: #333;
+      position: sticky;
+      top: 0;
+    }
+
+    .matrix-table th.th-station {
+      background: #e8f5e9;
+      color: var(--primary-green);
+    }
+
+    .matrix-row.done {
+      background: #f0f0f0;
+      color: #999;
       text-decoration: line-through;
+    }
+
+    .matrix-total {
+      font-size: 17px;
+      font-weight: 900;
+      color: #d32f2f;
+      background: #ffebee;
+      border-radius: 4px;
+      padding: 2px 6px;
+      display: inline-block;
+    }
+
+    .station-qty {
+      font-weight: bold;
+      color: #1565c0;
+    }
+
+    .check-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid #888;
+      background: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .matrix-row.done .check-btn {
+      background: var(--primary-green);
+      border-color: var(--primary-green);
+      color: #fff;
+    }
+
+    /* 底部操作與送單列 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-top: 2px solid var(--border-color);
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+
+    .bottom-summary {
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      max-width: 48%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-act {
+      padding: 8px 12px;
+      font-size: 13.5px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-clear {
+      background: #eceff1;
+      color: #455a64;
+    }
+
+    .btn-submit {
+      background: var(--primary-green);
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(46,125,50,0.3);
+    }
+
+    /* 彈窗樣式 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 8px;
+      max-width: 550px;
+      width: 100%;
+      padding: 16px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      font-size: 17px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .config-field {
+      margin-bottom: 12px;
+    }
+
+    .config-field label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .config-field textarea, .config-field input {
+      width: 100%;
+      padding: 8px;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .staff-input {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: 2px;
+      padding: 8px;
+      width: 100%;
+      margin: 10px 0;
+      border: 2px solid var(--primary-green);
+      border-radius: 6px;
+    }
+
+    .cloud-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: bold;
+      background: #e0e0e0;
+      color: #666;
+    }
+    .cloud-status.online {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    @media (max-width: 850px) {
+      .grid-3col {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col pb-20">
+<body>
 
-  <!-- 頂部導覽列：切換視角 -->
-  <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto px-3 py-2 flex justify-between items-center">
-      <div class="flex items-center space-x-2">
-        <i class="fa-solid fa-hospital-user text-emerald-400 text-xl"></i>
-        <span class="font-bold text-lg tracking-wide hidden sm:inline">SmartRx 智慧調劑點藥系統</span>
-        <span class="font-bold text-base sm:hidden">SmartRx</span>
-      </div>
-
-      <!-- 頁籤切換按鈕 -->
-      <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs sm:text-sm">
-        <button id="tab-pharmacist" onclick="switchTab('pharmacist')" class="px-3 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white shadow">
-          <i class="fa-solid fa-prescription-bottle-medical mr-1"></i>藥師點藥
-        </button>
-        <button id="tab-assistant" onclick="switchTab('assistant')" class="px-3 py-1.5 rounded-md font-bold transition-all text-slate-300 hover:text-white">
-          <i class="fa-solid fa-cart-flatbed mr-1"></i>助理一趟流
-        </button>
-        <button id="tab-settings" onclick="switchTab('settings')" class="px-2 py-1.5 rounded-md font-bold transition-all text-slate-300 hover:text-white">
-          <i class="fa-solid fa-gear"></i>
-        </button>
-      </div>
+  <!-- 頂部導航 -->
+  <div class="nav-bar">
+    <div class="nav-left">
+      <span class="app-title">💊 藥局點藥</span>
+      <select id="stationSelect" class="station-select" onchange="changeStation(this.value)">
+        <option value="綠">綠台</option>
+        <option value="紅">紅台</option>
+        <option value="藍">藍台</option>
+        <option value="黃">黃台</option>
+        <option value="青">青台</option>
+        <option value="專">專用台</option>
+      </select>
+      <span id="cloudBadge" class="cloud-status">同機連線</span>
     </div>
-  </header>
 
-  <!-- 主內容區域 -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4">
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabPharmacist" onclick="switchMode('pharmacist')">點藥面板</button>
+      <button class="mode-tab" id="tabAssistant" onclick="switchMode('assistant')">助理一趟流</button>
+    </div>
 
-    <!-- ==================== VIEW 1: 藥師點藥看板 ==================== -->
-    <section id="view-pharmacist" class="space-y-3">
-      <!-- 頂部控制欄：調劑台選擇與指示 -->
-      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center space-x-2">
-          <label for="station-select" class="font-bold text-slate-700 text-sm">調劑台選擇：</label>
-          <select id="station-select" onchange="changeStation(this.value)" class="bg-emerald-50 border border-emerald-500 text-emerald-900 font-extrabold text-base rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="station_1">一般台 1 (綠台)</option>
-            <option value="station_2">一般台 2 (紅台)</option>
-            <option value="station_3">一般台 3 (黃台)</option>
-            <option value="station_4">一般台 4 (藍台)</option>
-            <option value="station_5">一般台 5 (白台)</option>
-          </select>
-        </div>
+    <button class="btn-icon" onclick="openConfigModal()" title="系統與櫃位設定">⚙️</button>
+  </div>
 
-        <div class="text-xs text-slate-500 flex items-center gap-3">
-          <span><span class="inline-block w-3 h-3 bg-blue-100 border border-blue-500 rounded mr-1"></span>點擊 +1 (循環)</span>
-          <span><span class="inline-block w-3 h-3 bg-orange-100 border border-orange-500 rounded mr-1"></span>橘框：達上限</span>
-          <span><i class="fa-regular fa-clock text-slate-400 mr-1"></i>長按：直接歸零</span>
-        </div>
+  <div class="container">
+    <!-- 藥師點藥面板 -->
+    <div id="viewPharmacist">
+      <div class="sheet-title" id="currentStationTitle">【綠台 - 藥品劃記看板】</div>
+      <div class="grid-3col" id="pharmacistBoard"></div>
+    </div>
 
-        <button onclick="clearCurrentStation()" class="text-xs text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 px-2.5 py-1 rounded font-bold transition">
-          <i class="fa-solid fa-rotate-left mr-1"></i>本台清空
-        </button>
-      </div>
-
-      <!-- 紙本還原三欄看板 -->
-      <div class="bg-white border-2 border-slate-800 rounded-md p-2 sm:p-4 shadow-lg">
-        <div class="text-center font-black text-2xl text-emerald-800 pb-2 mb-3 border-b-2 border-slate-800 tracking-wider">
-          一般台 (綠) - 藥品劃記看板
-        </div>
-
-        <!-- 3欄網格佈局 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="pharmacist-board">
-          <!-- JS 動態繪製藥品分組與資料 -->
+    <!-- 助理一趟流揀貨矩陣 -->
+    <div id="viewAssistant" style="display: none;">
+      <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+        <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理動線揀貨矩陣（動線順序）</h3>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 檢視員工送單紀錄</button>
+          <button class="btn-act btn-clear" style="background:#e8f5e9; color:#2e7d32;" onclick="clearDoneItems()">清除已完成項目</button>
         </div>
       </div>
-    </section>
-
-    <!-- ==================== VIEW 2: 助理一趟流揀貨矩陣 ==================== -->
-    <section id="view-assistant" class="hidden space-y-3">
-      <div class="bg-slate-800 text-white p-3 rounded-lg shadow flex flex-wrap justify-between items-center gap-2">
-        <div>
-          <h2 class="text-lg font-bold flex items-center gap-2">
-            <i class="fa-solid fa-route text-amber-400"></i>
-            助理「一趟流」動線揀貨總表
-          </h2>
-          <p class="text-xs text-slate-300">依照藥局庫存架位（GZA ➔ 高警訊）排序，推車走一趟即可補完 5 個調劑台</p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button onclick="clearAllPickedStatus()" class="bg-slate-700 hover:bg-slate-600 border border-slate-500 text-xs text-slate-200 px-3 py-1.5 rounded font-bold">
-            重置勾選狀態
-          </button>
-          <button onclick="clearAllStationsData()" class="bg-red-600 hover:bg-red-700 text-xs text-white px-3 py-1.5 rounded font-bold shadow">
-            <i class="fa-solid fa-trash-can mr-1"></i>清空全部調劑台點藥
-          </button>
-        </div>
-      </div>
-
-      <!-- 動線統計摘要與矩陣 -->
-      <div class="bg-white rounded-lg border border-slate-300 shadow-md overflow-x-auto">
-        <table class="w-full text-left border-collapse matrix-table min-w-[700px]">
-          <thead>
-            <tr class="bg-slate-100 text-slate-800 text-xs font-black uppercase">
-              <th class="p-2 w-12 text-center">揀貨</th>
-              <th class="p-2 w-20">架位/組別</th>
-              <th class="p-2">藥品名稱 (全名 / 中文)</th>
-              <th class="p-2 w-16 text-center">單位</th>
-              <th class="p-2 w-24 text-center bg-emerald-100 text-emerald-900 font-extrabold text-sm">總需數量</th>
-              <th class="p-2 w-16 text-center bg-emerald-50 text-emerald-800">台1 (綠)</th>
-              <th class="p-2 w-16 text-center bg-red-50 text-red-800">台2 (紅)</th>
-              <th class="p-2 w-16 text-center bg-amber-50 text-amber-800">台3 (黃)</th>
-              <th class="p-2 w-16 text-center bg-blue-50 text-blue-800">台4 (藍)</th>
-              <th class="p-2 w-16 text-center bg-slate-50 text-slate-800">台5 (白)</th>
-            </tr>
-          </thead>
-          <tbody id="assistant-matrix-body" class="text-sm divide-y divide-slate-200">
-            <!-- JS 動態生成矩陣列 -->
-          </tbody>
+      <div class="matrix-card">
+        <table class="matrix-table" id="matrixTable">
+          <thead id="matrixHead"></thead>
+          <tbody id="matrixBody"></tbody>
         </table>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <!-- ==================== VIEW 3: 藥品上限與後台設定 ==================== -->
-    <section id="view-settings" class="hidden space-y-4">
-      <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-4">
-        <h2 class="text-lg font-bold text-slate-800 border-b pb-2">
-          <i class="fa-solid fa-sliders text-indigo-600 mr-2"></i>藥品上限數與單位管理
-        </h2>
+  <!-- 藥師端底部固定列 -->
+  <div class="bottom-bar" id="pharmacistBottomBar">
+    <div class="bottom-summary" id="stationSummaryText">未點選藥品</div>
+    <div style="display: flex; gap: 6px;">
+      <button class="btn-act btn-clear" onclick="resetCurrentDraft()">清空本台草稿</button>
+      <button class="btn-act btn-submit" onclick="openSubmitModal()">🚀 送出領藥單</button>
+    </div>
+  </div>
 
-        <!-- 即時同步連線設定 (Firebase) -->
-        <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-md space-y-2 text-xs text-indigo-950">
-          <div class="font-bold text-sm flex items-center justify-between">
-            <span><i class="fa-solid fa-cloud-arrow-up mr-1"></i>雲端跨裝置即時同步設定 (Firebase Realtime Database)</span>
-            <span id="cloud-status-badge" class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-mono text-[10px]">本機區域連線模式</span>
-          </div>
-          <p class="text-indigo-800">預設情況下，同一台電腦/手機開多個瀏覽器分頁會以區域廣播 (BroadcastChannel) 自動秒同步。若需跨不同手機即時同步，請在此貼入免費的 Firebase 設定：</p>
-          <textarea id="firebase-config-input" rows="3" placeholder='{ "databaseURL": "https://your-db-default-rtdb.firebaseio.com" }' class="w-full p-2 font-mono text-xs border border-indigo-300 rounded focus:ring-1 focus:ring-indigo-500"></textarea>
-          <div class="flex justify-end">
-            <button onclick="saveFirebaseConfig()" class="bg-indigo-600 text-white font-bold px-3 py-1 rounded text-xs hover:bg-indigo-700 transition">儲存並建立雲端連線</button>
-          </div>
-        </div>
-
-        <!-- 藥品細項清單與上限修改 -->
-        <div class="space-y-2">
-          <div class="flex justify-between items-center">
-            <h3 class="font-bold text-slate-700 text-sm">藥品上限數量 (Max Quantity) 設定表：</h3>
-            <button onclick="resetDefaultCatalog()" class="text-xs text-slate-500 hover:text-red-600 underline">重置為預設菜單與上限</button>
-          </div>
-          <div class="max-h-[500px] overflow-y-auto border border-slate-200 rounded-md">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-100 text-slate-700 sticky top-0">
-                <tr>
-                  <th class="p-2 border-b">組別</th>
-                  <th class="p-2 border-b">藥品名稱</th>
-                  <th class="p-2 border-b w-20">單位</th>
-                  <th class="p-2 border-b w-28">單次最高上限</th>
-                </tr>
-              </thead>
-              <tbody id="settings-catalog-body" class="divide-y divide-slate-100">
-                <!-- JS 動態生成 -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+  <!-- 送單工號確認彈窗 -->
+  <div class="modal-overlay" id="submitModal">
+    <div class="modal-box" style="max-width:380px; text-align:center;">
+      <div class="modal-header">
+        <span>🔑 輸入員工代碼送單</span>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeSubmitModal()">✕</button>
       </div>
-    </section>
-
-  </main>
-
-  <!-- 底部即時點藥統計常駐列（僅在藥師點藥頁顯示） -->
-  <footer id="pharmacist-footer" class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t-2 border-emerald-500 text-white p-2.5 z-40 shadow-2xl">
-    <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
-      <div class="flex items-center space-x-2 overflow-hidden">
-        <span class="bg-emerald-600 text-white font-black text-xs px-2 py-1 rounded whitespace-nowrap" id="footer-station-label">台 1 (綠)</span>
-        <div class="text-xs font-mono text-slate-200 truncate" id="footer-summary-text">尚未選擇項目</div>
-      </div>
-      <div class="flex items-center gap-2 whitespace-nowrap">
-        <button onclick="switchTab('assistant')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-3 py-2 rounded-md shadow flex items-center gap-1 transition">
-          <span>查看一趟流矩陣</span>
-          <i class="fa-solid fa-chevron-right text-[10px]"></i>
-        </button>
+      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入您的員工代碼（全數字）以完成送單：</p>
+      <input type="number" inputmode="numeric" id="staffCodeInput" class="staff-input" placeholder="例如：1042">
+      <div id="submitSummaryPreview" style="font-size:12px; color:#666; max-height:100px; overflow-y:auto; margin-bottom:12px; background:#f9f9f9; padding:6px; border-radius:4px; text-align:left;"></div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn-act btn-clear" onclick="closeSubmitModal()">取消</button>
+        <button class="btn-act btn-submit" onclick="confirmSubmitOrder()">確認送出</button>
       </div>
     </div>
-  </footer>
+  </div>
 
-  <!-- JS 邏輯處理 -->
+  <!-- 歷史與工號送單檢視彈窗 (助理端用) -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>📋 員工送單明細記錄（工號/時間）</span>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeHistoryModal()">✕</button>
+      </div>
+      <div id="historyListContent" style="font-size:13px; max-height:400px; overflow-y:auto;"></div>
+      <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+        <button class="btn-act btn-clear" onclick="closeHistoryModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系統與櫃位設定彈窗 -->
+  <div class="modal-overlay" id="configModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>⚙️ 調劑台櫃位與系統設定</span>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeConfigModal()">✕</button>
+      </div>
+      <div class="config-field">
+        <label>櫃位藥品結構 (JSON 可自訂櫃位、藥名、單位、上限與狀態)</label>
+        <p style="font-size:11px;color:#777;margin:2px 0 6px;">
+          欄位說明：<code>pkgChange: true</code> (換包裝)、<code>shortage: true</code> (前次未到)、<code>disabled: true</code> (禁止點)
+        </p>
+        <textarea id="medDataConfigInput" rows="8"></textarea>
+      </div>
+
+      <div class="config-field">
+        <label>Firebase 雲端配置 (JSON 格式)</label>
+        <textarea id="firebaseConfigInput" rows="4" placeholder='{"apiKey":"...","databaseURL":"https://..."}'></textarea>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; gap:8px;">
+        <button class="btn-act btn-clear" style="color:#d32f2f;" onclick="resetToDefaultConfig()">還原預設櫃位</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-act btn-clear" onclick="closeConfigModal()">取消</button>
+          <button class="btn-act btn-submit" onclick="saveAllConfigs()">儲存變更</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // 預設完整的菜單資料結構與庫存儲位順序
-    const DEFAULT_CATALOG = [
-      // Column 1
-      { id: "m1",  group: "GZA", name: "IWELL / 宜胃", unit: "盒", max: 5 },
-      { id: "m2",  group: "GZA", name: "NEXium / 耐適恩", unit: "", max: 5 },
-      { id: "m3",  group: "GZA", name: "Febuxostat / 達理痛", unit: "", max: 5 },
-      { id: "m4",  group: "GZA", name: "Strocain / 習痛佳音", unit: "", max: 5 },
-      { id: "m5",  group: "GZA", name: "Lipitor 40 / 立普妥 40", unit: "", max: 5 },
-      { id: "m6",  group: "GZA", name: "Suzin / 舒腦", unit: "", max: 5 },
-      { id: "m7",  group: "GZA", name: "Plavix / 保栓通", unit: "", max: 5 },
-      { id: "m8",  group: "GZA", name: "Urief / 優列扶", unit: "", max: 5 },
-
-      { id: "m9",  group: "GZB", name: "Folic acid / 葉酸", unit: "盒", max: 5 },
-      { id: "m10", group: "GZB", name: "Furosemide / 舒利諾", unit: "盒", max: 5 },
-      { id: "m11", group: "GZB", name: "Jardiance Duo / 恩美糖", unit: "", max: 5 },
-      { id: "m12", group: "GZB", name: "Desora / 治敏樂", unit: "", max: 5 },
-      { id: "m13", group: "GZB", name: "Arax / 克胺錠", unit: "盒", max: 5 },
-      { id: "m14", group: "GZB", name: "LOXol / 樂咳痰舒", unit: "盒", max: 5 },
-      { id: "m15", group: "GZB", name: "P.P.C. / 必克風", unit: "盒", max: 5 },
-      { id: "m16", group: "GZB", name: "CephaLEXIN / 信保欣", unit: "盒", max: 5 },
-      { id: "m17", group: "GZB", name: "Minlife-P / 特敏福", unit: "盒", max: 5 },
-      { id: "m18", group: "GZB", name: "Tamlosin D / 暢利淨D", unit: "", max: 5 },
-      { id: "m19", group: "GZB", name: "Ferrous Gluco-B / 鐵他葡萄糖酸鐵", unit: "盒", max: 5 },
-
-      { id: "m20", group: "GZC+D", name: "Peace / 鼻福", unit: "", max: 5 },
-      { id: "m21", group: "GZC+D", name: "Meptin-Mini / 滅喘淨微", unit: "", max: 5 },
-      { id: "m22", group: "GZC+D", name: "Joinlo / 降樂脂", unit: "", max: 5 },
-      { id: "m23", group: "GZC+D", name: "Exforge HCT / 力安穩", unit: "", max: 5 },
-      { id: "m24", group: "GZC+D", name: "CO-TAREG / 可道樂", unit: "", max: 5 },
-      { id: "m25", group: "GZC+D", name: "CO-Midis / 倍壓妥", unit: "", max: 5 },
-      { id: "m26", group: "GZC+D", name: "Doxaben / 可迅", unit: "", max: 5 },
-      { id: "m27", group: "GZC+D", name: "Throne / 克栓", unit: "盒", max: 5 },
-      { id: "m28", group: "GZC+D", name: "Herbesser / 合必爽", unit: "盒", max: 5 },
-      { id: "m29", group: "GZC+D", name: "Lipanthyl / 弗尼利脂寧", unit: "", max: 5 },
-      { id: "m30", group: "GZC+D", name: "Zanidip / 利壓", unit: "", max: 5 },
-      { id: "m31", group: "GZC+D", name: "Coxine / 冠欣", unit: "盒", max: 5 },
-      { id: "m32", group: "GZC+D", name: "Spironolactone / 輸泌來", unit: "盒", max: 5 },
-      { id: "m33", group: "GZC+D", name: "Ginkgocentrate / 杏銀", unit: "盒", max: 5 },
-      { id: "m34", group: "GZC+D", name: "Sigmart / 喜革脈", unit: "", max: 5 },
-      { id: "m35", group: "GZC+D", name: "Caltrate / 挺立鈣", unit: "盒", max: 5 },
-
-      // Column 2
-      { id: "m36", group: "GZE", name: "Nitrostat / 耐絞寧", unit: "盒", max: 5 },
-      { id: "m37", group: "GZE", name: "Pletaal / 普達錠", unit: "盒", max: 5 },
-      { id: "m38", group: "GZE", name: "Atozet / 優泰脂", unit: "", max: 5 },
-      { id: "m39", group: "GZE", name: "Acerine / 抑血凝", unit: "", max: 5 },
-      { id: "m40", group: "GZE", name: "Ibimo / 愛彼脈", unit: "", max: 5 },
-      { id: "m41", group: "GZE", name: "Conslife / 秘福", unit: "盒", max: 5 },
-      { id: "m42", group: "GZE", name: "Syntrend 25mg / 心全", unit: "", max: 5 },
-      { id: "m43", group: "GZE", name: "Sodium Bicarbonate / 碳酸氫鈉片", unit: "", max: 5 },
-
-      { id: "m44", group: "GZF", name: "Edarbi / 易得平", unit: "", max: 5 },
-      { id: "m45", group: "GZF", name: "Neuquinon / 能澍奇朗", unit: "", max: 5 },
-      { id: "m46", group: "GZF", name: "Klaricid / 開羅理黴素", unit: "", max: 5 },
-      { id: "m47", group: "GZF", name: "Morcasin / 孟克杏", unit: "盒", max: 5 },
-      { id: "m48", group: "GZF", name: "Duxetine / 萬憂停", unit: "", max: 5 },
-      { id: "m49", group: "GZF", name: "Juxac / 解鬱", unit: "", max: 5 },
-      { id: "m50", group: "GZF", name: "Keppra / 優開", unit: "", max: 5 },
-      { id: "m51", group: "GZF", name: "Dopadine / 多巴定", unit: "", max: 5 },
-      { id: "m52", group: "GZF", name: "Rafax / 羅菲思", unit: "", max: 5 },
-      { id: "m53", group: "GZF", name: "SeroXAT / 克憂果", unit: "", max: 5 },
-      { id: "m54", group: "GZF", name: "Depakine / 帝拔癲", unit: "束", max: 5 },
-      { id: "m55", group: "GZF", name: "Aabilify / 安立復", unit: "", max: 5 },
-      { id: "m56", group: "GZF", name: "Avodart / 適尿通", unit: "", max: 5 },
-      { id: "m57", group: "GZF", name: "Imolex / 依莫瀉", unit: "盒", max: 5 },
-      { id: "m58", group: "GZF", name: "GenURSO / 健膽舒錠", unit: "盒", max: 5 },
-      { id: "m59", group: "GZF", name: "Wecoli / 胃可麗錠", unit: "盒", max: 5 },
-      { id: "m60", group: "GZF", name: "Ketosteril / 吉多利", unit: "", max: 5 },
-      { id: "m61", group: "GZF", name: "U-Ca / 活維D", unit: "", max: 5 },
-      { id: "m62", group: "GZF", name: "Methimazole / 甲硫嗎唑", unit: "盒", max: 5 },
-
-      // Column 3
-      { id: "m63", group: "GZ-I+J", name: "Mesyrel / 美舒鬱", unit: "", max: 5 },
-      { id: "m64", group: "GZ-I+J", name: "Tonec / 痛停", unit: "盒", max: 5 },
-      { id: "m65", group: "GZ-I+J", name: "Etor 60mg / 伊托", unit: "", max: 5 },
-      { id: "m66", group: "GZ-I+J", name: "Hydroquine / 瘧寧", unit: "", max: 5 },
-      { id: "m67", group: "GZ-I+J", name: "Colchicine / 秋水仙鹼片", unit: "盒", max: 5 },
-      { id: "m68", group: "GZ-I+J", name: "EuriCON / 優力康", unit: "盒", max: 5 },
-      { id: "m69", group: "GZ-I+J", name: "SeroQUEL 25mg / 思樂康", unit: "", max: 5 },
-      { id: "m70", group: "GZ-I+J", name: "Mocalm / 永康緒", unit: "", max: 5 },
-      { id: "m71", group: "GZ-I+J", name: "Switane / 瑞丹", unit: "", max: 5 },
-      { id: "m72", group: "GZ-I+J", name: "Aricept / 愛億欣", unit: "", max: 5 },
-      { id: "m73", group: "GZ-I+J", name: "Leeyo / 離憂", unit: "", max: 5 },
-      { id: "m74", group: "GZ-I+J", name: "Dulcolax / 樂可舒", unit: "", max: 5 },
-      { id: "m75", group: "GZ-I+J", name: "Catilon / 腸必寧", unit: "盒", max: 5 },
-      { id: "m76", group: "GZ-I+J", name: "Betmiga / 貝坦利", unit: "", max: 5 },
-      { id: "m77", group: "GZ-I+J", name: "Fronil / 福樂你", unit: "", max: 5 },
-      { id: "m78", group: "GZ-I+J", name: "Oxbu / 歐舒", unit: "", max: 5 },
-
-      { id: "m79", group: "GZK", name: "Glyxambi / 糖順平", unit: "", max: 5 },
-      { id: "m80", group: "GZK", name: "Actos / 愛妥糖", unit: "", max: 5 },
-      { id: "m81", group: "GZK", name: "Forxiga / 福適佳", unit: "", max: 5 },
-      { id: "m82", group: "GZK", name: "Trajenta / 糖漸平", unit: "", max: 5 },
-      { id: "m83", group: "GZK", name: "Relinide / 醣立定", unit: "", max: 5 },
-      { id: "m84", group: "GZK", name: "Acarose / 降醣佳", unit: "盒", max: 5 },
-      { id: "m85", group: "GZK", name: "Nolvadex / 諾瓦得士", unit: "", max: 5 },
-
-      { id: "m86", group: "高警訊", warn: true, name: "Amaryl / 瑪爾胰", unit: "", max: 5 },
-      { id: "m87", group: "高警訊", warn: true, name: "25mg Jardiance / 恩排糖", unit: "", max: 5 },
-      { id: "m88", group: "高警訊", warn: true, name: "Lixiana 60mg / 里先安", unit: "", max: 5 },
-      { id: "m89", group: "高警訊", warn: true, name: "Pradaxa 110mg / 普栓達", unit: "", max: 5 },
-      { id: "m90", group: "高警訊", warn: true, name: "ThoIN / 端克", unit: "盒", max: 5 },
-      { id: "m91", group: "高警訊", warn: true, name: "Xarelto 15mg / 拜瑞妥", unit: "", max: 5 }
+    // 預設調劑台櫃位與藥品資料庫
+    const DEFAULT_MED_DATA = [
+      // 櫃位 1
+      {
+        col: 1, group: "GZA", isWarn: false,
+        items: [
+          { id: "iwell", name: "IWELL / 宜胃", unit: "盒", max: 3, pkgChange: false, shortage: false, disabled: false },
+          { id: "nexium", name: "NEXium / 耐適恩", unit: "盒", max: 3, pkgChange: true, shortage: false, disabled: false },
+          { id: "febuxostat", name: "Febuxostat / 達理痛", unit: "", max: 3, pkgChange: false, shortage: false, disabled: false },
+          { id: "strocain", name: "Strocain / 習痛佳音", unit: "", max: 4, pkgChange: false, shortage: true, disabled: false },
+          { id: "lipitor40", name: "Lipitor 40 / 立普妥 40", unit: "", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "suzin", name: "Suzin / 舒腦", unit: "", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "plavix", name: "Plavix / 保栓通", unit: "", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "urief", name: "Urief / 優列扶", unit: "", max: 2, pkgChange: false, shortage: false, disabled: false }
+        ]
+      },
+      {
+        col: 1, group: "GZB", isWarn: false,
+        items: [
+          { id: "folic_acid", name: "Folic acid / 葉酸", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "furosemide", name: "Furosemide / 舒利諾", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "jardiance_duo", name: "Jardiance Duo / 恩美糖", unit: "", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "desora", name: "Desora / 治敏樂", unit: "", max: 2, pkgChange: false, shortage: false, disabled: true },
+          { id: "arax", name: "Arax / 克胺錠", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "loxol", name: "LOXol / 樂咳痰舒", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "ppc", name: "P.P.C. / 必克風", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "cephalexin", name: "CephaLEXIN / 信保欣", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "minlife_p", name: "Minlife-P / 特敏福", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "tamlosin_d", name: "Tamlosin D / 暢利淨D", unit: "", max: 2, pkgChange: false, shortage: false, disabled: false },
+          { id: "ferrous_gluco_b", name: "Ferrous Gluco-B / 鐵他葡萄糖酸鐵", unit: "盒", max: 2, pkgChange: false, shortage: false, disabled: false }
+        ]
+      },
+      {
+        col: 1, group: "GZC + D", isWarn: false,
+        items: [
+          { id: "peace", name: "Peace / 鼻福", unit: "", max: 2 },
+          { id: "meptin_mini", name: "Meptin-Mini / 滅喘淨微", unit: "", max: 2 },
+          { id: "joinlo", name: "Joinlo / 降樂脂", unit: "", max: 2 },
+          { id: "exforge_hct", name: "Exforge HCT / 力安穩", unit: "", max: 3 },
+          { id: "co_tareg", name: "CO-TAREG / 可道樂", unit: "", max: 2 },
+          { id: "co_midis", name: "CO-Midis / 倍壓妥", unit: "", max: 2 },
+          { id: "doxaben", name: "Doxaben / 可迅", unit: "", max: 2 },
+          { id: "throne", name: "Throne / 克栓", unit: "盒", max: 2 },
+          { id: "herbesser", name: "Herbesser / 合必爽", unit: "盒", max: 2 },
+          { id: "lipanthyl", name: "Lipanthyl / 弗尼利脂寧", unit: "", max: 2 },
+          { id: "zanidip", name: "Zanidip / 利壓", unit: "", max: 2 },
+          { id: "coxine", name: "Coxine / 冠欣", unit: "盒", max: 2 },
+          { id: "spironolactone", name: "Spironolactone / 輸泌來", unit: "盒", max: 2 },
+          { id: "ginkgo", name: "Ginkgocentrate / 杏銀", unit: "盒", max: 2 },
+          { id: "sigmart", name: "Sigmart / 喜革脈", unit: "", max: 2 },
+          { id: "caltrate", name: "Caltrate / 挺立鈣", unit: "盒", max: 2 }
+        ]
+      },
+      // 櫃位 2
+      {
+        col: 2, group: "GZE", isWarn: false,
+        items: [
+          { id: "nitrostat", name: "Nitrostat / 耐絞寧", unit: "盒", max: 2 },
+          { id: "pletaal", name: "Pletaal / 普達錠", unit: "盒", max: 2 },
+          { id: "atozet", name: "Atozet / 優泰脂", unit: "", max: 2 },
+          { id: "acerine", name: "Acerine / 抑血凝", unit: "", max: 2 },
+          { id: "ibimo", name: "Ibimo / 愛彼脈", unit: "", max: 2 },
+          { id: "conslife", name: "Conslife / 秘福", unit: "盒", max: 2 },
+          { id: "syntrend25", name: "Syntrend 25mg / 心全", unit: "", max: 2 },
+          { id: "sod_bicarb", name: "Sodium Bicarbonate / 碳酸氫鈉片", unit: "", max: 3 }
+        ]
+      },
+      {
+        col: 2, group: "GZF", isWarn: false,
+        items: [
+          { id: "edarbi", name: "Edarbi / 易得平", unit: "", max: 2 },
+          { id: "neuquinon", name: "Neuquinon / 能澍奇朗", unit: "", max: 2 },
+          { id: "klaricid", name: "Klaricid / 開羅理黴素", unit: "", max: 2 },
+          { id: "morcasin", name: "Morcasin / 孟克杏", unit: "盒", max: 2 },
+          { id: "duxetine", name: "Duxetine / 萬憂停", unit: "", max: 2 },
+          { id: "juxac", name: "Juxac / 解鬱", unit: "", max: 2 },
+          { id: "keppra", name: "Keppra / 優開", unit: "", max: 2 },
+          { id: "dopadine", name: "Dopadine / 多巴定", unit: "", max: 2 },
+          { id: "rafax", name: "Rafax / 羅菲思", unit: "", max: 2 },
+          { id: "seroxat", name: "SeroXAT / 克憂果", unit: "", max: 2 },
+          { id: "depakine", name: "Depakine / 帝拔癲", unit: "束", max: 3 },
+          { id: "aabilify", name: "Aabilify / 安立復", unit: "", max: 2 },
+          { id: "avodart", name: "Avodart / 適尿通", unit: "", max: 2 },
+          { id: "imolex", name: "Imolex / 依莫瀉", unit: "盒", max: 2 },
+          { id: "genurso", name: "GenURSO / 健膽舒錠", unit: "盒", max: 2 },
+          { id: "wecoli", name: "Wecoli / 胃可麗錠", unit: "盒", max: 2 },
+          { id: "ketosteril", name: "Ketosteril / 吉多利", unit: "", max: 2 },
+          { id: "u_ca", name: "U-Ca / 活維D", unit: "", max: 2 },
+          { id: "methimazole", name: "Methimazole / 甲硫嗎唑", unit: "盒", max: 2 }
+        ]
+      },
+      // 櫃位 3
+      {
+        col: 3, group: "GZ-I + J", isWarn: false,
+        items: [
+          { id: "mesyrel", name: "Mesyrel / 美舒鬱", unit: "", max: 2 },
+          { id: "tonec", name: "Tonec / 痛停", unit: "盒", max: 2 },
+          { id: "etor60", name: "Etor 60mg / 伊托", unit: "", max: 2 },
+          { id: "hydroquine", name: "Hydroquine / 瘧寧", unit: "", max: 2 },
+          { id: "colchicine", name: "Colchicine / 秋水仙鹼片", unit: "盒", max: 2 },
+          { id: "euricon", name: "EuriCON / 優力康", unit: "盒", max: 2 },
+          { id: "seroquel25", name: "SeroQUEL 25mg / 思樂康", unit: "", max: 2 },
+          { id: "mocalm", name: "Mocalm / 永康緒", unit: "", max: 2 },
+          { id: "switane", name: "Switane / 瑞丹", unit: "", max: 2 },
+          { id: "aricept", name: "Aricept / 愛億欣", unit: "", max: 2 },
+          { id: "leeyo", name: "Leeyo / 離憂", unit: "", max: 2 },
+          { id: "dulcolax", name: "Dulcolax / 樂可舒", unit: "", max: 2 },
+          { id: "catilon", name: "Catilon / 腸必寧", unit: "盒", max: 2 },
+          { id: "betmiga", name: "Betmiga / 貝坦利", unit: "", max: 2 },
+          { id: "fronil", name: "Fronil / 福樂你", unit: "", max: 2 },
+          { id: "oxbu", name: "Oxbu / 歐舒", unit: "", max: 2 }
+        ]
+      },
+      {
+        col: 3, group: "GZK", isWarn: false,
+        items: [
+          { id: "glyxambi", name: "Glyxambi / 糖順平", unit: "", max: 2 },
+          { id: "actos", name: "Actos / 愛妥糖", unit: "", max: 2 },
+          { id: "forxiga", name: "Forxiga / 福適佳", unit: "", max: 2 },
+          { id: "trajenta", name: "Trajenta / 糖漸平", unit: "", max: 2 },
+          { id: "relinide", name: "Relinide / 醣立定", unit: "", max: 2 },
+          { id: "acarose", name: "Acarose / 降醣佳", unit: "盒", max: 2 },
+          { id: "nolvadex", name: "Nolvadex / 諾瓦得士", unit: "", max: 2 }
+        ]
+      },
+      {
+        col: 3, group: "高警訊 抽屜+架上", isWarn: true,
+        items: [
+          { id: "amaryl", name: "Amaryl / 瑪爾胰", unit: "", max: 2 },
+          { id: "jardiance25", name: "25mg Jardiance / 恩排糖", unit: "", max: 2 },
+          { id: "lixiana60", name: "Lixiana 60mg / 里先安", unit: "", max: 2 },
+          { id: "pradaxa110", name: "Pradaxa 110mg / 普栓達", unit: "", max: 2 },
+          { id: "thoin", name: "ThoIN / 端克", unit: "盒", max: 2 },
+          { id: "xarelto15", name: "Xarelto 15mg / 拜瑞妥", unit: "", max: 2 }
+        ]
+      }
     ];
 
-    const STATIONS = {
-      station_1: "台 1 (綠)",
-      station_2: "台 2 (紅)",
-      station_3: "台 3 (黃)",
-      station_4: "台 4 (藍)",
-      station_5: "台 5 (白)"
-    };
+    // 動態載入使用者自訂的櫃位藥品
+    let activeMedData = JSON.parse(localStorage.getItem("pharmacy_custom_meds") || JSON.stringify(DEFAULT_MED_DATA));
 
-    // 全局應用程式狀態
-    let catalog = JSON.parse(localStorage.getItem('smartrx_catalog')) || DEFAULT_CATALOG;
-    let currentStation = 'station_1';
-    let ordersData = JSON.parse(localStorage.getItem('smartrx_orders')) || {
-      station_1: {}, station_2: {}, station_3: {}, station_4: {}, station_5: {}
-    };
-    let pickedState = JSON.parse(localStorage.getItem('smartrx_picked')) || {};
+    // 全域變數
+    let currentStationColor = "綠"; // 綠 | 紅 | 藍 | 黃 | 青 | 專
+    let draftOrders = {}; // 本機當前草稿 { medId: qty }
+    let activeOrdersList = []; // 雲端/同步中的送單陣列 [{ id, color, orderSeq, staffCode, time, items: { medId: qty } }]
+    let checkedItems = {}; // 助理已打勾的 medId
+    let appMode = "pharmacist";
+    let dbRef = null;
+    const channel = new BroadcastChannel("pharmacy_order_refined_channel");
 
-    // 區域廣播同步 (同機跨分頁測試)
-    const syncChannel = new BroadcastChannel('smartrx_sync_channel');
-    syncChannel.onmessage = (event) => {
-      if (event.data.type === 'ORDER_UPDATE') {
-        ordersData = event.data.orders;
+    // 網址參數初始化 (如 ?station=綠 或 ?station=專)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("station")) {
+      const st = urlParams.get("station");
+      const validColors = ["綠", "紅", "藍", "黃", "青", "專"];
+      if (validColors.includes(st)) {
+        currentStationColor = st;
+        document.getElementById("stationSelect").value = st;
+      }
+    }
+
+    // 初始化同步與介面
+    initSync();
+    updateStationHeader();
+    renderAll();
+
+    function initSync() {
+      channel.onmessage = (e) => {
+        if (e.data && e.data.type === "UPDATE_ACTIVE_ORDERS") {
+          activeOrdersList = e.data.payload || [];
+          renderAll();
+        }
+      };
+
+      const savedConfig = localStorage.getItem("pharmacy_firebase_config");
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          if (!firebase.apps.length) firebase.initializeApp(config);
+          const db = firebase.database();
+          dbRef = db.ref("active_orders");
+          dbRef.on("value", (snapshot) => {
+            const val = snapshot.val();
+            activeOrdersList = val ? Object.values(val) : [];
+            renderAll();
+          });
+          document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
+          document.getElementById("cloudBadge").className = "cloud-status online";
+        } catch (err) {
+          console.error("Firebase init failed:", err);
+        }
+      }
+    }
+
+    function syncActiveOrders() {
+      channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList });
+      if (dbRef) {
+        dbRef.set(activeOrdersList);
+      }
+    }
+
+    // 更新台號與標題連動 (例如 綠台 或 綠2)
+    function changeStation(color) {
+      currentStationColor = color;
+      draftOrders = {}; // 切換台號時清空當前草稿
+      updateStationHeader();
+      renderAll();
+    }
+
+    function updateStationHeader() {
+      // 計算該顏色目前未完成的單數
+      const sameColorCount = activeOrdersList.filter(o => o.color === currentStationColor).length;
+      let titleTag = `${currentStationColor}台`;
+      if (currentStationColor === "專") titleTag = "專用台";
+      if (sameColorCount > 0) {
+        titleTag = `${currentStationColor}${sameColorCount + 1}`;
+      }
+      document.getElementById("currentStationTitle").innerText = `【${titleTag} - 藥品劃記看板】`;
+    }
+
+    // 點藥操作 (循環點擊 + 長按歸零)
+    let pressTimer = null;
+    let isLongPress = false;
+
+    function handleMedClick(med) {
+      if (isLongPress) {
+        isLongPress = false;
+        return;
+      }
+      if (med.disabled) return;
+
+      const cur = draftOrders[med.id] || 0;
+      let next = cur + 1;
+      if (next > (med.max || 3)) next = 0;
+
+      if (next === 0) {
+        delete draftOrders[med.id];
+      } else {
+        draftOrders[med.id] = next;
+      }
+      renderPharmacistBoard();
+    }
+
+    function startLongPress(medId) {
+      isLongPress = false;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        if (draftOrders[medId]) {
+          delete draftOrders[medId];
+          if (navigator.vibrate) navigator.vibrate(50); // 輕微震動回饋
+          renderPharmacistBoard();
+        }
+      }, 500);
+    }
+
+    function cancelLongPress() {
+      if (pressTimer) clearTimeout(pressTimer);
+    }
+
+    // 切換分頁模式
+    function switchMode(mode) {
+      appMode = mode;
+      document.getElementById("tabPharmacist").className = `mode-tab ${mode === 'pharmacist' ? 'active' : ''}`;
+      document.getElementById("tabAssistant").className = `mode-tab ${mode === 'assistant' ? 'active' : ''}`;
+      document.getElementById("viewPharmacist").style.display = mode === 'pharmacist' ? 'block' : 'none';
+      document.getElementById("pharmacistBottomBar").style.display = mode === 'pharmacist' ? 'flex' : 'none';
+      document.getElementById("viewAssistant").style.display = mode === 'assistant' ? 'block' : 'none';
+      renderAll();
+    }
+
+    function renderAll() {
+      updateStationHeader();
+      if (appMode === "pharmacist") {
         renderPharmacistBoard();
-        renderAssistantMatrix();
-      } else if (event.data.type === 'PICKED_UPDATE') {
-        pickedState = event.data.picked;
+      } else {
         renderAssistantMatrix();
       }
-    };
-
-    // 頁面初始化
-    document.addEventListener("DOMContentLoaded", () => {
-      // 讀取網址參數 (例如 ?station=station_2)
-      const urlParams = new URLSearchParams(window.location.search);
-      const stParam = urlParams.get('station');
-      if (stParam && STATIONS[stParam]) {
-        currentStation = stParam;
-        document.getElementById('station-select').value = stParam;
-      }
-
-      renderPharmacistBoard();
-      renderAssistantMatrix();
-      renderSettingsCatalog();
-    });
-
-    // 切換 Tab
-    function switchTab(tab) {
-      document.getElementById('view-pharmacist').classList.add('hidden');
-      document.getElementById('view-assistant').classList.add('hidden');
-      document.getElementById('view-settings').classList.add('hidden');
-
-      document.getElementById('tab-pharmacist').className = "px-3 py-1.5 rounded-md font-bold transition-all text-slate-300 hover:text-white";
-      document.getElementById('tab-assistant').className = "px-3 py-1.5 rounded-md font-bold transition-all text-slate-300 hover:text-white";
-      document.getElementById('tab-settings').className = "px-2 py-1.5 rounded-md font-bold transition-all text-slate-300 hover:text-white";
-
-      document.getElementById(`view-${tab}`).classList.remove('hidden');
-      document.getElementById(`tab-${tab}`).className = "px-3 py-1.5 rounded-md font-bold transition-all bg-emerald-600 text-white shadow";
-
-      const footer = document.getElementById('pharmacist-footer');
-      if (tab === 'pharmacist') {
-        footer.classList.remove('hidden');
-      } else {
-        footer.classList.add('hidden');
-      }
     }
 
-    // 切換調劑台
-    function changeStation(stKey) {
-      currentStation = stKey;
-      renderPharmacistBoard();
-    }
-
-    // 藥師點藥：循環增加數字 (Cycle Tap)
-    function handleItemTap(medId) {
-      const med = catalog.find(m => m.id === medId);
-      if (!med) return;
-
-      const currentQty = (ordersData[currentStation] && ordersData[currentStation][medId]) || 0;
-      let nextQty = currentQty + 1;
-
-      // 超過上限則歸零 (循環點擊邏輯)
-      if (nextQty > med.max) {
-        nextQty = 0;
-      }
-
-      if (!ordersData[currentStation]) ordersData[currentStation] = {};
-      
-      if (nextQty === 0) {
-        delete ordersData[currentStation][medId];
-      } else {
-        ordersData[currentStation][medId] = nextQty;
-      }
-
-      saveAndSyncOrders();
-    }
-
-    // 長按/右鍵手動歸零
-    function handleItemReset(medId, event) {
-      if (event) event.preventDefault();
-      if (ordersData[currentStation] && ordersData[currentStation][medId]) {
-        delete ordersData[currentStation][medId];
-        saveAndSyncOrders();
-      }
-    }
-
-    // 儲存並發送廣播通知
-    function saveAndSyncOrders() {
-      localStorage.setItem('smartrx_orders', JSON.stringify(ordersData));
-      syncChannel.postMessage({ type: 'ORDER_UPDATE', orders: ordersData });
-      renderPharmacistBoard();
-      renderAssistantMatrix();
-    }
-
-    // 繪製藥師點藥 3 欄紙本看板
+    // 渲染藥師端看板
     function renderPharmacistBoard() {
-      const board = document.getElementById('pharmacist-board');
-      board.innerHTML = '';
+      const board = document.getElementById("pharmacistBoard");
+      board.innerHTML = "";
 
-      document.getElementById('footer-station-label').innerText = STATIONS[currentStation];
+      [1, 2, 3].forEach(colIdx => {
+        const colDiv = document.createElement("div");
+        colDiv.className = "col-group";
 
-      // 按 Column 將 Group 分組
-      const colGroups = [
-        ["GZA", "GZB", "GZC+D"],
-        ["GZE", "GZF"],
-        ["GZ-I+J", "GZK", "高警訊"]
-      ];
+        const groups = activeMedData.filter(g => (g.col || 1) === colIdx);
+        groups.forEach(group => {
+          const block = document.createElement("div");
+          block.className = "med-block";
 
-      colGroups.forEach(groupList => {
-        const colEl = document.createElement('div');
-        colEl.className = 'flex flex-col gap-3';
+          const header = document.createElement("div");
+          header.className = `block-header ${group.isWarn ? 'warn' : ''}`;
+          header.innerHTML = `<span>${group.group}</span><span>${group.isWarn ? '⚠️ 高警訊' : ''}</span>`;
+          block.appendChild(header);
 
-        groupList.forEach(grpName => {
-          const items = catalog.filter(m => m.group === grpName);
-          if (items.length === 0) return;
+          (group.items || []).forEach(med => {
+            const count = draftOrders[med.id] || 0;
+            const isAtMax = count >= (med.max || 3);
 
-          const isWarnGroup = items[0].warn;
+            const itemDiv = document.createElement("div");
+            itemDiv.className = `med-item ${count > 0 ? 'selected' : ''} ${isAtMax ? 'at-max' : ''} ${med.disabled ? 'disabled' : ''}`;
 
-          const grpBox = document.createElement('div');
-          grpBox.className = `border-2 ${isWarnGroup ? 'border-red-600 bg-red-50/20' : 'border-slate-800 bg-white'} rounded flex overflow-hidden shadow-sm`;
+            // 長按事件
+            itemDiv.onmousedown = () => startLongPress(med.id);
+            itemDiv.onmouseup = cancelLongPress;
+            itemDiv.onmouseleave = cancelLongPress;
+            itemDiv.ontouchstart = () => startLongPress(med.id);
+            itemDiv.ontouchend = cancelLongPress;
 
-          // 左側豎排組別標籤
-          const labelEl = document.createElement('div');
-          labelEl.className = `w-8 flex items-center justify-center font-black text-xs border-r-2 writing-vertical px-1 tracking-widest ${
-            isWarnGroup ? 'bg-red-600 text-white border-red-600' : 'bg-slate-200 text-slate-800 border-slate-800'
-          }`;
-          labelEl.innerText = isWarnGroup ? "高警訊 抽屜+架上" : grpName;
-          grpBox.appendChild(labelEl);
+            itemDiv.onclick = () => handleMedClick(med);
 
-          // 藥品列表
-          const listEl = document.createElement('div');
-          listEl.className = 'flex-1 divide-y divide-slate-200';
+            // 狀態圖示標籤
+            let statusBadges = "";
+            if (med.pkgChange) statusBadges += `<span class="status-badge badge-pkg" title="即將換包裝">📦換包裝</span>`;
+            if (med.shortage) statusBadges += `<span class="status-badge badge-shortage" title="前次點藥未到完整">⏳欠藥</span>`;
+            if (med.disabled) statusBadges += `<span class="status-badge badge-ban" title="禁止點選">🚫禁點</span>`;
 
-          items.forEach(med => {
-            const qty = (ordersData[currentStation] && ordersData[currentStation][med.id]) || 0;
-            const isAtMax = qty === med.max;
-
-            const row = document.createElement('div');
-            row.className = `med-row flex items-center justify-between min-h-[38px] p-1 cursor-pointer transition ${
-              qty > 0 ? (isAtMax ? 'at-max border-2 border-orange-500' : 'selected') : 'hover:bg-slate-50'
-            }`;
-
-            // 綁定觸控事件
-            row.onclick = () => handleItemTap(med.id);
-            row.oncontextmenu = (e) => handleItemReset(med.id, e);
-
-            row.innerHTML = `
-              <div class="flex-1 px-1.5 text-xs font-bold text-slate-800 leading-tight">
-                ${med.name}
-              </div>
-              <div class="w-7 text-[10px] text-slate-500 text-center border-l border-slate-200">
-                ${med.unit}
-              </div>
-              <div class="w-10 h-8 flex items-center justify-center border-l-2 border-slate-800 font-black text-xl count-badge ${
-                qty > 0 ? (isAtMax ? 'text-orange-600' : 'text-blue-700') : 'text-slate-300'
-              }">
-                ${qty > 0 ? qty : ''}
+            itemDiv.innerHTML = `
+              <div class="med-name">${med.name}</div>
+              <div class="med-status-icons">${statusBadges}</div>
+              ${med.unit ? `<div class="med-unit-badge">${med.unit}</div>` : ''}
+              <div class="med-badge">
+                ${count > 0 ? count : ''}
+                ${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}
               </div>
             `;
-            listEl.appendChild(row);
+            block.appendChild(itemDiv);
           });
 
-          grpBox.appendChild(listEl);
-          colEl.appendChild(grpBox);
+          colDiv.appendChild(block);
         });
 
-        board.appendChild(colEl);
+        board.appendChild(colDiv);
       });
 
-      updatePharmacistFooterSummary();
-    }
-
-    // 更新底部點藥統計
-    function updatePharmacistFooterSummary() {
-      const currentOrders = ordersData[currentStation] || {};
-      const activeItems = Object.entries(currentOrders).filter(([_, q]) => q > 0);
-
-      const summaryText = document.getElementById('footer-summary-text');
-      if (activeItems.length === 0) {
-        summaryText.innerText = '尚未劃記任何藥品';
+      // 底部摘要
+      const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
+      const summaryEl = document.getElementById("stationSummaryText");
+      if (activeList.length === 0) {
+        summaryEl.innerText = "未點選藥品";
       } else {
-        const textArr = activeItems.map(([id, q]) => {
-          const med = catalog.find(m => m.id === id);
-          return `${med ? med.name.split('/')[0] : id} × ${q}`;
-        });
-        summaryText.innerText = `已點 ${activeItems.length} 項：${textArr.join('、')}`;
+        const txt = activeList.map(([id, qty]) => {
+          const med = findMed(id);
+          return `${med.name}×${qty}`;
+        }).join("、");
+        summaryEl.innerText = `草稿 (${activeList.length}項)：${txt}`;
       }
     }
 
-    // 繪製助理一趟流矩陣
+    // 渲染助理端動線矩陣
     function renderAssistantMatrix() {
-      const tbody = document.getElementById('assistant-matrix-body');
-      tbody.innerHTML = '';
+      const thead = document.getElementById("matrixHead");
+      const tbody = document.getElementById("matrixBody");
 
-      let hasData = false;
+      // 動態建立調劑台欄位標題 (例：綠1、綠2、紅、專)
+      const stationColumns = activeOrdersList.map(order => ({
+        key: order.id,
+        label: order.displayLabel,
+        color: order.color
+      }));
 
-      catalog.forEach(med => {
-        // 計算 5 個調劑台的數量
-        const q1 = (ordersData.station_1 && ordersData.station_1[med.id]) || 0;
-        const q2 = (ordersData.station_2 && ordersData.station_2[med.id]) || 0;
-        const q3 = (ordersData.station_3 && ordersData.station_3[med.id]) || 0;
-        const q4 = (ordersData.station_4 && ordersData.station_4[med.id]) || 0;
-        const q5 = (ordersData.station_5 && ordersData.station_5[med.id]) || 0;
-
-        const totalQty = q1 + q2 + q3 + q4 + q5;
-
-        // 若無任何台需要此藥品，則跳過（隱藏非必要列）
-        if (totalQty === 0) return;
-
-        hasData = true;
-        const isPicked = pickedState[med.id] || false;
-
-        const tr = document.createElement('tr');
-        tr.className = `transition ${isPicked ? 'picked-row' : 'hover:bg-slate-50'}`;
-
-        tr.innerHTML = `
-          <td class="p-2 text-center">
-            <input type="checkbox" ${isPicked ? 'checked' : ''} onchange="togglePicked('${med.id}')" class="w-5 h-5 accent-emerald-600 rounded cursor-pointer">
-          </td>
-          <td class="p-2 font-bold text-xs ${med.warn ? 'text-red-600' : 'text-slate-600'}">
-            ${med.group}
-          </td>
-          <td class="p-2 font-bold text-slate-800">
-            ${med.name}
-          </td>
-          <td class="p-2 text-center text-xs text-slate-500">
-            ${med.unit || '-'}
-          </td>
-          <td class="p-2 text-center font-black text-base bg-emerald-50 text-emerald-900 border-x border-emerald-200">
-            ${totalQty}
-          </td>
-          <td class="p-2 text-center font-extrabold ${q1 > 0 ? 'text-emerald-700 bg-emerald-50/50' : 'text-slate-300'}">${q1 || '-'}</td>
-          <td class="p-2 text-center font-extrabold ${q2 > 0 ? 'text-red-700 bg-red-50/50' : 'text-slate-300'}">${q2 || '-'}</td>
-          <td class="p-2 text-center font-extrabold ${q3 > 0 ? 'text-amber-700 bg-amber-50/50' : 'text-slate-300'}">${q3 || '-'}</td>
-          <td class="p-2 text-center font-extrabold ${q4 > 0 ? 'text-blue-700 bg-blue-50/50' : 'text-slate-300'}">${q4 || '-'}</td>
-          <td class="p-2 text-center font-extrabold ${q5 > 0 ? 'text-slate-900 bg-slate-100' : 'text-slate-300'}">${q5 || '-'}</td>
-        `;
-
-        tbody.appendChild(tr);
+      let headHtml = `
+        <tr>
+          <th style="width: 48px;">完成</th>
+          <th style="width: 85px;">櫃位</th>
+          <th>藥品名稱</th>
+          <th style="width: 50px;">單位</th>
+          <th style="width: 70px;">總需數</th>
+      `;
+      stationColumns.forEach(col => {
+        headHtml += `<th class="th-station" style="min-width: 55px;">${col.label}</th>`;
       });
+      headHtml += `</tr>`;
+      thead.innerHTML = headHtml;
 
-      if (!hasData) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="10" class="p-8 text-center text-slate-400 font-bold">
-              <i class="fa-solid fa-clipboard-check text-3xl mb-2 block text-slate-300"></i>
-              目前所有調劑台皆未劃記點藥需求
-            </td>
-          </tr>
-        `;
-      }
-    }
+      tbody.innerHTML = "";
+      let hasAnyOrder = false;
 
-    // 助理揀貨打勾狀態
-    function togglePicked(medId) {
-      pickedState[medId] = !pickedState[medId];
-      localStorage.setItem('smartrx_picked', JSON.stringify(pickedState));
-      syncChannel.postMessage({ type: 'PICKED_UPDATE', picked: pickedState });
-      renderAssistantMatrix();
-    }
+      // 嚴格依據櫃位動線逐一列出
+      activeMedData.forEach(group => {
+        (group.items || []).forEach(med => {
+          // 計算總需數與各單分配數
+          let totalQty = 0;
+          const colQtys = stationColumns.map(col => {
+            const order = activeOrdersList.find(o => o.id === col.key);
+            const q = order?.items?.[med.id] || 0;
+            totalQty += q;
+            return q;
+          });
 
-    function clearAllPickedStatus() {
-      pickedState = {};
-      localStorage.setItem('smartrx_picked', JSON.stringify(pickedState));
-      syncChannel.postMessage({ type: 'PICKED_UPDATE', picked: pickedState });
-      renderAssistantMatrix();
-    }
+          if (totalQty > 0) {
+            hasAnyOrder = true;
+            const isDone = !!checkedItems[med.id];
+            const tr = document.createElement("tr");
+            tr.className = `matrix-row ${isDone ? 'done' : ''}`;
+            tr.onclick = (e) => {
+              if (e.target.tagName !== 'BUTTON') toggleCheck(med.id);
+            };
 
-    function clearCurrentStation() {
-      if (confirm(`確定要清空【${STATIONS[currentStation]}】的所有點藥數量嗎？`)) {
-        ordersData[currentStation] = {};
-        saveAndSyncOrders();
-      }
-    }
-
-    function clearAllStationsData() {
-      if (confirm("確定要【清空所有 5 個調劑台】的點藥紀錄嗎？此動作將重置助理矩陣。")) {
-        ordersData = { station_1: {}, station_2: {}, station_3: {}, station_4: {}, station_5: {} };
-        pickedState = {};
-        localStorage.setItem('smartrx_picked', JSON.stringify(pickedState));
-        saveAndSyncOrders();
-      }
-    }
-
-    // 後台：繪製藥品上限與單位表
-    function renderSettingsCatalog() {
-      const tbody = document.getElementById('settings-catalog-body');
-      tbody.innerHTML = '';
-
-      catalog.forEach(med => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-2 font-bold text-slate-600">${med.group}</td>
-          <td class="p-2 font-medium text-slate-800">${med.name}</td>
-          <td class="p-2">
-            <input type="text" value="${med.unit}" onchange="updateMedSetting('${med.id}', 'unit', this.value)" class="w-12 border rounded px-1 text-center">
-          </td>
-          <td class="p-2">
-            <input type="number" min="1" max="99" value="${med.max}" onchange="updateMedSetting('${med.id}', 'max', parseInt(this.value))" class="w-16 border rounded px-1 text-center font-bold text-blue-600">
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function updateMedSetting(medId, key, value) {
-      const med = catalog.find(m => m.id === medId);
-      if (med) {
-        med[key] = value;
-        localStorage.setItem('smartrx_catalog', JSON.stringify(catalog));
-        renderPharmacistBoard();
-      }
-    }
-
-    function resetDefaultCatalog() {
-      if (confirm("確定要將藥品清單與上限數重置為系統預設值嗎？")) {
-        catalog = JSON.parse(JSON.stringify(DEFAULT_CATALOG));
-        localStorage.setItem('smartrx_catalog', JSON.stringify(catalog));
-        renderSettingsCatalog();
-        renderPharmacistBoard();
-      }
-    }
-
-    // Firebase 雲端整合 (簡化 API 連線)
-    function saveFirebaseConfig() {
-      const input = document.getElementById('firebase-config-input').value.trim();
-      if (!input) return;
-      try {
-        const config = JSON.parse(input);
-        if (!firebase.apps.length) {
-          firebase.initializeApp(config);
-        }
-        const db = firebase.database();
-        
-        // 監聽雲端資料變更
-        db.ref('smartrx_orders').on('value', (snapshot) => {
-          const val = snapshot.val();
-          if (val) {
-            ordersData = val;
-            renderPharmacistBoard();
-            renderAssistantMatrix();
+            let rowHtml = `
+              <td><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td>
+              <td style="font-weight:bold; color:#444;">${group.group}</td>
+              <td style="text-align:left; font-weight:bold;">${med.name}</td>
+              <td>${med.unit || '-'}</td>
+              <td><span class="matrix-total">${totalQty}</span></td>
+            `;
+            colQtys.forEach(q => {
+              rowHtml += `<td class="station-qty">${q > 0 ? q : '-'}</td>`;
+            });
+            tr.innerHTML = rowHtml;
+            tbody.appendChild(tr);
           }
         });
+      });
 
-        document.getElementById('cloud-status-badge').innerText = "已連線至 Firebase 雲端";
-        document.getElementById('cloud-status-badge').className = "bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono text-[10px]";
-        alert("Firebase 雲端即時資料庫連線成功！五台手機將可即時同步。");
-      } catch (e) {
-        alert("Firebase Config JSON 格式錯誤，請檢查。");
+      if (!hasAnyOrder) {
+        tbody.innerHTML = `<tr><td colspan="${5 + stationColumns.length}" style="padding: 26px; color: #888;">目前各調劑台均無待補藥單</td></tr>`;
       }
+    }
+
+    function toggleCheck(medId) {
+      checkedItems[medId] = !checkedItems[medId];
+      renderAssistantMatrix();
+    }
+
+    // 清除已完成項目
+    function clearDoneItems() {
+      const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
+      if (doneIds.length === 0) {
+        alert("尚未勾選任何已完成藥品！");
+        return;
+      }
+      // 從所有單中移除已完成的藥品
+      activeOrdersList.forEach(order => {
+        doneIds.forEach(id => {
+          if (order.items && order.items[id]) delete order.items[id];
+        });
+      });
+      // 過濾掉已經全部拿完的空單
+      activeOrdersList = activeOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
+      checkedItems = {};
+      syncActiveOrders();
+      renderAll();
+    }
+
+    // 送單機制與工號輸入
+    function openSubmitModal() {
+      const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
+      if (activeList.length === 0) {
+        alert("請先劃記點選藥品再送單！");
+        return;
+      }
+      const previewEl = document.getElementById("submitSummaryPreview");
+      previewEl.innerHTML = activeList.map(([id, qty]) => {
+        const med = findMed(id);
+        return `<div>• ${med.name} × <b>${qty}</b> ${med.unit}</div>`;
+      }).join("");
+      document.getElementById("staffCodeInput").value = "";
+      document.getElementById("submitModal").style.display = "flex";
+      setTimeout(() => document.getElementById("staffCodeInput").focus(), 100);
+    }
+
+    function closeSubmitModal() {
+      document.getElementById("submitModal").style.display = "none";
+    }
+
+    function confirmSubmitOrder() {
+      const staffCode = document.getElementById("staffCodeInput").value.trim();
+      if (!staffCode || !/^\\d+$/.test(staffCode)) {
+        alert("請輸入純數字員工代碼！");
+        return;
+      }
+
+      // 計算台號序號 (例如同顏色已有單 -> 綠2)
+      const existingSameColor = activeOrdersList.filter(o => o.color === currentStationColor);
+      const seq = existingSameColor.length + 1;
+      const displayLabel = `${currentStationColor}${seq > 1 ? seq : ''}`;
+
+      const newOrder = {
+        id: "ord_" + Date.now(),
+        color: currentStationColor,
+        orderSeq: seq,
+        displayLabel: displayLabel,
+        staffCode: staffCode,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        items: { ...draftOrders }
+      };
+
+      activeOrdersList.push(newOrder);
+      draftOrders = {}; // 送出後清空草稿
+      syncActiveOrders();
+      closeSubmitModal();
+      alert(`已成功送出【${displayLabel}】領藥單！`);
+      renderAll();
+    }
+
+    function resetCurrentDraft() {
+      if (confirm("確定要清空本台目前的劃記草稿嗎？")) {
+        draftOrders = {};
+        renderPharmacistBoard();
+      }
+    }
+
+    // 檢視歷史與工號明細
+    function openHistoryModal() {
+      const content = document.getElementById("historyListContent");
+      if (activeOrdersList.length === 0) {
+        content.innerHTML = "<p style='color:#888; text-align:center;'>目前無進行中的送單</p>";
+      } else {
+        content.innerHTML = activeOrdersList.map(order => `
+          <div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa;">
+            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">
+              <span style="color:var(--primary-green);">【${order.displayLabel}】 送單員工：${order.staffCode}</span>
+              <span style="color:#888; font-size:12px;">⏰ ${order.time}</span>
+            </div>
+            <div style="font-size:12.5px; color:#444; line-height:1.4;">
+              ${Object.entries(order.items || {}).map(([id, qty]) => {
+                const med = findMed(id);
+                return `${med.name}×${qty}${med.unit}`;
+              }).join("、 ")}
+            </div>
+          </div>
+        `).join("");
+      }
+      document.getElementById("historyModal").style.display = "flex";
+    }
+
+    function closeHistoryModal() {
+      document.getElementById("historyModal").style.display = "none";
+    }
+
+    // 系統與櫃位設定
+    function openConfigModal() {
+      document.getElementById("medDataConfigInput").value = JSON.stringify(activeMedData, null, 2);
+      document.getElementById("firebaseConfigInput").value = localStorage.getItem("pharmacy_firebase_config") || "";
+      document.getElementById("configModal").style.display = "flex";
+    }
+
+    function closeConfigModal() {
+      document.getElementById("configModal").style.display = "none";
+    }
+
+    function saveAllConfigs() {
+      const medVal = document.getElementById("medDataConfigInput").value.trim();
+      const fbVal = document.getElementById("firebaseConfigInput").value.trim();
+      try {
+        const parsedMeds = JSON.parse(medVal);
+        localStorage.setItem("pharmacy_custom_meds", JSON.stringify(parsedMeds));
+        activeMedData = parsedMeds;
+      } catch (err) {
+        alert("櫃位藥品 JSON 格式有誤，請檢查語法！");
+        return;
+      }
+
+      if (fbVal) {
+        try {
+          JSON.parse(fbVal);
+          localStorage.setItem("pharmacy_firebase_config", fbVal);
+        } catch (err) {
+          alert("Firebase JSON 格式錯誤！");
+          return;
+        }
+      } else {
+        localStorage.removeItem("pharmacy_firebase_config");
+      }
+
+      alert("設定已儲存！將重新整理套用");
+      location.reload();
+    }
+
+    function resetToDefaultConfig() {
+      if (confirm("確定要將所有櫃位藥品還原為出廠預設值嗎？")) {
+        localStorage.removeItem("pharmacy_custom_meds");
+        location.reload();
+      }
+    }
+
+    function findMed(id) {
+      for (const g of activeMedData) {
+        for (const item of (g.items || [])) {
+          if (item.id === id) return item;
+        }
+      }
+      return { name: id, unit: "" };
     }
   </script>
 </body>
 </html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(refined_html)
+
+print("Updated index.html written successfully.")
