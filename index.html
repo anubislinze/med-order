@@ -686,7 +686,7 @@
         <button class="btn-act btn-clear" style="color:#d32f2f;" onclick="resetToDefaultConfig()">還原出廠預設</button>
         <div style="display:flex; gap:8px;">
           <button class="btn-act btn-clear" onclick="closeConfigModal()">取消</button>
-          <button class="btn-act btn-submit" onclick="saveVisualConfigs()">儲存變更並套用</button>
+          <button class="btn-act btn-submit" onclick="saveVisualConfigs()">儲存變更並同步雲端</button>
         </div>
       </div>
     </div>
@@ -696,7 +696,7 @@
     // 授權白名單代碼
     const AUTH_STAFF_CODES = ["1508152", "admin", "8888"];
 
-    // 1. 一般台完整資料庫
+    // 1. 一般台出廠預設資料庫
     const DEFAULT_GENERAL_MEDS = [
       // 欄 1
       {
@@ -879,7 +879,7 @@
       }
     ];
 
-    // 2. 專用調劑台專屬資料庫 (架位料位編號獨立標示)
+    // 2. 專用調劑台出廠預設資料庫
     const DEFAULT_SPECIAL_MEDS = [
       {
         col: 1, group: "專用台 - LZ 料位區", isWarn: false,
@@ -934,7 +934,7 @@
       }
     ];
 
-    // 本機動態資料
+    // 本機記憶體動態資料
     let generalMedData = JSON.parse(localStorage.getItem("pharmacy_general_meds") || JSON.stringify(DEFAULT_GENERAL_MEDS));
     let specialMedData = JSON.parse(localStorage.getItem("pharmacy_special_meds") || JSON.stringify(DEFAULT_SPECIAL_MEDS));
 
@@ -946,8 +946,9 @@
     let appMode = "pharmacist";
     let editorTab = "general"; // general | special
     let isAssistantAuthenticated = false;
-    let dbRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v3_channel");
+    let dbOrdersRef = null;
+    let dbMenuRef = null;
+    const channel = new BroadcastChannel("pharmacy_order_v4_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -965,25 +966,51 @@
     renderAll();
 
     function initSync() {
+      // 1. 同一瀏覽器跨分頁 BroadcastChannel 監聽
       channel.onmessage = (e) => {
-        if (e.data && e.data.type === "UPDATE_ACTIVE_ORDERS") {
-          activeOrdersList = e.data.payload || [];
-          renderAll();
+        if (e.data) {
+          if (e.data.type === "UPDATE_ACTIVE_ORDERS") {
+            activeOrdersList = e.data.payload || [];
+            renderAll();
+          } else if (e.data.type === "UPDATE_MENU_CONFIG") {
+            if (e.data.payload.general) generalMedData = e.data.payload.general;
+            if (e.data.payload.special) specialMedData = e.data.payload.special;
+            localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
+            localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+            renderAll();
+          }
         }
       };
 
+      // 2. Firebase 雲端監聽（全藥局跨裝置同步）
       const savedConfig = localStorage.getItem("pharmacy_firebase_config");
       if (savedConfig) {
         try {
           const config = JSON.parse(savedConfig);
           if (!firebase.apps.length) firebase.initializeApp(config);
           const db = firebase.database();
-          dbRef = db.ref("active_orders_v3");
-          dbRef.on("value", (snapshot) => {
+          
+          // 監聽訂單
+          dbOrdersRef = db.ref("active_orders_v4");
+          dbOrdersRef.on("value", (snapshot) => {
             const val = snapshot.val();
             activeOrdersList = val ? Object.values(val) : [];
             renderAll();
           });
+
+          // 監聽菜單架構（全體手機自動更新）
+          dbMenuRef = db.ref("menu_config_v4");
+          dbMenuRef.on("value", (snapshot) => {
+            const val = snapshot.val();
+            if (val) {
+              if (val.general) generalMedData = val.general;
+              if (val.special) specialMedData = val.special;
+              localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
+              localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+              renderAll();
+            }
+          });
+
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
           document.getElementById("cloudBadge").className = "cloud-status online";
         } catch (err) {
@@ -994,7 +1021,13 @@
 
     function syncActiveOrders() {
       channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList });
-      if (dbRef) dbRef.set(activeOrdersList);
+      if (dbOrdersRef) dbOrdersRef.set(activeOrdersList);
+    }
+
+    function syncMenuConfig() {
+      const payload = { general: generalMedData, special: specialMedData };
+      channel.postMessage({ type: "UPDATE_MENU_CONFIG", payload });
+      if (dbMenuRef) dbMenuRef.set(payload);
     }
 
     function changeStation(val) {
@@ -1387,7 +1420,6 @@
         const groupBox = document.createElement("div");
         groupBox.className = "editor-group-box";
 
-        // 櫃位標題與欄位移動
         groupBox.innerHTML = `
           <div class="editor-group-header">
             <span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span>
@@ -1411,7 +1443,6 @@
 
         container.appendChild(groupBox);
 
-        // 渲染該櫃位內藥品清單 (支援排序與編輯)
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div");
@@ -1435,7 +1466,6 @@
             <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
 
-          // 拖曳排序事件
           row.ondragstart = (e) => {
             row.classList.add("dragging");
             e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx }));
@@ -1453,7 +1483,6 @@
       });
     }
 
-    // 櫃位與藥品編輯邏輯
     function updateGroupName(gIdx, val) {
       const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
       targetMenu[gIdx].group = val.trim();
@@ -1547,9 +1576,11 @@
     }
 
     function saveVisualConfigs() {
+      // 1. 寫入本機快取
       localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
       localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
 
+      // 2. 處理 Firebase 設定
       const fbVal = document.getElementById("firebaseConfigInput").value.trim();
       if (fbVal) {
         try {
@@ -1563,22 +1594,31 @@
         localStorage.removeItem("pharmacy_firebase_config");
       }
 
-      alert("所有櫃位架構與藥品設定已儲存！將重新整理套用");
-      location.reload();
+      // 3. 全網即時廣播（同步全體手機）
+      syncMenuConfig();
+
+      alert("所有櫃位架構與藥品設定已儲存並同步至雲端！");
+      closeConfigModal();
+      renderAll();
     }
 
     function resetToDefaultConfig() {
-      if (confirm("確定要將藥品與櫃位還原為出廠預設值嗎？")) {
-        localStorage.removeItem("pharmacy_general_meds");
-        localStorage.removeItem("pharmacy_special_meds");
-        location.reload();
+      if (confirm("確定要將藥品與櫃位還原為出廠預設值並同步至所有載具嗎？")) {
+        generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS));
+        specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS));
+        localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
+        localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+        syncMenuConfig();
+        alert("已還原出廠預設並同步！");
+        closeConfigModal();
+        renderAll();
       }
     }
 
     function findMedAcrossAll(id) {
       const all = [...generalMedData, ...specialMedData];
       for (const g of all) {
-        for (const item of g.items) {
+        for (const item of (g.items || [])) {
           if (item.id === id) return item;
         }
       }
