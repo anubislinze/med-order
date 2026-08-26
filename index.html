@@ -386,7 +386,6 @@
       text-decoration: line-through;
     }
 
-    /* 零層級調劑台數量格（點退循環） */
     .station-qty-cell {
       min-width: 55px;
       height: 38px;
@@ -546,6 +545,23 @@
       color: #2e7d32;
     }
 
+    /* 人員名單管理樣式 */
+    .staff-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+    .staff-table th, .staff-table td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      text-align: center;
+    }
+    .staff-table th {
+      background: #f1f5f9;
+      font-weight: bold;
+    }
+
     /* 後台可視化編輯器樣式 */
     .editor-group-box {
       background: #f8fafc;
@@ -702,8 +718,8 @@
         <span>🔒 助理端權限驗證</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeAuthModal()">✕</button>
       </div>
-      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入員工授權代碼進入助理揀貨畫面：</p>
-      <input type="password" inputmode="numeric" id="authCodeInput" class="staff-input" placeholder="請輸入代碼">
+      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入授權代碼進入助理揀貨畫面：</p>
+      <input type="password" inputmode="numeric" id="authCodeInput" class="staff-input" placeholder="請輸入授權代碼">
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn-act btn-clear" onclick="closeAuthModal()">取消</button>
         <button class="btn-act btn-submit" onclick="confirmAssistantAccess()">驗證進入</button>
@@ -715,15 +731,15 @@
   <div class="modal-overlay" id="submitModal">
     <div class="modal-box" style="max-width:380px; text-align:center;">
       <div class="modal-header">
-        <span>🔑 輸入員工代碼送單</span>
+        <span>🔑 驗證點餐員工代碼</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeSubmitModal()">✕</button>
       </div>
-      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入您的員工代碼（全數字）：</p>
+      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入授權的點餐員工代碼（全數字）：</p>
       <input type="number" inputmode="numeric" id="staffCodeInput" class="staff-input" placeholder="例如：1042">
       <div id="submitSummaryPreview" style="font-size:12px; color:#666; max-height:120px; overflow-y:auto; margin-bottom:12px; background:#f9f9f9; padding:6px; border-radius:4px; text-align:left;"></div>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn-act btn-clear" onclick="closeSubmitModal()">取消</button>
-        <button class="btn-act btn-submit" onclick="confirmSubmitOrder()">確認送出</button>
+        <button class="btn-act btn-submit" onclick="confirmSubmitOrder()">驗證並送出</button>
       </div>
     </div>
   </div>
@@ -742,25 +758,26 @@
     </div>
   </div>
 
-  <!-- 可視化設定與櫃位調整彈窗 -->
+  <!-- 可視化設定與櫃位/人員管理彈窗 -->
   <div class="modal-overlay" id="configModal">
     <div class="modal-box">
       <div class="modal-header">
-        <span>⚙️ 櫃位架構與藥品可視化管理</span>
+        <span>⚙️ 系統設定與架構管理</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeConfigModal()">✕</button>
       </div>
       
-      <!-- 快速切換菜單 -->
+      <!-- 快速切換三大設定標籤 -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" id="btnEditGeneral" onclick="switchEditorTab('general')" style="background:#e8f5e9; color:#2e7d32;">一般台菜單</button>
           <button class="btn-act btn-clear" id="btnEditSpecial" onclick="switchEditorTab('special')">專用區菜單</button>
+          <button class="btn-act btn-clear" id="btnEditStaff" onclick="switchEditorTab('staff')" style="background:#fef3c7; color:#92400e;">👥 人員名單管理</button>
         </div>
-        <button class="btn-act btn-clear" style="background:#e0f2fe; color:#0369a1;" onclick="addNewGroup()">➕ 新增櫃位區域</button>
+        <button class="btn-act btn-clear" id="btnAddGroupBtn" style="background:#e0f2fe; color:#0369a1;" onclick="addNewGroup()">➕ 新增櫃位區域</button>
       </div>
 
       <div style="background:#f1f5f9; padding:8px; border-radius:6px; margin-bottom:12px; max-height:380px; overflow-y:auto;" id="visualEditorContainer">
-        <!-- 動態渲染櫃位與藥品項目 -->
+        <!-- 動態渲染櫃位/藥品或人員名單 -->
       </div>
 
       <div style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
@@ -783,10 +800,20 @@
       storageBucket: "pharmacy-order-20f00.firebasestorage.app"
     };
 
-    // 授權白名單代碼
-    const AUTH_STAFF_CODES = ["1508152", "admin", "8888"];
+    // 2. 出廠預設人員權限名單 (可點餐藥師名單 vs 可進入助理端名單)
+    const DEFAULT_STAFF_CONFIG = {
+      pharmacists: [
+        { code: "1042", name: "藥師 A" },
+        { code: "1043", name: "藥師 B" },
+        { code: "1508152", name: "測試管理員" }
+      ],
+      assistants: [
+        { code: "1508152", name: "主責助理 / 管理員" },
+        { code: "8888", name: "調劑助理" }
+      ]
+    };
 
-    // 2. 一般台出廠預設資料庫
+    // 3. 一般台出廠預設資料庫
     const DEFAULT_GENERAL_MEDS = [
       // 欄 1
       {
@@ -969,7 +996,7 @@
       }
     ];
 
-    // 3. 專用調劑台出廠預設資料庫
+    // 4. 專用調劑台出廠預設資料庫
     const DEFAULT_SPECIAL_MEDS = [
       {
         col: 1, group: "專用台 - LZ 料位區", isWarn: false,
@@ -1027,20 +1054,22 @@
     // 本機記憶體動態資料
     let generalMedData = JSON.parse(localStorage.getItem("pharmacy_general_meds") || JSON.stringify(DEFAULT_GENERAL_MEDS));
     let specialMedData = JSON.parse(localStorage.getItem("pharmacy_special_meds") || JSON.stringify(DEFAULT_SPECIAL_MEDS));
+    let staffConfig = JSON.parse(localStorage.getItem("pharmacy_staff_config") || JSON.stringify(DEFAULT_STAFF_CONFIG));
 
     // 全域變數
     let currentStation = "綠籃"; // 黃籃 | 綠籃 | 紅籃 | 藍籃 | 青籃 | 專用區
     let draftOrders = {};
-    let activeOrdersList = []; // [{ id, station, orderSeq, displayLabel, staffCode, time, items: { medId: reqQty }, fulfilled: { medId: actualQty } }]
+    let activeOrdersList = [];
     let checkedItems = {};
-    let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}"); // { station: [{ medName, req, actual, time }] }
+    let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}");
     let appMode = "pharmacist";
-    let editorTab = "general"; // general | special
+    let editorTab = "general"; // general | special | staff
     let isAssistantAuthenticated = false;
     let dbOrdersRef = null;
     let dbMenuRef = null;
     let dbShortfallRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v6_channel");
+    let dbStaffRef = null;
+    const channel = new BroadcastChannel("pharmacy_order_v7_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -1070,6 +1099,9 @@
             localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
             localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
             renderAll();
+          } else if (e.data.type === "UPDATE_STAFF_CONFIG") {
+            staffConfig = e.data.payload || DEFAULT_STAFF_CONFIG;
+            localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
           } else if (e.data.type === "UPDATE_SHORTFALLS") {
             latestShortfalls = e.data.payload || {};
             localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
@@ -1078,23 +1110,21 @@
         }
       };
 
-      // 2. Firebase 全自動連線初始化
+      // 2. Firebase 全自動連線
       try {
         if (!firebase.apps.length) {
           firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
         }
         const db = firebase.database();
         
-        // 監聽訂單
-        dbOrdersRef = db.ref("active_orders_v6");
+        dbOrdersRef = db.ref("active_orders_v7");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        // 監聽菜單架構（全體手機自動更新）
-        dbMenuRef = db.ref("menu_config_v6");
+        dbMenuRef = db.ref("menu_config_v7");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1106,8 +1136,16 @@
           }
         });
 
-        // 監聽實出回報通知 (欠藥回饋)
-        dbShortfallRef = db.ref("shortfalls_v6");
+        dbStaffRef = db.ref("staff_config_v7");
+        dbStaffRef.on("value", (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            staffConfig = val;
+            localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
+          }
+        });
+
+        dbShortfallRef = db.ref("shortfalls_v7");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1132,6 +1170,11 @@
       const payload = { general: generalMedData, special: specialMedData };
       channel.postMessage({ type: "UPDATE_MENU_CONFIG", payload });
       if (dbMenuRef) dbMenuRef.set(payload);
+    }
+
+    function syncStaffConfig() {
+      channel.postMessage({ type: "UPDATE_STAFF_CONFIG", payload: staffConfig });
+      if (dbStaffRef) dbStaffRef.set(staffConfig);
     }
 
     function syncShortfalls() {
@@ -1221,7 +1264,7 @@
       if (pressTimer) clearTimeout(pressTimer);
     }
 
-    // 助理端零層級點退微調（循環制：原點數 -> -1 -> ... -> 0 -> 原點數）
+    // 助理端零層級點退微調
     function cycleStationFulfillment(orderId, medId) {
       const order = activeOrdersList.find(o => o.id === orderId);
       if (!order) return;
@@ -1230,7 +1273,6 @@
       const reqQty = order.items?.[medId] || 0;
       const currentFulfilled = (order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
 
-      // 循環邏輯：往下遞減，小於 0 則循環回原點數
       let nextFulfilled = currentFulfilled - 1;
       if (nextFulfilled < 0) {
         nextFulfilled = reqQty;
@@ -1241,7 +1283,7 @@
       renderAssistantMatrix();
     }
 
-    // 助理端密碼驗證
+    // 助理端密碼驗證 (檢驗可進入助理名單)
     function promptAssistantAccess() {
       if (isAssistantAuthenticated) {
         switchMode('assistant');
@@ -1258,12 +1300,14 @@
 
     function confirmAssistantAccess() {
       const code = document.getElementById("authCodeInput").value.trim();
-      if (AUTH_STAFF_CODES.includes(code)) {
+      const validAssistant = (staffConfig.assistants || []).find(a => a.code === code);
+
+      if (validAssistant) {
         isAssistantAuthenticated = true;
         closeAuthModal();
         switchMode('assistant');
       } else {
-        alert("授權代碼不正確！");
+        alert("授權代碼不正確或無助理權限！");
       }
     }
 
@@ -1351,7 +1395,6 @@
         board.appendChild(colDiv);
       });
 
-      // 底部摘要
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       const summaryEl = document.getElementById("stationSummaryText");
       if (activeList.length === 0) {
@@ -1365,7 +1408,7 @@
       }
     }
 
-    // 渲染助理端矩陣 (支援實出點退微調)
+    // 渲染助理端矩陣
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
@@ -1432,7 +1475,6 @@
               </td>
             `;
 
-            // 各台零層級點退格
             colData.forEach(c => {
               if (c.req > 0) {
                 let cellClass = "station-qty-cell";
@@ -1468,7 +1510,7 @@
       renderAssistantMatrix();
     }
 
-    // 助理確認揀貨清空（記錄欠藥回饋並平順清單）
+    // 助理確認揀貨清空
     function clearDoneItems() {
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
       if (doneIds.length === 0) {
@@ -1476,7 +1518,6 @@
         return;
       }
 
-      // 檢查並記錄是否有少給（欠藥回報通知）
       activeOrdersList.forEach(order => {
         const stKey = order.station;
         doneIds.forEach(medId => {
@@ -1495,13 +1536,11 @@
             });
           }
 
-          // 從單中移除已完成品項
           if (order.items && order.items[medId]) delete order.items[medId];
           if (order.fulfilled && order.fulfilled[medId] !== undefined) delete order.fulfilled[medId];
         });
       });
 
-      // 過濾掉全部拿完的空單
       activeOrdersList = activeOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
       checkedItems = {};
       
@@ -1511,7 +1550,7 @@
       renderAll();
     }
 
-    // 藥師送單
+    // 藥師送單 (白名單驗證)
     function openSubmitModal() {
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       if (activeList.length === 0) {
@@ -1534,8 +1573,11 @@
 
     function confirmSubmitOrder() {
       const staffCode = document.getElementById("staffCodeInput").value.trim();
-      if (!staffCode || !/^\d+$/.test(staffCode)) {
-        alert("請輸入純數字員工代碼！");
+      
+      // 驗證是否在可點餐名單中
+      const validPharmacist = (staffConfig.pharmacists || []).find(p => p.code === staffCode);
+      if (!validPharmacist) {
+        alert("查無此點餐員工代碼，請確認或請主管於後台名單新增！");
         return;
       }
 
@@ -1549,16 +1591,17 @@
         orderSeq: seq,
         displayLabel: displayLabel,
         staffCode: staffCode,
+        staffName: validPharmacist.name,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         items: { ...draftOrders },
-        fulfilled: {} // 預設實出數等於需求數
+        fulfilled: {}
       };
 
       activeOrdersList.push(newOrder);
       draftOrders = {};
       syncActiveOrders();
       closeSubmitModal();
-      alert(`已成功送出【${displayLabel}】領藥單！`);
+      alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`);
       renderAll();
     }
 
@@ -1578,7 +1621,7 @@
         content.innerHTML = activeOrdersList.map(order => `
           <div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">
-              <span style="color:var(--primary-green);">【${order.displayLabel}】 員工代碼：${order.staffCode}</span>
+              <span style="color:var(--primary-green);">【${order.displayLabel}】 送單同仁：${order.staffName || ''} (${order.staffCode})</span>
               <span style="color:#888; font-size:12px;">⏰ ${order.time}</span>
             </div>
             <div style="font-size:12px; color:#444;">
@@ -1599,7 +1642,9 @@
       document.getElementById("historyModal").style.display = "none";
     }
 
-    // 可視化設定後台
+    // ==========================================
+    // 直覺可視化管理後台 (菜單與人員管理)
+    // ==========================================
     function openConfigModal() {
       switchEditorTab('general');
       document.getElementById("configModal").style.display = "flex";
@@ -1615,9 +1660,82 @@
       document.getElementById("btnEditGeneral").style.color = tab === 'general' ? '#2e7d32' : '#455a64';
       document.getElementById("btnEditSpecial").style.background = tab === 'special' ? '#e8f5e9' : '#eceff1';
       document.getElementById("btnEditSpecial").style.color = tab === 'special' ? '#2e7d32' : '#455a64';
-      renderVisualEditor();
+      document.getElementById("btnEditStaff").style.background = tab === 'staff' ? '#fef3c7' : '#eceff1';
+      document.getElementById("btnEditStaff").style.color = tab === 'staff' ? '#92400e' : '#455a64';
+
+      document.getElementById("btnAddGroupBtn").style.display = tab === 'staff' ? 'none' : 'block';
+
+      if (tab === 'staff') {
+        renderStaffEditor();
+      } else {
+        renderVisualEditor();
+      }
     }
 
+    // 渲染人員名單編輯器
+    function renderStaffEditor() {
+      const container = document.getElementById("visualEditorContainer");
+      container.innerHTML = `
+        <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐藥師名單 (${staffConfig.pharmacists.length}人)</span>
+            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增藥師</button>
+          </div>
+          <table class="staff-table">
+            <thead><tr><th>員工代碼</th><th>姓名/職稱</th><th>操作</th></tr></thead>
+            <tbody>
+              ${staffConfig.pharmacists.map((p, idx) => `
+                <tr>
+                  <td><input type="number" value="${p.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'code', this.value)"></td>
+                  <td><input type="text" value="${p.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'name', this.value)"></td>
+                  <td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('pharmacists', ${idx})">✕ 刪除</button></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-weight:bold; color:#b45309;">🔒 授權可進入助理端名單 (${staffConfig.assistants.length}人)</span>
+            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#fef3c7; color:#92400e;" onclick="addNewStaff('assistants')">➕ 新增助理</button>
+          </div>
+          <table class="staff-table">
+            <thead><tr><th>授權代碼</th><th>姓名/備註</th><th>操作</th></tr></thead>
+            <tbody>
+              ${staffConfig.assistants.map((a, idx) => `
+                <tr>
+                  <td><input type="text" value="${a.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'code', this.value)"></td>
+                  <td><input type="text" value="${a.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'name', this.value)"></td>
+                  <td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('assistants', ${idx})" ${staffConfig.assistants.length <= 1 ? 'disabled' : ''}>✕ 刪除</button></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function addNewStaff(type) {
+      const code = prompt("請輸入員工代碼 (全數字或授權碼)：");
+      if (!code) return;
+      const name = prompt("請輸入姓名或稱謂 (例：林藥師)：") || "同仁";
+      staffConfig[type].push({ code: code.trim(), name: name.trim() });
+      renderStaffEditor();
+    }
+
+    function updateStaff(type, idx, field, val) {
+      staffConfig[type][idx][field] = val.trim();
+    }
+
+    function deleteStaff(type, idx) {
+      if (confirm(`確定要刪除「${staffConfig[type][idx].name}」的權限嗎？`)) {
+        staffConfig[type].splice(idx, 1);
+        renderStaffEditor();
+      }
+    }
+
+    // 渲染菜單編輯器
     function renderVisualEditor() {
       const container = document.getElementById("visualEditorContainer");
       container.innerHTML = "";
@@ -1761,19 +1879,24 @@
     function saveVisualConfigs() {
       localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
       localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+      localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
       syncMenuConfig();
-      alert("所有櫃位架構與藥品設定已儲存並同步至雲端！");
+      syncStaffConfig();
+      alert("所有櫃位架構、藥品與人員名單已儲存並同步至雲端！");
       closeConfigModal();
       renderAll();
     }
 
     function resetToDefaultConfig() {
-      if (confirm("確定要將藥品與櫃位還原為出廠預設值並同步至所有載具嗎？")) {
+      if (confirm("確定要將藥品、櫃位與人員還原為出廠預設值並同步至所有載具嗎？")) {
         generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS));
         specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS));
+        staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG));
         localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
         localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+        localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
         syncMenuConfig();
+        syncStaffConfig();
         alert("已還原出廠預設並同步！");
         closeConfigModal();
         renderAll();
