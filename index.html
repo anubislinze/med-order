@@ -25,6 +25,10 @@
       --disabled-bg: #eeeeee;
       --warn-color: #c62828;
       --warn-bg: #ffebee;
+      --partial-color: #d97706;
+      --partial-bg: #fef3c7;
+      --zero-color: #dc2626;
+      --zero-bg: #fee2e2;
       --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
     }
 
@@ -119,11 +123,32 @@
       padding: 0 8px;
     }
 
+    /* 藥師端頂部實出回報通知橫幅 */
+    .shortfall-banner {
+      display: none;
+      background: #fffbeb;
+      border: 1.5px solid #f59e0b;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #92400e;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .shortfall-banner-header {
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
     .sheet-title {
       text-align: center;
       font-size: 21px;
       font-weight: 900;
-      margin: 8px 0 10px;
+      margin: 6px 0 10px;
       color: var(--primary-green);
       letter-spacing: 1px;
     }
@@ -308,7 +333,7 @@
 
     .matrix-table th, .matrix-table td {
       border: 1px solid #ddd;
-      padding: 7px 6px;
+      padding: 7px 5px;
       text-align: center;
     }
 
@@ -326,9 +351,17 @@
     }
 
     .matrix-row.done {
-      background: #f0f0f0;
-      color: #999;
+      background: #f1f5f9;
+      color: #94a3b8;
       text-decoration: line-through;
+    }
+
+    .matrix-total-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
     }
 
     .matrix-total {
@@ -341,9 +374,55 @@
       display: inline-block;
     }
 
-    .station-qty {
-      font-weight: bold;
+    .matrix-total.adjusted {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px dashed #f59e0b;
+    }
+
+    .origin-total-hint {
+      font-size: 10px;
+      color: #888;
+      text-decoration: line-through;
+    }
+
+    /* 零層級調劑台數量格（點退循環） */
+    .station-qty-cell {
+      min-width: 55px;
+      height: 38px;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 15px;
       color: #1565c0;
+      transition: background 0.15s, transform 0.05s;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .station-qty-cell:active {
+      transform: scale(0.92);
+    }
+
+    .station-qty-cell.partial {
+      background: var(--partial-bg);
+      color: var(--partial-color);
+      border: 1.5px solid #f59e0b;
+    }
+
+    .station-qty-cell.zero {
+      background: var(--zero-bg);
+      color: var(--zero-color);
+      border: 1.5px solid #ef4444;
+    }
+
+    .sub-qty-hint {
+      font-size: 9px;
+      color: #888;
+      line-height: 1;
+      font-weight: normal;
     }
 
     .check-btn {
@@ -509,11 +588,6 @@
       margin-bottom: 4px;
     }
 
-    .editor-med-row.dragging {
-      opacity: 0.4;
-      background: #e0e7ff;
-    }
-
     .drag-handle {
       cursor: grab;
       font-size: 15px;
@@ -578,6 +652,15 @@
   <div class="container">
     <!-- 藥師點藥面板 -->
     <div id="viewPharmacist">
+      <!-- 助理實出回報通知區 -->
+      <div id="shortfallBanner" class="shortfall-banner">
+        <div class="shortfall-banner-header">
+          <span>📢 助理實出調整通知</span>
+          <button style="border:none;background:none;font-size:14px;color:#92400e;cursor:pointer;" onclick="dismissShortfallBanner()">✕ 關閉</button>
+        </div>
+        <div id="shortfallBannerContent"></div>
+      </div>
+
       <div class="sheet-title" id="currentStationTitle">【綠籃 - 藥品劃記看板】</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
     </div>
@@ -585,10 +668,13 @@
     <!-- 助理一趟流揀貨矩陣 -->
     <div id="viewAssistant" style="display: none;">
       <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-        <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理動線揀貨矩陣（架位動線排序）</h3>
+        <div>
+          <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理動線揀貨矩陣（架位動線排序）</h3>
+          <span style="font-size:11px; color:#64748b;">💡 庫存不足時，直接點擊各台數量即可「點退/循環微調實出數」</span>
+        </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 員工送單紀錄</button>
-          <button class="btn-act btn-clear" style="background:#e8f5e9; color:#2e7d32;" onclick="clearDoneItems()">清除已完成勾選</button>
+          <button class="btn-act btn-clear" style="background:#e8f5e9; color:#2e7d32;" onclick="clearDoneItems()">確認揀貨並清空</button>
         </div>
       </div>
       <div class="matrix-card">
@@ -688,7 +774,7 @@
   </div>
 
   <script>
-    // 1. 內建預設 Firebase 雲端金鑰 (全自動連線，開箱即用)
+    // 1. 內建 Firebase 雲端配置
     const BUILTIN_FIREBASE_CONFIG = {
       apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg",
       authDomain: "pharmacy-order-20f00.firebaseapp.com",
@@ -945,14 +1031,16 @@
     // 全域變數
     let currentStation = "綠籃"; // 黃籃 | 綠籃 | 紅籃 | 藍籃 | 青籃 | 專用區
     let draftOrders = {};
-    let activeOrdersList = [];
+    let activeOrdersList = []; // [{ id, station, orderSeq, displayLabel, staffCode, time, items: { medId: reqQty }, fulfilled: { medId: actualQty } }]
     let checkedItems = {};
+    let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}"); // { station: [{ medName, req, actual, time }] }
     let appMode = "pharmacist";
     let editorTab = "general"; // general | special
     let isAssistantAuthenticated = false;
     let dbOrdersRef = null;
     let dbMenuRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v5_channel");
+    let dbShortfallRef = null;
+    const channel = new BroadcastChannel("pharmacy_order_v6_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -982,6 +1070,10 @@
             localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
             localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
             renderAll();
+          } else if (e.data.type === "UPDATE_SHORTFALLS") {
+            latestShortfalls = e.data.payload || {};
+            localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
+            checkAndRenderShortfallBanner();
           }
         }
       };
@@ -994,7 +1086,7 @@
         const db = firebase.database();
         
         // 監聽訂單
-        dbOrdersRef = db.ref("active_orders_v5");
+        dbOrdersRef = db.ref("active_orders_v6");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
@@ -1002,7 +1094,7 @@
         });
 
         // 監聽菜單架構（全體手機自動更新）
-        dbMenuRef = db.ref("menu_config_v5");
+        dbMenuRef = db.ref("menu_config_v6");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1012,6 +1104,15 @@
             localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
             renderAll();
           }
+        });
+
+        // 監聽實出回報通知 (欠藥回饋)
+        dbShortfallRef = db.ref("shortfalls_v6");
+        dbShortfallRef.on("value", (snapshot) => {
+          const val = snapshot.val();
+          latestShortfalls = val || {};
+          localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
+          checkAndRenderShortfallBanner();
         });
 
         document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
@@ -1033,10 +1134,16 @@
       if (dbMenuRef) dbMenuRef.set(payload);
     }
 
+    function syncShortfalls() {
+      channel.postMessage({ type: "UPDATE_SHORTFALLS", payload: latestShortfalls });
+      if (dbShortfallRef) dbShortfallRef.set(latestShortfalls);
+    }
+
     function changeStation(val) {
       currentStation = val;
       draftOrders = {};
       updateStationHeader();
+      checkAndRenderShortfallBanner();
       renderAll();
     }
 
@@ -1049,11 +1156,33 @@
       document.getElementById("currentStationTitle").innerText = `【${displayTitle} - 藥品劃記看板】`;
     }
 
+    function checkAndRenderShortfallBanner() {
+      const banner = document.getElementById("shortfallBanner");
+      const content = document.getElementById("shortfallBannerContent");
+      const list = latestShortfalls[currentStation] || [];
+
+      if (list.length > 0 && appMode === "pharmacist") {
+        content.innerHTML = list.map(item => `
+          <div>• <b>${item.medName}</b>：點 <b>${item.req}</b> ${item.unit} ➔ 實出 <b style="color:#d97706;">${item.actual}</b> ${item.unit} (少發 ${item.req - item.actual}) <span style="font-size:11px; color:#888;">[${item.time}]</span></div>
+        `).join("");
+        banner.style.display = "block";
+      } else {
+        banner.style.display = "none";
+      }
+    }
+
+    function dismissShortfallBanner() {
+      delete latestShortfalls[currentStation];
+      localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
+      syncShortfalls();
+      document.getElementById("shortfallBanner").style.display = "none";
+    }
+
     function getCurrentMenuData() {
       return currentStation === "專用區" ? specialMedData : generalMedData;
     }
 
-    // 點藥操作 (循環 + 長按歸零)
+    // 藥師點藥操作 (循環 + 長按歸零)
     let pressTimer = null;
     let isLongPress = false;
 
@@ -1092,6 +1221,26 @@
       if (pressTimer) clearTimeout(pressTimer);
     }
 
+    // 助理端零層級點退微調（循環制：原點數 -> -1 -> ... -> 0 -> 原點數）
+    function cycleStationFulfillment(orderId, medId) {
+      const order = activeOrdersList.find(o => o.id === orderId);
+      if (!order) return;
+      if (!order.fulfilled) order.fulfilled = {};
+
+      const reqQty = order.items?.[medId] || 0;
+      const currentFulfilled = (order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
+
+      // 循環邏輯：往下遞減，小於 0 則循環回原點數
+      let nextFulfilled = currentFulfilled - 1;
+      if (nextFulfilled < 0) {
+        nextFulfilled = reqQty;
+      }
+
+      order.fulfilled[medId] = nextFulfilled;
+      syncActiveOrders();
+      renderAssistantMatrix();
+    }
+
     // 助理端密碼驗證
     function promptAssistantAccess() {
       if (isAssistantAuthenticated) {
@@ -1127,6 +1276,7 @@
       document.getElementById("pharmacistBottomBar").style.display = mode === 'pharmacist' ? 'flex' : 'none';
       document.getElementById("viewAssistant").style.display = mode === 'assistant' ? 'block' : 'none';
       document.getElementById("btnAdminGear").style.display = mode === 'assistant' ? 'block' : 'none';
+      checkAndRenderShortfallBanner();
       renderAll();
     }
 
@@ -1215,7 +1365,7 @@
       }
     }
 
-    // 渲染助理端矩陣
+    // 渲染助理端矩陣 (支援實出點退微調)
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
@@ -1223,7 +1373,8 @@
       const stationColumns = activeOrdersList.map(order => ({
         key: order.id,
         label: order.displayLabel,
-        station: order.station
+        station: order.station,
+        orderObj: order
       }));
 
       let headHtml = `
@@ -1232,7 +1383,7 @@
           <th style="width: 85px;">架位</th>
           <th>藥品名稱</th>
           <th style="width: 45px;">單位</th>
-          <th style="width: 65px;">總需數</th>
+          <th style="width: 70px;">實出/總需</th>
       `;
       stationColumns.forEach(col => {
         headHtml += `<th class="th-station" style="min-width: 55px;">${col.label}</th>`;
@@ -1247,33 +1398,60 @@
 
       combinedAllGroups.forEach(group => {
         (group.items || []).forEach(med => {
-          let totalQty = 0;
-          const colQtys = stationColumns.map(col => {
-            const order = activeOrdersList.find(o => o.id === col.key);
-            const q = order?.items?.[med.id] || 0;
-            totalQty += q;
-            return q;
+          let totalReqQty = 0;
+          let totalActualQty = 0;
+          let hasAdjustedInRow = false;
+
+          const colData = stationColumns.map(col => {
+            const req = col.orderObj.items?.[med.id] || 0;
+            const actual = (col.orderObj.fulfilled?.[med.id] !== undefined) ? col.orderObj.fulfilled[med.id] : req;
+            
+            totalReqQty += req;
+            totalActualQty += actual;
+            if (actual !== req) hasAdjustedInRow = true;
+
+            return { req, actual, orderId: col.orderObj.id };
           });
 
-          if (totalQty > 0) {
+          if (totalReqQty > 0) {
             hasAnyOrder = true;
             const isDone = !!checkedItems[med.id];
             const tr = document.createElement("tr");
             tr.className = `matrix-row ${isDone ? 'done' : ''}`;
-            tr.onclick = (e) => {
-              if (e.target.tagName !== 'BUTTON') toggleCheck(med.id);
-            };
 
             let rowHtml = `
               <td><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td>
               <td style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td>
               <td style="text-align:left; font-weight:bold;">${med.name}</td>
               <td>${med.unit || '-'}</td>
-              <td><span class="matrix-total">${totalQty}</span></td>
+              <td>
+                <div class="matrix-total-cell">
+                  <span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>
+                  ${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}
+                </div>
+              </td>
             `;
-            colQtys.forEach(q => {
-              rowHtml += `<td class="station-qty">${q > 0 ? q : '-'}</td>`;
+
+            // 各台零層級點退格
+            colData.forEach(c => {
+              if (c.req > 0) {
+                let cellClass = "station-qty-cell";
+                if (c.actual === 0) cellClass += " zero";
+                else if (c.actual < c.req) cellClass += " partial";
+
+                rowHtml += `
+                  <td>
+                    <div class="${cellClass}" onclick="cycleStationFulfillment('${c.orderId}', '${med.id}')" title="點擊調整實出數 (原需求: ${c.req})">
+                      <span>${c.actual}</span>
+                      ${c.actual !== c.req ? `<span class="sub-qty-hint">/${c.req}</span>` : ''}
+                    </div>
+                  </td>
+                `;
+              } else {
+                rowHtml += `<td style="color:#ccc;">-</td>`;
+              }
             });
+
             tr.innerHTML = rowHtml;
             tbody.appendChild(tr);
           }
@@ -1290,20 +1468,46 @@
       renderAssistantMatrix();
     }
 
+    // 助理確認揀貨清空（記錄欠藥回饋並平順清單）
     function clearDoneItems() {
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
       if (doneIds.length === 0) {
         alert("尚未勾選任何已完成項目！");
         return;
       }
+
+      // 檢查並記錄是否有少給（欠藥回報通知）
       activeOrdersList.forEach(order => {
-        doneIds.forEach(id => {
-          if (order.items && order.items[id]) delete order.items[id];
+        const stKey = order.station;
+        doneIds.forEach(medId => {
+          const req = order.items?.[medId] || 0;
+          const actual = (order.fulfilled?.[medId] !== undefined) ? order.fulfilled[medId] : req;
+          
+          if (req > 0 && actual < req) {
+            if (!latestShortfalls[stKey]) latestShortfalls[stKey] = [];
+            const med = findMedAcrossAll(medId);
+            latestShortfalls[stKey].push({
+              medName: med.name,
+              unit: med.unit || '盒',
+              req: req,
+              actual: actual,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+          }
+
+          // 從單中移除已完成品項
+          if (order.items && order.items[medId]) delete order.items[medId];
+          if (order.fulfilled && order.fulfilled[medId] !== undefined) delete order.fulfilled[medId];
         });
       });
+
+      // 過濾掉全部拿完的空單
       activeOrdersList = activeOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
       checkedItems = {};
+      
       syncActiveOrders();
+      syncShortfalls();
+      alert("已完成本批揀貨！若有少發項目已自動回報至該調劑台看板。");
       renderAll();
     }
 
@@ -1346,7 +1550,8 @@
         displayLabel: displayLabel,
         staffCode: staffCode,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        items: { ...draftOrders }
+        items: { ...draftOrders },
+        fulfilled: {} // 預設實出數等於需求數
       };
 
       activeOrdersList.push(newOrder);
@@ -1379,7 +1584,9 @@
             <div style="font-size:12px; color:#444;">
               ${Object.entries(order.items || {}).map(([id, qty]) => {
                 const med = findMedAcrossAll(id);
-                return `${med.name}×${qty}${med.unit}`;
+                const actual = (order.fulfilled?.[id] !== undefined) ? order.fulfilled[id] : qty;
+                const isShort = actual < qty;
+                return `<span style="${isShort ? 'color:#d97706; font-weight:bold;' : ''}">${med.name}×${actual}${actual !== qty ? `(原:${qty})` : ''}${med.unit}</span>`;
               }).join("、 ")}
             </div>
           </div>
@@ -1392,9 +1599,7 @@
       document.getElementById("historyModal").style.display = "none";
     }
 
-    // ==========================================
-    // 直覺可視化管理後台 (支援拖曳/上下移/增減/更名)
-    // ==========================================
+    // 可視化設定後台
     function openConfigModal() {
       switchEditorTab('general');
       document.getElementById("configModal").style.display = "flex";
@@ -1449,12 +1654,8 @@
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div");
           row.className = "editor-med-row";
-          row.draggable = true;
-          row.dataset.gidx = gIdx;
-          row.dataset.midx = mIdx;
-
           row.innerHTML = `
-            <span class="drag-handle" title="按住拖曳排序">☰</span>
+            <span class="drag-handle">☰</span>
             <input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名">
             <input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位">
             <input type="number" min="1" max="9" value="${med.max || 2}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數">
@@ -1467,19 +1668,6 @@
             <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
             <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
-
-          row.ondragstart = (e) => {
-            row.classList.add("dragging");
-            e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx }));
-          };
-          row.ondragend = () => row.classList.remove("dragging");
-          row.ondragover = (e) => e.preventDefault();
-          row.ondrop = (e) => {
-            e.preventDefault();
-            const source = JSON.parse(e.dataTransfer.getData("text/plain"));
-            reorderMed(source.gIdx, source.mIdx, gIdx, mIdx);
-          };
-
           medListEl.appendChild(row);
         });
       });
@@ -1546,13 +1734,6 @@
       renderVisualEditor();
     }
 
-    function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      const [movedItem] = targetMenu[srcGIdx].items.splice(srcMIdx, 1);
-      targetMenu[destGIdx].items.splice(destMIdx, 0, movedItem);
-      renderVisualEditor();
-    }
-
     function addNewMed(gIdx) {
       const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
       const medName = prompt("請輸入藥品名稱 (例：Med / 中文名)：");
@@ -1578,13 +1759,9 @@
     }
 
     function saveVisualConfigs() {
-      // 1. 寫入本機快取
       localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
       localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
-
-      // 2. 全網即時廣播與雲端寫入（同步全體手機）
       syncMenuConfig();
-
       alert("所有櫃位架構與藥品設定已儲存並同步至雲端！");
       closeConfigModal();
       renderAll();
