@@ -563,7 +563,7 @@
         <option value="青籃">青籃</option>
         <option value="專用區">專用區</option>
       </select>
-      <span id="cloudBadge" class="cloud-status">同機連線</span>
+      <span id="cloudBadge" class="cloud-status">連線中...</span>
     </div>
 
     <div class="mode-tabs">
@@ -677,11 +677,6 @@
         <!-- 動態渲染櫃位與藥品項目 -->
       </div>
 
-      <div style="margin-top:8px; border-top: 1px solid #ddd; padding-top: 8px;">
-        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">Firebase 雲端連線配置 (選填)</label>
-        <textarea id="firebaseConfigInput" rows="2" style="width:100%; font-size:12px; padding:6px; border:1px solid #ccc; border-radius:4px;" placeholder='{"apiKey":"...","databaseURL":"https://..."}'></textarea>
-      </div>
-
       <div style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
         <button class="btn-act btn-clear" style="color:#d32f2f;" onclick="resetToDefaultConfig()">還原出廠預設</button>
         <div style="display:flex; gap:8px;">
@@ -693,10 +688,19 @@
   </div>
 
   <script>
+    // 1. 內建預設 Firebase 雲端金鑰 (全自動連線，開箱即用)
+    const BUILTIN_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg",
+      authDomain: "pharmacy-order-20f00.firebaseapp.com",
+      databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com",
+      projectId: "pharmacy-order-20f00",
+      storageBucket: "pharmacy-order-20f00.firebasestorage.app"
+    };
+
     // 授權白名單代碼
     const AUTH_STAFF_CODES = ["1508152", "admin", "8888"];
 
-    // 1. 一般台出廠預設資料庫
+    // 2. 一般台出廠預設資料庫
     const DEFAULT_GENERAL_MEDS = [
       // 欄 1
       {
@@ -879,7 +883,7 @@
       }
     ];
 
-    // 2. 專用調劑台出廠預設資料庫
+    // 3. 專用調劑台出廠預設資料庫
     const DEFAULT_SPECIAL_MEDS = [
       {
         col: 1, group: "專用台 - LZ 料位區", isWarn: false,
@@ -948,7 +952,7 @@
     let isAssistantAuthenticated = false;
     let dbOrdersRef = null;
     let dbMenuRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v4_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v5_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -966,7 +970,7 @@
     renderAll();
 
     function initSync() {
-      // 1. 同一瀏覽器跨分頁 BroadcastChannel 監聽
+      // 1. 同一瀏覽器跨分頁廣播
       channel.onmessage = (e) => {
         if (e.data) {
           if (e.data.type === "UPDATE_ACTIVE_ORDERS") {
@@ -982,40 +986,39 @@
         }
       };
 
-      // 2. Firebase 雲端監聽（全藥局跨裝置同步）
-      const savedConfig = localStorage.getItem("pharmacy_firebase_config");
-      if (savedConfig) {
-        try {
-          const config = JSON.parse(savedConfig);
-          if (!firebase.apps.length) firebase.initializeApp(config);
-          const db = firebase.database();
-          
-          // 監聽訂單
-          dbOrdersRef = db.ref("active_orders_v4");
-          dbOrdersRef.on("value", (snapshot) => {
-            const val = snapshot.val();
-            activeOrdersList = val ? Object.values(val) : [];
-            renderAll();
-          });
-
-          // 監聽菜單架構（全體手機自動更新）
-          dbMenuRef = db.ref("menu_config_v4");
-          dbMenuRef.on("value", (snapshot) => {
-            const val = snapshot.val();
-            if (val) {
-              if (val.general) generalMedData = val.general;
-              if (val.special) specialMedData = val.special;
-              localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
-              localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
-              renderAll();
-            }
-          });
-
-          document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
-          document.getElementById("cloudBadge").className = "cloud-status online";
-        } catch (err) {
-          console.error("Firebase 連線失敗:", err);
+      // 2. Firebase 全自動連線初始化
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
         }
+        const db = firebase.database();
+        
+        // 監聽訂單
+        dbOrdersRef = db.ref("active_orders_v5");
+        dbOrdersRef.on("value", (snapshot) => {
+          const val = snapshot.val();
+          activeOrdersList = val ? Object.values(val) : [];
+          renderAll();
+        });
+
+        // 監聽菜單架構（全體手機自動更新）
+        dbMenuRef = db.ref("menu_config_v5");
+        dbMenuRef.on("value", (snapshot) => {
+          const val = snapshot.val();
+          if (val) {
+            if (val.general) generalMedData = val.general;
+            if (val.special) specialMedData = val.special;
+            localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
+            localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+            renderAll();
+          }
+        });
+
+        document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
+        document.getElementById("cloudBadge").className = "cloud-status online";
+      } catch (err) {
+        console.error("Firebase 連線失敗:", err);
+        document.getElementById("cloudBadge").innerText = "同機連線";
       }
     }
 
@@ -1393,7 +1396,6 @@
     // 直覺可視化管理後台 (支援拖曳/上下移/增減/更名)
     // ==========================================
     function openConfigModal() {
-      document.getElementById("firebaseConfigInput").value = localStorage.getItem("pharmacy_firebase_config") || "";
       switchEditorTab('general');
       document.getElementById("configModal").style.display = "flex";
     }
@@ -1580,21 +1582,7 @@
       localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
       localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
 
-      // 2. 處理 Firebase 設定
-      const fbVal = document.getElementById("firebaseConfigInput").value.trim();
-      if (fbVal) {
-        try {
-          JSON.parse(fbVal);
-          localStorage.setItem("pharmacy_firebase_config", fbVal);
-        } catch (err) {
-          alert("Firebase 配置格式錯誤！");
-          return;
-        }
-      } else {
-        localStorage.removeItem("pharmacy_firebase_config");
-      }
-
-      // 3. 全網即時廣播（同步全體手機）
+      // 2. 全網即時廣播與雲端寫入（同步全體手機）
       syncMenuConfig();
 
       alert("所有櫃位架構與藥品設定已儲存並同步至雲端！");
