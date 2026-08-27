@@ -323,7 +323,7 @@
       line-height: 1;
     }
 
-    /* 助理揀貨矩陣 (支援雙向凍結標題與欄位) */
+    /* 助理揀貨矩陣 (僅凍結第 1、2 欄) */
     .matrix-card {
       background: #fff;
       border-radius: 8px;
@@ -366,7 +366,7 @@
       color: var(--primary-green);
     }
 
-    /* 左側關鍵欄位凍結 (Sticky Column) */
+    /* 左側第 1、2 欄凍結 (Sticky Columns 1 & 2) */
     .sticky-col-check {
       position: sticky;
       left: 0;
@@ -387,26 +387,18 @@
       background-color: #fff;
       width: 75px;
       min-width: 75px;
+      border-right: 2px solid #cbd5e1 !important;
     }
     th.sticky-col-shelf {
       z-index: 30;
       background-color: #f1f5f9;
+      border-right: 2px solid #cbd5e1 !important;
     }
 
-    .sticky-col-name {
-      position: sticky;
-      left: 119px;
-      z-index: 10;
-      background-color: #fff;
+    .col-name {
       text-align: left !important;
       font-weight: bold;
       min-width: 140px;
-      border-right: 2px solid #cbd5e1 !important;
-    }
-    th.sticky-col-name {
-      z-index: 30;
-      background-color: #f1f5f9;
-      border-right: 2px solid #cbd5e1 !important;
     }
 
     .matrix-row.done td {
@@ -1210,7 +1202,7 @@
     let dbMenuRef = null;
     let dbShortfallRef = null;
     let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v9_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v10_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -1256,14 +1248,14 @@
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v9");
+        dbOrdersRef = db.ref("active_orders_v10");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v9");
+        dbMenuRef = db.ref("menu_config_v10");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1275,7 +1267,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v9");
+        dbStaffRef = db.ref("staff_config_v10");
         dbStaffRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1284,7 +1276,7 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v9");
+        dbShortfallRef = db.ref("shortfalls_v10");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1547,7 +1539,7 @@
       }
     }
 
-    // 渲染助理端矩陣 (雙向凍結標題與欄位)
+    // 渲染助理端矩陣 (僅凍結第 1、2 欄)
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
@@ -1563,7 +1555,7 @@
         <tr>
           <th class="sticky-col-check">完成</th>
           <th class="sticky-col-shelf">架位</th>
-          <th class="sticky-col-name">藥品名稱</th>
+          <th class="col-name">藥品名稱</th>
           <th style="width: 45px; min-width: 45px;">單位</th>
           <th style="width: 70px; min-width: 70px;">實出/總需</th>
       `;
@@ -1604,7 +1596,7 @@
             let rowHtml = `
               <td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td>
               <td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td>
-              <td class="sticky-col-name">${med.name}</td>
+              <td class="col-name">${med.name}</td>
               <td>${med.unit || '-'}</td>
               <td>
                 <div class="matrix-total-cell">
@@ -1872,7 +1864,6 @@
       }
     }
 
-    // 觸控拖曳全域暫存
     let touchDragSrc = null;
 
     function renderVisualEditor() {
@@ -1930,7 +1921,6 @@
             <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
 
-          // 1. 電腦滑鼠 Drag & Drop
           row.ondragstart = (e) => {
             row.classList.add("dragging");
             e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx }));
@@ -1943,7 +1933,6 @@
             reorderMed(source.gIdx, source.mIdx, gIdx, mIdx);
           };
 
-          // 2. 手機/平板觸控長按拖曳 (Touch Reorder)
           const handleEl = row.querySelector(".drag-handle");
           handleEl.ontouchstart = (e) => {
             touchDragSrc = { gIdx, mIdx, el: row };
