@@ -659,13 +659,34 @@
       padding: 4px 6px;
       border-radius: 4px;
       margin-bottom: 4px;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      touch-action: none;
+    }
+
+    .editor-med-row.dragging {
+      opacity: 0.45;
+      background: #e0e7ff;
+      border: 1px dashed #6366f1;
+    }
+
+    .editor-med-row.touch-active {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      background: #f8fafc;
+      transform: scale(1.02);
+      z-index: 50;
     }
 
     .drag-handle {
       cursor: grab;
-      font-size: 15px;
-      color: #94a3b8;
-      padding: 0 4px;
+      font-size: 16px;
+      color: #64748b;
+      padding: 4px 6px;
+      border-radius: 4px;
+      touch-action: none;
+    }
+    .drag-handle:active {
+      cursor: grabbing;
+      color: var(--primary-green);
     }
 
     .move-btn {
@@ -857,7 +878,7 @@
       storageBucket: "pharmacy-order-20f00.firebasestorage.app"
     };
 
-    // 2. 出廠預設人員權限名單 (可點餐藥師名單 vs 可進入助理端名單)
+    // 2. 出廠預設人員權限名單
     const DEFAULT_STAFF_CONFIG = {
       "pharmacists": [
         { "code": "1508152", "name": "測試管理員" },
@@ -1189,7 +1210,7 @@
     let dbMenuRef = null;
     let dbShortfallRef = null;
     let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v8_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v9_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -1235,14 +1256,14 @@
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v8");
+        dbOrdersRef = db.ref("active_orders_v9");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v8");
+        dbMenuRef = db.ref("menu_config_v9");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1254,7 +1275,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v8");
+        dbStaffRef = db.ref("staff_config_v9");
         dbStaffRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1263,7 +1284,7 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v8");
+        dbShortfallRef = db.ref("shortfalls_v9");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1759,7 +1780,9 @@
       document.getElementById("historyModal").style.display = "none";
     }
 
-    // 可視化設定後台
+    // ==========================================
+    // 直覺可視化管理後台 (支援滑鼠與手機觸控長按拖曳換位)
+    // ==========================================
     function openConfigModal() {
       switchEditorTab('general');
       document.getElementById("configModal").style.display = "flex";
@@ -1849,6 +1872,9 @@
       }
     }
 
+    // 觸控拖曳全域暫存
+    let touchDragSrc = null;
+
     function renderVisualEditor() {
       const container = document.getElementById("visualEditorContainer");
       container.innerHTML = "";
@@ -1885,8 +1911,12 @@
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div");
           row.className = "editor-med-row";
+          row.draggable = true;
+          row.dataset.gidx = gIdx;
+          row.dataset.midx = mIdx;
+
           row.innerHTML = `
-            <span class="drag-handle">☰</span>
+            <span class="drag-handle" title="按住拖曳排序">☰</span>
             <input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名">
             <input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位">
             <input type="number" min="1" max="9" value="${med.max || 2}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數">
@@ -1899,6 +1929,50 @@
             <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
             <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
+
+          // 1. 電腦滑鼠 Drag & Drop
+          row.ondragstart = (e) => {
+            row.classList.add("dragging");
+            e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx }));
+          };
+          row.ondragend = () => row.classList.remove("dragging");
+          row.ondragover = (e) => e.preventDefault();
+          row.ondrop = (e) => {
+            e.preventDefault();
+            const source = JSON.parse(e.dataTransfer.getData("text/plain"));
+            reorderMed(source.gIdx, source.mIdx, gIdx, mIdx);
+          };
+
+          // 2. 手機/平板觸控長按拖曳 (Touch Reorder)
+          const handleEl = row.querySelector(".drag-handle");
+          handleEl.ontouchstart = (e) => {
+            touchDragSrc = { gIdx, mIdx, el: row };
+            row.classList.add("touch-active");
+            if (navigator.vibrate) navigator.vibrate(30);
+          };
+
+          handleEl.ontouchmove = (e) => {
+            if (!touchDragSrc) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetRow = targetEl ? targetEl.closest(".editor-med-row") : null;
+            if (targetRow && targetRow !== touchDragSrc.el) {
+              const destGIdx = parseInt(targetRow.dataset.gidx);
+              const destMIdx = parseInt(targetRow.dataset.midx);
+              reorderMed(touchDragSrc.gIdx, touchDragSrc.mIdx, destGIdx, destMIdx);
+              touchDragSrc.gIdx = destGIdx;
+              touchDragSrc.mIdx = destMIdx;
+            }
+          };
+
+          handleEl.ontouchend = () => {
+            if (touchDragSrc) {
+              touchDragSrc.el.classList.remove("touch-active");
+              touchDragSrc = null;
+            }
+          };
+
           medListEl.appendChild(row);
         });
       });
@@ -1962,6 +2036,13 @@
       if (targetIdx < 0 || targetIdx >= items.length) return;
       const [item] = items.splice(mIdx, 1);
       items.splice(targetIdx, 0, item);
+      renderVisualEditor();
+    }
+
+    function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) {
+      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
+      const [movedItem] = targetMenu[srcGIdx].items.splice(srcMIdx, 1);
+      targetMenu[destGIdx].items.splice(destMIdx, 0, movedItem);
       renderVisualEditor();
     }
 
