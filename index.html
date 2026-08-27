@@ -718,9 +718,9 @@
       <select id="stationSelect" class="station-select" onchange="changeStation(this.value)">
         <option value="黃籃">黃籃</option>
         <option value="綠籃">綠籃</option>
+        <option value="青籃">青籃</option>
         <option value="紅籃">紅籃</option>
         <option value="藍籃">藍籃</option>
-        <option value="青籃">青籃</option>
         <option value="專用區">專用區</option>
       </select>
       <span id="cloudBadge" class="cloud-status">連線中...</span>
@@ -870,79 +870,93 @@
       storageBucket: "pharmacy-order-20f00.firebasestorage.app"
     };
 
-    // 2. 出廠預設人員權限名單
+    // 2. 出廠預設人員權限名單 (共 67 名可點餐，15 名助理端)
     const DEFAULT_STAFF_CONFIG = {
       "pharmacists": [
-        { "code": "1508152", "name": "測試管理員" },
-        { "code": "1502204", "name": "龔洲弘" },
-        { "code": "1505488", "name": "胡妙貞" },
-        { "code": "1507247", "name": "陳婷婷" },
-        { "code": "1509161", "name": "劉彥廷" },
-        { "code": "1511318", "name": "林佳慧" },
-        { "code": "1512513", "name": "蒲詩青" },
-        { "code": "1512851", "name": "黃俊瑋" },
-        { "code": "1512964", "name": "陳怡均" },
-        { "code": "1515415", "name": "林香如" },
-        { "code": "1515840", "name": "蔡聖儲" },
-        { "code": "1515971", "name": "吳礎宇" },
-        { "code": "1516035", "name": "郭素如" },
-        { "code": "1520164", "name": "楊佩軒" },
-        { "code": "1520174", "name": "陳緯真" },
-        { "code": "1520229", "name": "張珮茹" },
-        { "code": "1520388", "name": "杜駿廷" },
-        { "code": "1520396", "name": "楊富喻" },
-        { "code": "1520787", "name": "盧昱伶" },
-        { "code": "1520788", "name": "施懿芸" },
-        { "code": "1520841", "name": "彭銘麒" },
-        { "code": "1520846", "name": "陳浩承" },
-        { "code": "1520885", "name": "李讚耿" },
-        { "code": "1521524", "name": "張君綺" },
-        { "code": "1521737", "name": "蕭邑霖" },
-        { "code": "1522302", "name": "李俊賢" },
-        { "code": "1522623", "name": "謝奕萱" },
-        { "code": "1525322", "name": "李建宏" },
-        { "code": "1525390", "name": "施秉承" },
-        { "code": "1525673", "name": "游皓翔" },
-        { "code": "1525841", "name": "胡庭嘉" },
-        { "code": "1526094", "name": "黃凌軒" },
-        { "code": "1526325", "name": "蘇文娸" },
-        { "code": "1526596", "name": "蕭爲哲" },
-        { "code": "1527572", "name": "李孟霓" },
-        { "code": "1528019", "name": "杜宜玲" },
-        { "code": "1528405", "name": "曾宥誠" },
-        { "code": "1528523", "name": "張君華" },
-        { "code": "1529958", "name": "張諶" },
-        { "code": "1530179", "name": "曹良亘" },
-        { "code": "1530404", "name": "李子騰" },
-        { "code": "1530559", "name": "陳盈恩" },
-        { "code": "1530565", "name": "李昀軒" },
-        { "code": "1530821", "name": "廖庭妤" },
-        { "code": "1530831", "name": "陳品臻" },
-        { "code": "1514848", "name": "管紋萱" },
-        { "code": "1520605", "name": "洪銘竣" },
-        { "code": "1527221", "name": "黃湘瑩" },
-        { "code": "1528196", "name": "周湧樺" },
-        { "code": "1529310", "name": "林晏竹" },
-        { "code": "1529350", "name": "林姍諭" },
-        { "code": "1531621", "name": "林麗秋" },
-        { "code": "1531673", "name": "顧國棟" }
+            { "code": "1501072", "name": "吳明欣" },
+            { "code": "1506227", "name": "仙女" },
+            { "code": "1507175", "name": "詹智琳" },
+            { "code": "1508152", "name": "林盟桔" },
+            { "code": "1513095", "name": "童玟津" },
+            { "code": "1516302", "name": "張綜瑋" },
+            { "code": "1501559", "name": "方心靜" },
+            { "code": "1520043", "name": "劉育如" },
+            { "code": "1520646", "name": "林宥妡" },
+            { "code": "1521107", "name": "黃宜瑄" },
+            { "code": "1521823", "name": "劉伊菁" },
+            { "code": "1523870", "name": "謝馨慧" },
+            { "code": "1525503", "name": "陳郁婷" },
+            { "code": "1527904", "name": "洪淑麗" },
+            { "code": "1528713", "name": "黃家萱" },
+            { "code": "1502204", "name": "龔洲弘" },
+            { "code": "1505488", "name": "胡妙貞" },
+            { "code": "1507247", "name": "陳婷婷" },
+            { "code": "1509161", "name": "劉彥廷" },
+            { "code": "1511318", "name": "林佳慧" },
+            { "code": "1512513", "name": "蒲詩青" },
+            { "code": "1512851", "name": "黃俊瑋" },
+            { "code": "1512964", "name": "陳怡均" },
+            { "code": "1515415", "name": "林香如" },
+            { "code": "1515840", "name": "蔡聖儲" },
+            { "code": "1515971", "name": "吳礎宇" },
+            { "code": "1516035", "name": "郭素如" },
+            { "code": "1520164", "name": "楊佩軒" },
+            { "code": "1520174", "name": "陳緯真" },
+            { "code": "1520229", "name": "張珮茹" },
+            { "code": "1520388", "name": "杜駿廷" },
+            { "code": "1520396", "name": "楊富喻" },
+            { "code": "1520787", "name": "盧昱伶" },
+            { "code": "1520788", "name": "施懿芸" },
+            { "code": "1520841", "name": "彭銘麒" },
+            { "code": "1520846", "name": "陳浩承" },
+            { "code": "1520885", "name": "李讚耿" },
+            { "code": "1521524", "name": "張君綺" },
+            { "code": "1521737", "name": "蕭邑霖" },
+            { "code": "1522302", "name": "李俊賢" },
+            { "code": "1522623", "name": "謝奕萱" },
+            { "code": "1525322", "name": "李建宏" },
+            { "code": "1525390", "name": "施秉承" },
+            { "code": "1525673", "name": "游皓翔" },
+            { "code": "1525841", "name": "胡庭嘉" },
+            { "code": "1526094", "name": "黃凌軒" },
+            { "code": "1526325", "name": "蘇文娸" },
+            { "code": "1526596", "name": "蕭爲哲" },
+            { "code": "1527572", "name": "李孟霓" },
+            { "code": "1528019", "name": "杜宜玲" },
+            { "code": "1528405", "name": "曾宥誠" },
+            { "code": "1528523", "name": "張君華" },
+            { "code": "1529958", "name": "張諶" },
+            { "code": "1530179", "name": "曹良亘" },
+            { "code": "1530404", "name": "李子騰" },
+            { "code": "1530559", "name": "陳盈恩" },
+            { "code": "1530565", "name": "李昀軒" },
+            { "code": "1530821", "name": "廖庭妤" },
+            { "code": "1530831", "name": "陳品臻" },
+            { "code": "1514848", "name": "管紋萱" },
+            { "code": "1520605", "name": "洪銘竣" },
+            { "code": "1527221", "name": "黃湘瑩" },
+            { "code": "1528196", "name": "周湧樺" },
+            { "code": "1529310", "name": "林晏竹" },
+            { "code": "1529350", "name": "林姍諭" },
+            { "code": "1531621", "name": "林麗秋" },
+            { "code": "1531673", "name": "顧國棟" }
       ],
       "assistants": [
-        { "code": "1508152", "name": "主責助理 / 管理員" },
-        { "code": "1506227", "name": "范凱雯" },
-        { "code": "1507175", "name": "詹智琳" },
-        { "code": "1501072", "name": "吳明欣" },
-        { "code": "1513095", "name": "童玟津" },
-        { "code": "1516302", "name": "張綜瑋" },
-        { "code": "1501559", "name": "方心靜" },
-        { "code": "1520043", "name": "劉育如" },
-        { "code": "1520646", "name": "林宥妡" },
-        { "code": "1521107", "name": "黃宜瑄" },
-        { "code": "1521823", "name": "劉伊菁" },
-        { "code": "1523870", "name": "謝馨慧" },
-        { "code": "1525503", "name": "陳郁婷" },
-        { "code": "1527904", "name": "洪淑麗" },
-        { "code": "1528713", "name": "黃家萱" }
+            { "code": "1501072", "name": "吳明欣" },
+            { "code": "1506227", "name": "仙女" },
+            { "code": "1507175", "name": "詹智琳" },
+            { "code": "1508152", "name": "林盟桔" },
+            { "code": "1513095", "name": "童玟津" },
+            { "code": "1516302", "name": "張綜瑋" },
+            { "code": "1501559", "name": "方心靜" },
+            { "code": "1520043", "name": "劉育如" },
+            { "code": "1520646", "name": "林宥妡" },
+            { "code": "1521107", "name": "黃宜瑄" },
+            { "code": "1521823", "name": "劉伊菁" },
+            { "code": "1523870", "name": "謝馨慧" },
+            { "code": "1525503", "name": "陳郁婷" },
+            { "code": "1527904", "name": "洪淑麗" },
+            { "code": "1528713", "name": "黃家萱" }
       ]
     };
 
@@ -1190,25 +1204,24 @@
     let staffConfig = JSON.parse(localStorage.getItem("pharmacy_staff_config") || JSON.stringify(DEFAULT_STAFF_CONFIG));
 
     // 全域變數
-    let currentStation = "綠籃"; // 黃籃 | 綠籃 | 紅籃 | 藍籃 | 青籃 | 專用區
+    let currentStation = "綠籃";
     let draftOrders = {};
     let activeOrdersList = [];
     let checkedItems = {};
     let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}");
     let appMode = "pharmacist";
-    let editorTab = "general"; // general | special | staff
+    let editorTab = "general";
     let isAssistantAuthenticated = false;
     let dbOrdersRef = null;
     let dbMenuRef = null;
     let dbShortfallRef = null;
     let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v10_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v11_channel");
 
-    // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("station")) {
       const st = urlParams.get("station");
-      const validStations = ["黃籃", "綠籃", "紅籃", "藍籃", "青籃", "專用區"];
+      const validStations = ["黃籃", "綠籃", "青籃", "紅籃", "藍籃", "專用區"];
       if (validStations.includes(st)) {
         currentStation = st;
         document.getElementById("stationSelect").value = st;
@@ -1248,14 +1261,14 @@
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v10");
+        dbOrdersRef = db.ref("active_orders_v11");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v10");
+        dbMenuRef = db.ref("menu_config_v11");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1267,7 +1280,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v10");
+        dbStaffRef = db.ref("staff_config_v11");
         dbStaffRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1276,7 +1289,7 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v10");
+        dbShortfallRef = db.ref("shortfalls_v11");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1807,8 +1820,8 @@
       container.innerHTML = `
         <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; margin-bottom:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐藥師名單 (${staffConfig.pharmacists.length}人)</span>
-            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增藥師</button>
+            <span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐名單 (${staffConfig.pharmacists.length}人)</span>
+            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增人員</button>
           </div>
           <table class="staff-table">
             <thead><tr><th>員工代碼</th><th>姓名/職稱</th><th>操作</th></tr></thead>
