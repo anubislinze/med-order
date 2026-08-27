@@ -148,9 +148,17 @@
       text-align: center;
       font-size: 21px;
       font-weight: 900;
-      margin: 6px 0 10px;
+      margin: 6px 0 2px;
       color: var(--primary-green);
       letter-spacing: 1px;
+    }
+
+    .sheet-subtitle-hint {
+      text-align: center;
+      font-size: 11.5px;
+      color: #64748b;
+      margin-bottom: 10px;
+      font-weight: 500;
     }
 
     /* 3 欄版面配置 */
@@ -315,34 +323,42 @@
       line-height: 1;
     }
 
-    /* 助理揀貨矩陣 */
+    /* 助理揀貨矩陣 (支援雙向凍結標題與欄位) */
     .matrix-card {
       background: #fff;
       border-radius: 8px;
       border: 1.5px solid var(--border-color);
-      overflow-x: auto;
+      overflow: auto;
+      max-height: calc(100vh - 190px);
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: relative;
     }
 
     .matrix-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       font-size: 13px;
-      min-width: 720px;
+      min-width: 680px;
     }
 
     .matrix-table th, .matrix-table td {
-      border: 1px solid #ddd;
+      border-right: 1px solid #ddd;
+      border-bottom: 1px solid #ddd;
       padding: 7px 5px;
       text-align: center;
+      background-color: #fff;
     }
 
+    /* 頂部標題列凍結 (Sticky Header) */
     .matrix-table th {
-      background: #f5f5f5;
-      font-weight: 900;
-      color: #333;
       position: sticky;
       top: 0;
+      z-index: 20;
+      background: #f1f5f9;
+      font-weight: 900;
+      color: #333;
+      border-bottom: 2px solid var(--border-color);
     }
 
     .matrix-table th.th-station {
@@ -350,8 +366,51 @@
       color: var(--primary-green);
     }
 
-    .matrix-row.done {
-      background: #f1f5f9;
+    /* 左側關鍵欄位凍結 (Sticky Column) */
+    .sticky-col-check {
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      background-color: #fff;
+      width: 44px;
+      min-width: 44px;
+    }
+    th.sticky-col-check {
+      z-index: 30;
+      background-color: #f1f5f9;
+    }
+
+    .sticky-col-shelf {
+      position: sticky;
+      left: 44px;
+      z-index: 10;
+      background-color: #fff;
+      width: 75px;
+      min-width: 75px;
+    }
+    th.sticky-col-shelf {
+      z-index: 30;
+      background-color: #f1f5f9;
+    }
+
+    .sticky-col-name {
+      position: sticky;
+      left: 119px;
+      z-index: 10;
+      background-color: #fff;
+      text-align: left !important;
+      font-weight: bold;
+      min-width: 140px;
+      border-right: 2px solid #cbd5e1 !important;
+    }
+    th.sticky-col-name {
+      z-index: 30;
+      background-color: #f1f5f9;
+      border-right: 2px solid #cbd5e1 !important;
+    }
+
+    .matrix-row.done td {
+      background: #f1f5f9 !important;
       color: #94a3b8;
       text-decoration: line-through;
     }
@@ -387,7 +446,7 @@
     }
 
     .station-qty-cell {
-      min-width: 55px;
+      min-width: 52px;
       height: 38px;
       cursor: pointer;
       font-weight: 900;
@@ -545,7 +604,6 @@
       color: #2e7d32;
     }
 
-    /* 人員名單管理樣式 */
     .staff-table {
       width: 100%;
       border-collapse: collapse;
@@ -562,7 +620,6 @@
       font-weight: bold;
     }
 
-    /* 後台可視化編輯器樣式 */
     .editor-group-box {
       background: #f8fafc;
       border: 1.5px solid #cbd5e1;
@@ -658,10 +715,9 @@
 
     <div class="mode-tabs">
       <button class="mode-tab active" id="tabPharmacist" onclick="switchMode('pharmacist')">點藥面板</button>
-      <button class="mode-tab" id="tabAssistant" onclick="promptAssistantAccess()">📦 助理一趟流</button>
+      <button class="mode-tab" id="tabAssistant" onclick="promptAssistantAccess()">📦 助理取藥</button>
     </div>
 
-    <!-- 齒輪僅在助理端顯示 -->
     <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="openConfigModal()" title="助理與櫃位設定">⚙️</button>
   </div>
 
@@ -678,19 +734,20 @@
       </div>
 
       <div class="sheet-title" id="currentStationTitle">【綠籃 - 藥品劃記看板】</div>
+      <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 0.5 秒可直接歸零</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
     </div>
 
-    <!-- 助理一趟流揀貨矩陣 -->
+    <!-- 助理取藥矩陣 -->
     <div id="viewAssistant" style="display: none;">
       <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
         <div>
-          <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理動線揀貨矩陣（架位動線排序）</h3>
+          <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理取藥動線矩陣（架位動線排序）</h3>
           <span style="font-size:11px; color:#64748b;">💡 庫存不足時，直接點擊各台數量即可「點退/循環微調實出數」</span>
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 員工送單紀錄</button>
-          <button class="btn-act btn-clear" style="background:#e8f5e9; color:#2e7d32;" onclick="clearDoneItems()">確認揀貨並清空</button>
+          <button class="btn-act btn-clear" style="background:#e8f5e9; color:#2e7d32;" onclick="clearDoneItems()">確認取藥並清空</button>
         </div>
       </div>
       <div class="matrix-card">
@@ -715,10 +772,10 @@
   <div class="modal-overlay" id="authModal">
     <div class="modal-box" style="max-width:340px; text-align:center;">
       <div class="modal-header">
-        <span>🔒 助理端權限驗證</span>
+        <span>🔒 助理取藥權限驗證</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeAuthModal()">✕</button>
       </div>
-      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入授權代碼進入助理揀貨畫面：</p>
+      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入授權代碼進入助理取藥畫面：</p>
       <input type="password" inputmode="numeric" id="authCodeInput" class="staff-input" placeholder="請輸入授權代碼">
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn-act btn-clear" onclick="closeAuthModal()">取消</button>
@@ -735,7 +792,7 @@
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeSubmitModal()">✕</button>
       </div>
       <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入授權的點餐員工代碼（全數字）：</p>
-      <input type="number" inputmode="numeric" id="staffCodeInput" class="staff-input" placeholder="例如：1042">
+      <input type="number" inputmode="numeric" id="staffCodeInput" class="staff-input" placeholder="例如：1502204">
       <div id="submitSummaryPreview" style="font-size:12px; color:#666; max-height:120px; overflow-y:auto; margin-bottom:12px; background:#f9f9f9; padding:6px; border-radius:4px; text-align:left;"></div>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button class="btn-act btn-clear" onclick="closeSubmitModal()">取消</button>
@@ -803,282 +860,78 @@
     // 2. 出廠預設人員權限名單 (可點餐藥師名單 vs 可進入助理端名單)
     const DEFAULT_STAFF_CONFIG = {
       "pharmacists": [
-            {
-                  "code": "1508152",
-                  "name": "測試管理員"
-            },
-            {
-                  "code": "1502204",
-                  "name": "龔洲弘"
-            },
-            {
-                  "code": "1505488",
-                  "name": "胡妙貞"
-            },
-            {
-                  "code": "1507247",
-                  "name": "陳婷婷"
-            },
-            {
-                  "code": "1509161",
-                  "name": "劉彥廷"
-            },
-            {
-                  "code": "1511318",
-                  "name": "林佳慧"
-            },
-            {
-                  "code": "1512513",
-                  "name": "蒲詩青"
-            },
-            {
-                  "code": "1512851",
-                  "name": "黃俊瑋"
-            },
-            {
-                  "code": "1512964",
-                  "name": "陳怡均"
-            },
-            {
-                  "code": "1515415",
-                  "name": "林香如"
-            },
-            {
-                  "code": "1515840",
-                  "name": "蔡聖儲"
-            },
-            {
-                  "code": "1515971",
-                  "name": "吳礎宇"
-            },
-            {
-                  "code": "1516035",
-                  "name": "郭素如"
-            },
-            {
-                  "code": "1520164",
-                  "name": "楊佩軒"
-            },
-            {
-                  "code": "1520174",
-                  "name": "陳緯真"
-            },
-            {
-                  "code": "1520229",
-                  "name": "張珮茹"
-            },
-            {
-                  "code": "1520388",
-                  "name": "杜駿廷"
-            },
-            {
-                  "code": "1520396",
-                  "name": "楊富喻"
-            },
-            {
-                  "code": "1520787",
-                  "name": "盧昱伶"
-            },
-            {
-                  "code": "1520788",
-                  "name": "施懿芸"
-            },
-            {
-                  "code": "1520841",
-                  "name": "彭銘麒"
-            },
-            {
-                  "code": "1520846",
-                  "name": "陳浩承"
-            },
-            {
-                  "code": "1520885",
-                  "name": "李讚耿"
-            },
-            {
-                  "code": "1521524",
-                  "name": "張君綺"
-            },
-            {
-                  "code": "1521737",
-                  "name": "蕭邑霖"
-            },
-            {
-                  "code": "1522302",
-                  "name": "李俊賢"
-            },
-            {
-                  "code": "1522623",
-                  "name": "謝奕萱"
-            },
-            {
-                  "code": "1525322",
-                  "name": "李建宏"
-            },
-            {
-                  "code": "1525390",
-                  "name": "施秉承"
-            },
-            {
-                  "code": "1525673",
-                  "name": "游皓翔"
-            },
-            {
-                  "code": "1525841",
-                  "name": "胡庭嘉"
-            },
-            {
-                  "code": "1526094",
-                  "name": "黃凌軒"
-            },
-            {
-                  "code": "1526325",
-                  "name": "蘇文娸"
-            },
-            {
-                  "code": "1526596",
-                  "name": "蕭爲哲"
-            },
-            {
-                  "code": "1527572",
-                  "name": "李孟霓"
-            },
-            {
-                  "code": "1528019",
-                  "name": "杜宜玲"
-            },
-            {
-                  "code": "1528405",
-                  "name": "曾宥誠"
-            },
-            {
-                  "code": "1528523",
-                  "name": "張君華"
-            },
-            {
-                  "code": "1529958",
-                  "name": "張諶"
-            },
-            {
-                  "code": "1530179",
-                  "name": "曹良亘"
-            },
-            {
-                  "code": "1530404",
-                  "name": "李子騰"
-            },
-            {
-                  "code": "1530559",
-                  "name": "陳盈恩"
-            },
-            {
-                  "code": "1530565",
-                  "name": "李昀軒"
-            },
-            {
-                  "code": "1530821",
-                  "name": "廖庭妤"
-            },
-            {
-                  "code": "1530831",
-                  "name": "陳品臻"
-            },
-            {
-                  "code": "1514848",
-                  "name": "管紋萱"
-            },
-            {
-                  "code": "1520605",
-                  "name": "洪銘竣"
-            },
-            {
-                  "code": "1527221",
-                  "name": "黃湘瑩"
-            },
-            {
-                  "code": "1528196",
-                  "name": "周湧樺"
-            },
-            {
-                  "code": "1529310",
-                  "name": "林晏竹"
-            },
-            {
-                  "code": "1529350",
-                  "name": "林姍諭"
-            },
-            {
-                  "code": "1531621",
-                  "name": "林麗秋"
-            },
-            {
-                  "code": "1531673",
-                  "name": "顧國棟"
-            }
+        { "code": "1508152", "name": "測試管理員" },
+        { "code": "1502204", "name": "龔洲弘" },
+        { "code": "1505488", "name": "胡妙貞" },
+        { "code": "1507247", "name": "陳婷婷" },
+        { "code": "1509161", "name": "劉彥廷" },
+        { "code": "1511318", "name": "林佳慧" },
+        { "code": "1512513", "name": "蒲詩青" },
+        { "code": "1512851", "name": "黃俊瑋" },
+        { "code": "1512964", "name": "陳怡均" },
+        { "code": "1515415", "name": "林香如" },
+        { "code": "1515840", "name": "蔡聖儲" },
+        { "code": "1515971", "name": "吳礎宇" },
+        { "code": "1516035", "name": "郭素如" },
+        { "code": "1520164", "name": "楊佩軒" },
+        { "code": "1520174", "name": "陳緯真" },
+        { "code": "1520229", "name": "張珮茹" },
+        { "code": "1520388", "name": "杜駿廷" },
+        { "code": "1520396", "name": "楊富喻" },
+        { "code": "1520787", "name": "盧昱伶" },
+        { "code": "1520788", "name": "施懿芸" },
+        { "code": "1520841", "name": "彭銘麒" },
+        { "code": "1520846", "name": "陳浩承" },
+        { "code": "1520885", "name": "李讚耿" },
+        { "code": "1521524", "name": "張君綺" },
+        { "code": "1521737", "name": "蕭邑霖" },
+        { "code": "1522302", "name": "李俊賢" },
+        { "code": "1522623", "name": "謝奕萱" },
+        { "code": "1525322", "name": "李建宏" },
+        { "code": "1525390", "name": "施秉承" },
+        { "code": "1525673", "name": "游皓翔" },
+        { "code": "1525841", "name": "胡庭嘉" },
+        { "code": "1526094", "name": "黃凌軒" },
+        { "code": "1526325", "name": "蘇文娸" },
+        { "code": "1526596", "name": "蕭爲哲" },
+        { "code": "1527572", "name": "李孟霓" },
+        { "code": "1528019", "name": "杜宜玲" },
+        { "code": "1528405", "name": "曾宥誠" },
+        { "code": "1528523", "name": "張君華" },
+        { "code": "1529958", "name": "張諶" },
+        { "code": "1530179", "name": "曹良亘" },
+        { "code": "1530404", "name": "李子騰" },
+        { "code": "1530559", "name": "陳盈恩" },
+        { "code": "1530565", "name": "李昀軒" },
+        { "code": "1530821", "name": "廖庭妤" },
+        { "code": "1530831", "name": "陳品臻" },
+        { "code": "1514848", "name": "管紋萱" },
+        { "code": "1520605", "name": "洪銘竣" },
+        { "code": "1527221", "name": "黃湘瑩" },
+        { "code": "1528196", "name": "周湧樺" },
+        { "code": "1529310", "name": "林晏竹" },
+        { "code": "1529350", "name": "林姍諭" },
+        { "code": "1531621", "name": "林麗秋" },
+        { "code": "1531673", "name": "顧國棟" }
       ],
       "assistants": [
-            {
-                  "code": "1508152",
-                  "name": "主責助理 / 管理員"
-            },
-            {
-                  "code": "1506227",
-                  "name": "范凱雯"
-            },
-            {
-                  "code": "1507175",
-                  "name": "詹智琳"
-            },
-            {
-                  "code": "1501072",
-                  "name": "吳明欣"
-            },
-            {
-                  "code": "1513095",
-                  "name": "童玟津"
-            },
-            {
-                  "code": "1516302",
-                  "name": "張綜瑋"
-            },
-            {
-                  "code": "1501559",
-                  "name": "方心靜"
-            },
-            {
-                  "code": "1520043",
-                  "name": "劉育如"
-            },
-            {
-                  "code": "1520646",
-                  "name": "林宥妡"
-            },
-            {
-                  "code": "1521107",
-                  "name": "黃宜瑄"
-            },
-            {
-                  "code": "1521823",
-                  "name": "劉伊菁"
-            },
-            {
-                  "code": "1523870",
-                  "name": "謝馨慧"
-            },
-            {
-                  "code": "1525503",
-                  "name": "陳郁婷"
-            },
-            {
-                  "code": "1527904",
-                  "name": "洪淑麗"
-            },
-            {
-                  "code": "1528713",
-                  "name": "黃家萱"
-            }
+        { "code": "1508152", "name": "主責助理 / 管理員" },
+        { "code": "1506227", "name": "范凱雯" },
+        { "code": "1507175", "name": "詹智琳" },
+        { "code": "1501072", "name": "吳明欣" },
+        { "code": "1513095", "name": "童玟津" },
+        { "code": "1516302", "name": "張綜瑋" },
+        { "code": "1501559", "name": "方心靜" },
+        { "code": "1520043", "name": "劉育如" },
+        { "code": "1520646", "name": "林宥妡" },
+        { "code": "1521107", "name": "黃宜瑄" },
+        { "code": "1521823", "name": "劉伊菁" },
+        { "code": "1523870", "name": "謝馨慧" },
+        { "code": "1525503", "name": "陳郁婷" },
+        { "code": "1527904", "name": "洪淑麗" },
+        { "code": "1528713", "name": "黃家萱" }
       ]
-};
+    };
 
     // 3. 一般台出廠預設資料庫
     const DEFAULT_GENERAL_MEDS = [
@@ -1336,7 +1189,7 @@
     let dbMenuRef = null;
     let dbShortfallRef = null;
     let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v7_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v8_channel");
 
     // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
@@ -1354,7 +1207,6 @@
     renderAll();
 
     function initSync() {
-      // 1. 同一瀏覽器跨分頁廣播
       channel.onmessage = (e) => {
         if (e.data) {
           if (e.data.type === "UPDATE_ACTIVE_ORDERS") {
@@ -1377,21 +1229,20 @@
         }
       };
 
-      // 2. Firebase 全自動連線
       try {
         if (!firebase.apps.length) {
           firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v7");
+        dbOrdersRef = db.ref("active_orders_v8");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v7");
+        dbMenuRef = db.ref("menu_config_v8");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1403,7 +1254,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v7");
+        dbStaffRef = db.ref("staff_config_v8");
         dbStaffRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1412,7 +1263,7 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v7");
+        dbShortfallRef = db.ref("shortfalls_v8");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1550,7 +1401,7 @@
       renderAssistantMatrix();
     }
 
-    // 助理端密碼驗證 (檢驗可進入助理名單)
+    // 助理端密碼驗證
     function promptAssistantAccess() {
       if (isAssistantAuthenticated) {
         switchMode('assistant');
@@ -1574,7 +1425,7 @@
         closeAuthModal();
         switchMode('assistant');
       } else {
-        alert("授權代碼不正確或無助理權限！");
+        alert("授權代碼不正確或無助理取藥權限！");
       }
     }
 
@@ -1675,7 +1526,7 @@
       }
     }
 
-    // 渲染助理端矩陣
+    // 渲染助理端矩陣 (雙向凍結標題與欄位)
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
@@ -1689,14 +1540,14 @@
 
       let headHtml = `
         <tr>
-          <th style="width: 46px;">完成</th>
-          <th style="width: 85px;">架位</th>
-          <th>藥品名稱</th>
-          <th style="width: 45px;">單位</th>
-          <th style="width: 70px;">實出/總需</th>
+          <th class="sticky-col-check">完成</th>
+          <th class="sticky-col-shelf">架位</th>
+          <th class="sticky-col-name">藥品名稱</th>
+          <th style="width: 45px; min-width: 45px;">單位</th>
+          <th style="width: 70px; min-width: 70px;">實出/總需</th>
       `;
       stationColumns.forEach(col => {
-        headHtml += `<th class="th-station" style="min-width: 55px;">${col.label}</th>`;
+        headHtml += `<th class="th-station" style="min-width: 58px;">${col.label}</th>`;
       });
       headHtml += `</tr>`;
       thead.innerHTML = headHtml;
@@ -1730,9 +1581,9 @@
             tr.className = `matrix-row ${isDone ? 'done' : ''}`;
 
             let rowHtml = `
-              <td><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td>
-              <td style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td>
-              <td style="text-align:left; font-weight:bold;">${med.name}</td>
+              <td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td>
+              <td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td>
+              <td class="sticky-col-name">${med.name}</td>
               <td>${med.unit || '-'}</td>
               <td>
                 <div class="matrix-total-cell">
@@ -1777,7 +1628,7 @@
       renderAssistantMatrix();
     }
 
-    // 助理確認揀貨清空
+    // 助理確認取藥清空
     function clearDoneItems() {
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
       if (doneIds.length === 0) {
@@ -1813,7 +1664,7 @@
       
       syncActiveOrders();
       syncShortfalls();
-      alert("已完成本批揀貨！若有少發項目已自動回報至該調劑台看板。");
+      alert("已完成本批取藥！若有少發項目已自動回報至該調劑台看板。");
       renderAll();
     }
 
@@ -1841,7 +1692,6 @@
     function confirmSubmitOrder() {
       const staffCode = document.getElementById("staffCodeInput").value.trim();
       
-      // 驗證是否在可點餐名單中
       const validPharmacist = (staffConfig.pharmacists || []).find(p => p.code === staffCode);
       if (!validPharmacist) {
         alert("查無此點餐員工代碼，請確認或請主管於後台名單新增！");
@@ -1909,9 +1759,7 @@
       document.getElementById("historyModal").style.display = "none";
     }
 
-    // ==========================================
-    // 直覺可視化管理後台 (菜單與人員管理)
-    // ==========================================
+    // 可視化設定後台
     function openConfigModal() {
       switchEditorTab('general');
       document.getElementById("configModal").style.display = "flex";
@@ -1939,7 +1787,6 @@
       }
     }
 
-    // 渲染人員名單編輯器
     function renderStaffEditor() {
       const container = document.getElementById("visualEditorContainer");
       container.innerHTML = `
@@ -1964,7 +1811,7 @@
 
         <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-weight:bold; color:#b45309;">🔒 授權可進入助理端名單 (${staffConfig.assistants.length}人)</span>
+            <span style="font-weight:bold; color:#b45309;">🔒 授權可進入助理取藥名單 (${staffConfig.assistants.length}人)</span>
             <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#fef3c7; color:#92400e;" onclick="addNewStaff('assistants')">➕ 新增助理</button>
           </div>
           <table class="staff-table">
@@ -2002,7 +1849,6 @@
       }
     }
 
-    // 渲染菜單編輯器
     function renderVisualEditor() {
       const container = document.getElementById("visualEditorContainer");
       container.innerHTML = "";
