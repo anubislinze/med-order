@@ -1226,7 +1226,7 @@
     let draftOrders = {};
     let activeOrdersList = [];
     let checkedItems = {};
-    let editingMedId = null; // 當前正開啟打字輸入的藥品 ID
+    let editingMedId = null;
     let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}");
     let appMode = "pharmacist";
     let editorTab = "general";
@@ -1430,7 +1430,7 @@
 
     // 點擊數量方格直接打字輸入
     function startDirectEditQty(e, medId) {
-      e.stopPropagation(); // 阻止觸發整列 +1
+      e.stopPropagation();
       editingMedId = medId;
       renderPharmacistBoard();
       setTimeout(() => {
@@ -1575,7 +1575,6 @@
             if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">⏳欠藥</span>`;
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
-            // 數量方格：正常顯示 vs 直接打字模式
             let badgeContent = "";
             if (isEditingThis) {
               badgeContent = `
@@ -1621,17 +1620,24 @@
       }
     }
 
-    // 渲染助理取藥矩陣 (嚴格依架位動線順序排序，絕不受點單先後影響)
+    // 渲染助理取藥矩陣 (直欄依台號權重排序，行依架位排序)
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
 
+      const stationPriority = { "黃籃": 1, "綠籃": 2, "青籃": 3, "紅籃": 4, "藍籃": 5, "專用區": 6 };
+      
       const stationColumns = activeOrdersList.map(order => ({
         key: order.id,
         label: order.displayLabel,
         station: order.station,
         orderObj: order
-      }));
+      })).sort((a, b) => {
+        const pA = stationPriority[a.station] || 99;
+        const pB = stationPriority[b.station] || 99;
+        if (pA !== pB) return pA - pB;
+        return (a.orderObj.orderSeq || 0) - (b.orderObj.orderSeq || 0);
+      });
 
       let headHtml = `
         <tr>
@@ -1650,7 +1656,6 @@
       tbody.innerHTML = "";
       let hasAnyOrder = false;
 
-      // 嚴格依照藥局架位動線順序走訪 (一般台依序 -> 專用台依序)
       const canonicalGroupsOrder = [
         ...generalMedData.filter(g => g.col === 1),
         ...generalMedData.filter(g => g.col === 2),
@@ -1677,7 +1682,6 @@
             return { req, actual, orderId: col.orderObj.id };
           });
 
-          // 只要有任何一台點了該藥品，就依嚴格架位順序輸出此行
           if (totalReqQty > 0) {
             hasAnyOrder = true;
             const isDone = !!checkedItems[med.id];
@@ -1732,7 +1736,6 @@
       renderAssistantMatrix();
     }
 
-    // 助理確認取藥清空
     function clearDoneItems() {
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
       if (doneIds.length === 0) {
@@ -1772,7 +1775,6 @@
       renderAll();
     }
 
-    // 藥師送單 (白名單驗證)
     function openSubmitModal() {
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       if (activeList.length === 0) {
@@ -1835,7 +1837,6 @@
       }
     }
 
-    // 員工送單紀錄
     function openHistoryModal() {
       const content = document.getElementById("historyListContent");
       if (activeOrdersList.length === 0) {
