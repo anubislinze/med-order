@@ -305,6 +305,24 @@
       font-weight: 900;
       font-size: 18px;
       color: var(--accent-blue);
+      cursor: text;
+      position: relative;
+    }
+
+    .med-badge-input {
+      width: 38px;
+      height: 32px;
+      font-family: var(--font-stack);
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      border: 2px solid var(--accent-blue);
+      border-radius: 4px;
+      padding: 0;
+      background: #fff;
+      color: #111;
+      outline: none;
+      box-shadow: 0 0 5px rgba(21, 101, 192, 0.4);
     }
 
     .med-item.selected .med-badge {
@@ -747,7 +765,7 @@
       </div>
 
       <div class="sheet-title" id="currentStationTitle">【綠籃 - 藥品劃記看板】</div>
-      <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 0.5 秒可直接歸零</div>
+      <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 0.5 秒可直接歸零 ｜ 點擊數量格可直接打字輸入</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
     </div>
 
@@ -755,7 +773,7 @@
     <div id="viewAssistant" style="display: none;">
       <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
         <div>
-          <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理取藥動線矩陣（架位動線排序）</h3>
+          <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理取藥動線矩陣（嚴格依架位動線排序）</h3>
           <span style="font-size:11px; color:#64748b;">💡 庫存不足時，直接點擊各台數量即可「點退/循環微調實出數」</span>
         </div>
         <div style="display:flex; gap:6px;">
@@ -960,240 +978,240 @@
       ]
     };
 
-    // 3. 一般台出廠預設資料庫
+    // 3. 一般台出廠預設資料庫 (全部藥品預設上限 max: 5)
     const DEFAULT_GENERAL_MEDS = [
       // 欄 1
       {
         col: 1, group: "GZA", isWarn: false,
         items: [
-          { id: "iwell", name: "IWELL / 宜胃", unit: "盒", max: 3 },
-          { id: "nexium", name: "NEXium / 耐適恩", unit: "盒", max: 3 },
-          { id: "febuxostat", name: "Febuxostat / 達理痛", unit: "", max: 3 },
-          { id: "strocain", name: "Strocain / 習痛佳音", unit: "", max: 4 },
-          { id: "lipitor40", name: "Lipitor 40 / 立普妥 40", unit: "", max: 2 },
-          { id: "suzin", name: "Suzin / 舒腦", unit: "", max: 2 },
-          { id: "plavix", name: "Plavix / 保栓通", unit: "", max: 2 },
-          { id: "urief", name: "Urief / 優列扶", unit: "", max: 2 }
+          { id: "iwell", name: "IWELL / 宜胃", unit: "盒", max: 5 },
+          { id: "nexium", name: "NEXium / 耐適恩", unit: "盒", max: 5 },
+          { id: "febuxostat", name: "Febuxostat / 達理痛", unit: "", max: 5 },
+          { id: "strocain", name: "Strocain / 習痛佳音", unit: "", max: 5 },
+          { id: "lipitor40", name: "Lipitor 40 / 立普妥 40", unit: "", max: 5 },
+          { id: "suzin", name: "Suzin / 舒腦", unit: "", max: 5 },
+          { id: "plavix", name: "Plavix / 保栓通", unit: "", max: 5 },
+          { id: "urief", name: "Urief / 優列扶", unit: "", max: 5 }
         ]
       },
       {
         col: 1, group: "GZB", isWarn: false,
         items: [
-          { id: "folic_acid", name: "Folic acid / 葉酸", unit: "盒", max: 2 },
-          { id: "furosemide", name: "Furosemide / 舒利諾", unit: "盒", max: 2 },
-          { id: "jardiance_duo", name: "Jardiance Duo / 恩美糖", unit: "", max: 2 },
-          { id: "desora", name: "Desora / 治敏樂", unit: "", max: 2 },
-          { id: "arax", name: "Arax / 克胺錠", unit: "盒", max: 2 },
-          { id: "loxol", name: "LOXol / 樂咳痰舒", unit: "盒", max: 2 },
-          { id: "ppc", name: "P.P.C. / 必克風", unit: "盒", max: 2 },
-          { id: "cephalexin", name: "CephaLEXIN / 信保欣", unit: "盒", max: 2 },
-          { id: "minlife_p", name: "Minlife-P / 特敏福", unit: "盒", max: 2 },
-          { id: "tamlosin_d", name: "Tamlosin D / 暢利淨D", unit: "", max: 2 },
-          { id: "ferrous_gluco_b", name: "Ferrous Gluco-B / 鐵他葡萄糖酸鐵", unit: "盒", max: 2 }
+          { id: "folic_acid", name: "Folic acid / 葉酸", unit: "盒", max: 5 },
+          { id: "furosemide", name: "Furosemide / 舒利諾", unit: "盒", max: 5 },
+          { id: "jardiance_duo", name: "Jardiance Duo / 恩美糖", unit: "", max: 5 },
+          { id: "desora", name: "Desora / 治敏樂", unit: "", max: 5 },
+          { id: "arax", name: "Arax / 克胺錠", unit: "盒", max: 5 },
+          { id: "loxol", name: "LOXol / 樂咳痰舒", unit: "盒", max: 5 },
+          { id: "ppc", name: "P.P.C. / 必克風", unit: "盒", max: 5 },
+          { id: "cephalexin", name: "CephaLEXIN / 信保欣", unit: "盒", max: 5 },
+          { id: "minlife_p", name: "Minlife-P / 特敏福", unit: "盒", max: 5 },
+          { id: "tamlosin_d", name: "Tamlosin D / 暢利淨D", unit: "", max: 5 },
+          { id: "ferrous_gluco_b", name: "Ferrous Gluco-B / 鐵他葡萄糖酸鐵", unit: "盒", max: 5 }
         ]
       },
       {
         col: 1, group: "GZC + D", isWarn: false,
         items: [
-          { id: "peace", name: "Peace / 鼻福", unit: "", max: 2 },
-          { id: "meptin_mini", name: "Meptin-Mini / 滅喘淨微", unit: "", max: 2 },
-          { id: "joinlo", name: "Joinlo / 降樂脂", unit: "", max: 2 },
-          { id: "exforge_hct", name: "Exforge HCT / 力安穩", unit: "", max: 3 },
-          { id: "co_tareg", name: "CO-TAREG / 可道樂", unit: "", max: 2 },
-          { id: "co_midis", name: "CO-Midis / 倍壓妥", unit: "", max: 2 },
-          { id: "doxaben", name: "Doxaben / 可迅", unit: "", max: 2 },
-          { id: "throne", name: "Throne / 克栓", unit: "盒", max: 2 },
-          { id: "herbesser", name: "Herbesser / 合必爽", unit: "盒", max: 2 },
-          { id: "lipanthyl", name: "Lipanthyl / 弗尼利脂寧", unit: "", max: 2 },
-          { id: "zanidip", name: "Zanidip / 利壓", unit: "", max: 2 },
-          { id: "coxine", name: "Coxine / 冠欣", unit: "盒", max: 2 },
-          { id: "spironolactone", name: "Spironolactone / 輸泌來", unit: "盒", max: 2 },
-          { id: "ginkgo", name: "Ginkgocentrate / 杏銀", unit: "盒", max: 2 },
-          { id: "sigmart", name: "Sigmart / 喜革脈", unit: "", max: 2 },
-          { id: "caltrate", name: "Caltrate / 挺立鈣", unit: "盒", max: 2 }
+          { id: "peace", name: "Peace / 鼻福", unit: "", max: 5 },
+          { id: "meptin_mini", name: "Meptin-Mini / 滅喘淨微", unit: "", max: 5 },
+          { id: "joinlo", name: "Joinlo / 降樂脂", unit: "", max: 5 },
+          { id: "exforge_hct", name: "Exforge HCT / 力安穩", unit: "", max: 5 },
+          { id: "co_tareg", name: "CO-TAREG / 可道樂", unit: "", max: 5 },
+          { id: "co_midis", name: "CO-Midis / 倍壓妥", unit: "", max: 5 },
+          { id: "doxaben", name: "Doxaben / 可迅", unit: "", max: 5 },
+          { id: "throne", name: "Throne / 克栓", unit: "盒", max: 5 },
+          { id: "herbesser", name: "Herbesser / 合必爽", unit: "盒", max: 5 },
+          { id: "lipanthyl", name: "Lipanthyl / 弗尼利脂寧", unit: "", max: 5 },
+          { id: "zanidip", name: "Zanidip / 利壓", unit: "", max: 5 },
+          { id: "coxine", name: "Coxine / 冠欣", unit: "盒", max: 5 },
+          { id: "spironolactone", name: "Spironolactone / 輸泌來", unit: "盒", max: 5 },
+          { id: "ginkgo", name: "Ginkgocentrate / 杏銀", unit: "盒", max: 5 },
+          { id: "sigmart", name: "Sigmart / 喜革脈", unit: "", max: 5 },
+          { id: "caltrate", name: "Caltrate / 挺立鈣", unit: "盒", max: 5 }
         ]
       },
       {
         col: 1, group: "GZM (背面)", isWarn: false,
         items: [
-          { id: "qtern", name: "Qtern / 控醣穩", unit: "", max: 2 },
-          { id: "irbetan", name: "Irbetan / 爾壓順", unit: "", max: 2 },
-          { id: "entecavir", name: "Entecavir / 欣苷", unit: "", max: 2 },
-          { id: "daflon", name: "Daflon / 達促朗", unit: "", max: 2 },
-          { id: "sinmaron", name: "Sinmaron / 舒解憂", unit: "", max: 2 },
-          { id: "synorid", name: "Synorid / 欣律", unit: "", max: 2 },
-          { id: "lyrica", name: "Lyrica / 利瑞卡", unit: "", max: 2 }
+          { id: "qtern", name: "Qtern / 控醣穩", unit: "", max: 5 },
+          { id: "irbetan", name: "Irbetan / 爾壓順", unit: "", max: 5 },
+          { id: "entecavir", name: "Entecavir / 欣苷", unit: "", max: 5 },
+          { id: "daflon", name: "Daflon / 達促朗", unit: "", max: 5 },
+          { id: "sinmaron", name: "Sinmaron / 舒解憂", unit: "", max: 5 },
+          { id: "synorid", name: "Synorid / 欣律", unit: "", max: 5 },
+          { id: "lyrica", name: "Lyrica / 利瑞卡", unit: "", max: 5 }
         ]
       },
       // 欄 2
       {
         col: 2, group: "GZE", isWarn: false,
         items: [
-          { id: "nitrostat", name: "Nitrostat / 耐絞寧", unit: "盒", max: 2 },
-          { id: "pletaal", name: "Pletaal / 普達錠", unit: "盒", max: 2 },
-          { id: "atozet", name: "Atozet / 優泰脂", unit: "", max: 2 },
-          { id: "acerine", name: "Acerine / 抑血凝", unit: "", max: 2 },
-          { id: "ibimo", name: "Ibimo / 愛彼脈", unit: "", max: 2 },
-          { id: "conslife", name: "Conslife / 秘福", unit: "盒", max: 2 },
-          { id: "syntrend25", name: "Syntrend 25mg / 心全", unit: "", max: 2 },
-          { id: "sod_bicarb", name: "Sodium Bicarbonate / 碳酸氫鈉片", unit: "", max: 3 }
+          { id: "nitrostat", name: "Nitrostat / 耐絞寧", unit: "盒", max: 5 },
+          { id: "pletaal", name: "Pletaal / 普達錠", unit: "盒", max: 5 },
+          { id: "atozet", name: "Atozet / 優泰脂", unit: "", max: 5 },
+          { id: "acerine", name: "Acerine / 抑血凝", unit: "", max: 5 },
+          { id: "ibimo", name: "Ibimo / 愛彼脈", unit: "", max: 5 },
+          { id: "conslife", name: "Conslife / 秘福", unit: "盒", max: 5 },
+          { id: "syntrend25", name: "Syntrend 25mg / 心全", unit: "", max: 5 },
+          { id: "sod_bicarb", name: "Sodium Bicarbonate / 碳酸氫鈉片", unit: "", max: 5 }
         ]
       },
       {
         col: 2, group: "GZF", isWarn: false,
         items: [
-          { id: "edarbi", name: "Edarbi / 易得平", unit: "", max: 2 },
-          { id: "neuquinon", name: "Neuquinon / 能澍奇朗", unit: "", max: 2 },
-          { id: "klaricid", name: "Klaricid / 開羅理黴素", unit: "", max: 2 },
-          { id: "morcasin", name: "Morcasin / 孟克杏", unit: "盒", max: 2 },
-          { id: "duxetine", name: "Duxetine / 萬憂停", unit: "", max: 2 },
-          { id: "juxac", name: "Juxac / 解鬱", unit: "", max: 2 },
-          { id: "keppra", name: "Keppra / 優開", unit: "", max: 2 },
-          { id: "dopadine", name: "Dopadine / 多巴定", unit: "", max: 2 },
-          { id: "rafax", name: "Rafax / 羅菲思", unit: "", max: 2 },
-          { id: "seroxat", name: "SeroXAT / 克憂果", unit: "", max: 2 },
-          { id: "depakine", name: "Depakine / 帝拔癲", unit: "束", max: 3 },
-          { id: "aabilify", name: "Aabilify / 安立復", unit: "", max: 2 },
-          { id: "avodart", name: "Avodart / 適尿通", unit: "", max: 2 },
-          { id: "imolex", name: "Imolex / 依莫瀉", unit: "盒", max: 2 },
-          { id: "genurso", name: "GenURSO / 健膽舒錠", unit: "盒", max: 2 },
-          { id: "wecoli", name: "Wecoli / 胃可麗錠", unit: "盒", max: 2 },
-          { id: "ketosteril", name: "Ketosteril / 吉多利", unit: "", max: 2 },
-          { id: "u_ca", name: "U-Ca / 活維D", unit: "", max: 2 },
-          { id: "methimazole", name: "Methimazole / 甲硫嗎唑", unit: "盒", max: 2 }
+          { id: "edarbi", name: "Edarbi / 易得平", unit: "", max: 5 },
+          { id: "neuquinon", name: "Neuquinon / 能澍奇朗", unit: "", max: 5 },
+          { id: "klaricid", name: "Klaricid / 開羅理黴素", unit: "", max: 5 },
+          { id: "morcasin", name: "Morcasin / 孟克杏", unit: "盒", max: 5 },
+          { id: "duxetine", name: "Duxetine / 萬憂停", unit: "", max: 5 },
+          { id: "juxac", name: "Juxac / 解鬱", unit: "", max: 5 },
+          { id: "keppra", name: "Keppra / 優開", unit: "", max: 5 },
+          { id: "dopadine", name: "Dopadine / 多巴定", unit: "", max: 5 },
+          { id: "rafax", name: "Rafax / 羅菲思", unit: "", max: 5 },
+          { id: "seroxat", name: "SeroXAT / 克憂果", unit: "", max: 5 },
+          { id: "depakine", name: "Depakine / 帝拔癲", unit: "束", max: 5 },
+          { id: "aabilify", name: "Aabilify / 安立復", unit: "", max: 5 },
+          { id: "avodart", name: "Avodart / 適尿通", unit: "", max: 5 },
+          { id: "imolex", name: "Imolex / 依莫瀉", unit: "盒", max: 5 },
+          { id: "genurso", name: "GenURSO / 健膽舒錠", unit: "盒", max: 5 },
+          { id: "wecoli", name: "Wecoli / 胃可麗錠", unit: "盒", max: 5 },
+          { id: "ketosteril", name: "Ketosteril / 吉多利", unit: "", max: 5 },
+          { id: "u_ca", name: "U-Ca / 活維D", unit: "", max: 5 },
+          { id: "methimazole", name: "Methimazole / 甲硫嗎唑", unit: "盒", max: 5 }
         ]
       },
       {
         col: 2, group: "GZN (背面)", isWarn: false,
         items: [
-          { id: "lamictal", name: "LamicTAL / 樂命達", unit: "", max: 2 },
-          { id: "trileptal", name: "Trileptal / 除癲達", unit: "", max: 2 },
-          { id: "topamax25", name: "Topamax 25mg / 妥泰(裸錠)", unit: "", max: 2 },
-          { id: "olan", name: "Olan / 若寧", unit: "", max: 2 },
-          { id: "nifedipine", name: "NiFEdipine / 恆脈循", unit: "", max: 2 },
-          { id: "seroquel300", name: "SeroQUEL 300mg / 思樂康", unit: "", max: 2 },
-          { id: "monkast10", name: "Monkast 10mg / 樂息喘", unit: "", max: 2 }
+          { id: "lamictal", name: "LamicTAL / 樂命達", unit: "", max: 5 },
+          { id: "trileptal", name: "Trileptal / 除癲達", unit: "", max: 5 },
+          { id: "topamax25", name: "Topamax 25mg / 妥泰(裸錠)", unit: "", max: 5 },
+          { id: "olan", name: "Olan / 若寧", unit: "", max: 5 },
+          { id: "nifedipine", name: "NiFEdipine / 恆脈循", unit: "", max: 5 },
+          { id: "seroquel300", name: "SeroQUEL 300mg / 思樂康", unit: "", max: 5 },
+          { id: "monkast10", name: "Monkast 10mg / 樂息喘", unit: "", max: 5 }
         ]
       },
       {
         col: 2, group: "GZO (背面)", isWarn: false,
         items: [
-          { id: "procal", name: "Procal / 普羅鈣", unit: "盒", max: 2 },
-          { id: "algitab", name: "Algitab / 艾胃逆服", unit: "", max: 2 },
-          { id: "polupi", name: "Polupi / 僕樂彼", unit: "盒", max: 2 },
-          { id: "takepron", name: "Takepron / 泰克胃通", unit: "", max: 2 },
-          { id: "creon", name: "Creon / 卡利消", unit: "", max: 2 },
-          { id: "sandimmun25", name: "Sandimmun 25mg / 新體睦", unit: "盒", max: 2 }
+          { id: "procal", name: "Procal / 普羅鈣", unit: "盒", max: 5 },
+          { id: "algitab", name: "Algitab / 艾胃逆服", unit: "", max: 5 },
+          { id: "polupi", name: "Polupi / 僕樂彼", unit: "盒", max: 5 },
+          { id: "takepron", name: "Takepron / 泰克胃通", unit: "", max: 5 },
+          { id: "creon", name: "Creon / 卡利消", unit: "", max: 5 },
+          { id: "sandimmun25", name: "Sandimmun 25mg / 新體睦", unit: "盒", max: 5 }
         ]
       },
       // 欄 3
       {
         col: 3, group: "GZ-I + J", isWarn: false,
         items: [
-          { id: "mesyrel", name: "Mesyrel / 美舒鬱", unit: "", max: 2 },
-          { id: "tonec", name: "Tonec / 痛停", unit: "盒", max: 2 },
-          { id: "etor60", name: "Etor 60mg / 伊托", unit: "", max: 2 },
-          { id: "hydroquine", name: "Hydroquine / 瘧寧", unit: "", max: 2 },
-          { id: "colchicine", name: "Colchicine / 秋水仙鹼片", unit: "盒", max: 2 },
-          { id: "euricon", name: "EuriCON / 優力康", unit: "盒", max: 2 },
-          { id: "seroquel25", name: "SeroQUEL 25mg / 思樂康", unit: "", max: 2 },
-          { id: "mocalm", name: "Mocalm / 永康緒", unit: "", max: 2 },
-          { id: "switane", name: "Switane / 瑞丹", unit: "", max: 2 },
-          { id: "aricept", name: "Aricept / 愛億欣", unit: "", max: 2 },
-          { id: "leeyo", name: "Leeyo / 離憂", unit: "", max: 2 },
-          { id: "dulcolax", name: "Dulcolax / 樂可舒", unit: "", max: 2 },
-          { id: "catilon", name: "Catilon / 腸必寧", unit: "盒", max: 2 },
-          { id: "betmiga", name: "Betmiga / 貝坦利", unit: "", max: 2 },
-          { id: "fronil", name: "Fronil / 福樂你", unit: "", max: 2 },
-          { id: "oxbu", name: "Oxbu / 歐舒", unit: "", max: 2 }
+          { id: "mesyrel", name: "Mesyrel / 美舒鬱", unit: "", max: 5 },
+          { id: "tonec", name: "Tonec / 痛停", unit: "盒", max: 5 },
+          { id: "etor60", name: "Etor 60mg / 伊托", unit: "", max: 5 },
+          { id: "hydroquine", name: "Hydroquine / 瘧寧", unit: "", max: 5 },
+          { id: "colchicine", name: "Colchicine / 秋水仙鹼片", unit: "盒", max: 5 },
+          { id: "euricon", name: "EuriCON / 優力康", unit: "盒", max: 5 },
+          { id: "seroquel25", name: "SeroQUEL 25mg / 思樂康", unit: "", max: 5 },
+          { id: "mocalm", name: "Mocalm / 永康緒", unit: "", max: 5 },
+          { id: "switane", name: "Switane / 瑞丹", unit: "", max: 5 },
+          { id: "aricept", name: "Aricept / 愛億欣", unit: "", max: 5 },
+          { id: "leeyo", name: "Leeyo / 離憂", unit: "", max: 5 },
+          { id: "dulcolax", name: "Dulcolax / 樂可舒", unit: "", max: 5 },
+          { id: "catilon", name: "Catilon / 腸必寧", unit: "盒", max: 5 },
+          { id: "betmiga", name: "Betmiga / 貝坦利", unit: "", max: 5 },
+          { id: "fronil", name: "Fronil / 福樂你", unit: "", max: 5 },
+          { id: "oxbu", name: "Oxbu / 歐舒", unit: "", max: 5 }
         ]
       },
       {
         col: 3, group: "GZK", isWarn: false,
         items: [
-          { id: "glyxambi", name: "Glyxambi / 糖順平", unit: "", max: 2 },
-          { id: "actos", name: "Actos / 愛妥糖", unit: "", max: 2 },
-          { id: "forxiga", name: "Forxiga / 福適佳", unit: "", max: 2 },
-          { id: "trajenta", name: "Trajenta / 糖漸平", unit: "", max: 2 },
-          { id: "relinide", name: "Relinide / 醣立定", unit: "", max: 2 },
-          { id: "acarose", name: "Acarose / 降醣佳", unit: "盒", max: 2 },
-          { id: "nolvadex", name: "Nolvadex / 諾瓦得士", unit: "", max: 2 }
+          { id: "glyxambi", name: "Glyxambi / 糖順平", unit: "", max: 5 },
+          { id: "actos", name: "Actos / 愛妥糖", unit: "", max: 5 },
+          { id: "forxiga", name: "Forxiga / 福適佳", unit: "", max: 5 },
+          { id: "trajenta", name: "Trajenta / 糖漸平", unit: "", max: 5 },
+          { id: "relinide", name: "Relinide / 醣立定", unit: "", max: 5 },
+          { id: "acarose", name: "Acarose / 降醣佳", unit: "盒", max: 5 },
+          { id: "nolvadex", name: "Nolvadex / 諾瓦得士", unit: "", max: 5 }
         ]
       },
       {
         col: 3, group: "高警訊 抽屜+架上", isWarn: true,
         items: [
-          { id: "amaryl", name: "Amaryl / 瑪爾胰", unit: "", max: 2 },
-          { id: "jardiance25", name: "25mg Jardiance / 恩排糖", unit: "", max: 2 },
-          { id: "lixiana60", name: "Lixiana 60mg / 里先安", unit: "", max: 2 },
-          { id: "pradaxa110", name: "Pradaxa 110mg / 普栓達", unit: "", max: 2 },
-          { id: "thoin", name: "ThoIN / 端克", unit: "盒", max: 2 },
-          { id: "xarelto15", name: "Xarelto 15mg / 拜瑞妥", unit: "", max: 2 }
+          { id: "amaryl", name: "Amaryl / 瑪爾胰", unit: "", max: 5 },
+          { id: "jardiance25", name: "25mg Jardiance / 恩排糖", unit: "", max: 5 },
+          { id: "lixiana60", name: "Lixiana 60mg / 里先安", unit: "", max: 5 },
+          { id: "pradaxa110", name: "Pradaxa 110mg / 普栓達", unit: "", max: 5 },
+          { id: "thoin", name: "ThoIN / 端克", unit: "盒", max: 5 },
+          { id: "xarelto15", name: "Xarelto 15mg / 拜瑞妥", unit: "", max: 5 }
         ]
       },
       {
         col: 3, group: "胰島素 架(桌)上庫存區", isInsulin: true,
         items: [
-          { id: "xigduo", name: "Xigduo / 釋多糖", unit: "", max: 2 },
-          { id: "toujeo", name: "Toujeo / 糖德仕", unit: "", max: 2 },
-          { id: "tresiba", name: "Tresiba / 諾胰保", unit: "盒", max: 2 },
-          { id: "mix50_kwikpen", name: "Mix50 KwikPen(紅筆)", unit: "盒", max: 2 },
-          { id: "ryzodeg", name: "Ryzodeg / 諾胰得(藍筆)", unit: "盒", max: 2 }
+          { id: "xigduo", name: "Xigduo / 釋多糖", unit: "", max: 5 },
+          { id: "toujeo", name: "Toujeo / 糖德仕", unit: "", max: 5 },
+          { id: "tresiba", name: "Tresiba / 諾胰保", unit: "盒", max: 5 },
+          { id: "mix50_kwikpen", name: "Mix50 KwikPen(紅筆)", unit: "盒", max: 5 },
+          { id: "ryzodeg", name: "Ryzodeg / 諾胰得(藍筆)", unit: "盒", max: 5 }
         ]
       }
     ];
 
-    // 4. 專用調劑台出廠預設資料庫
+    // 4. 專用調劑台出廠預設資料庫 (全部藥品預設上限 max: 5)
     const DEFAULT_SPECIAL_MEDS = [
       {
         col: 1, group: "專用台 - LZ 料位區", isWarn: false,
         items: [
-          { id: "lzd18", name: "LZD18 Megatus ORAL 美佳特口服懸液劑", unit: "盒", max: 2 },
-          { id: "lzl24", name: "LZL24 Mycostatin 滅菌靈懸液用粉劑", unit: "盒", max: 2 },
-          { id: "lzj18", name: "LZJ18 Mezavant 安適凡特緩釋腸溶膜衣錠", unit: "束", max: 2 },
-          { id: "lzl28", name: "LZL28 Trileptal 除癲達口服懸浮液", unit: "盒", max: 2 }
+          { id: "lzd18", name: "LZD18 Megatus ORAL 美佳特口服懸液劑", unit: "盒", max: 5 },
+          { id: "lzl24", name: "LZL24 Mycostatin 滅菌靈懸液用粉劑", unit: "盒", max: 5 },
+          { id: "lzj18", name: "LZJ18 Mezavant 安適凡特緩釋腸溶膜衣錠", unit: "束", max: 5 },
+          { id: "lzl28", name: "LZL28 Trileptal 除癲達口服懸浮液", unit: "盒", max: 5 }
         ]
       },
       {
         col: 1, group: "專用台 - SX / SZC 料位區", isWarn: false,
         items: [
-          { id: "sxy22", name: "SXY22 ASACOL 安腸克栓劑", unit: "盒", max: 2 },
-          { id: "sxz12", name: "SXZ12 Crinone 快孕隆", unit: "盒", max: 2 },
-          { id: "szc18", name: "SZC18 Advanced 優麗舒加強型單支裝眼用乳劑(自費)", unit: "盒", max: 2 },
-          { id: "szc38", name: "SZC38 Seridol Oral 賽力多內服液劑", unit: "盒", max: 2 }
+          { id: "sxy22", name: "SXY22 ASACOL 安腸克栓劑", unit: "盒", max: 5 },
+          { id: "sxz12", name: "SXZ12 Crinone 快孕隆", unit: "盒", max: 5 },
+          { id: "szc18", name: "SZC18 Advanced 優麗舒加強型單支裝眼用乳劑(自費)", unit: "盒", max: 5 },
+          { id: "szc38", name: "SZC38 Seridol Oral 賽力多內服液劑", unit: "盒", max: 5 }
         ]
       },
       {
         col: 2, group: "專用台 - SZD / SZG / SZH 料位區", isWarn: false,
         items: [
           { id: "szd38", name: "SZD38 Restasis OPH 麗眼達眼用乳劑", unit: "盒", max: 5 },
-          { id: "szg18", name: "SZG18 Depakine 200mg 帝拔癲液", unit: "盒", max: 2 },
-          { id: "szg38", name: "SZG38 Qting ORAL 康停懸液劑", unit: "盒", max: 2 },
-          { id: "szh18", name: "SZH18 Sandimmun100 新體睦", unit: "", max: 2 },
-          { id: "szh28", name: "SZH28 Keppra 優開內服液劑", unit: "盒", max: 3 }
+          { id: "szg18", name: "SZG18 Depakine 200mg 帝拔癲液", unit: "盒", max: 5 },
+          { id: "szg38", name: "SZG38 Qting ORAL 康停懸液劑", unit: "盒", max: 5 },
+          { id: "szh18", name: "SZH18 Sandimmun100 新體睦", unit: "", max: 5 },
+          { id: "szh28", name: "SZH28 Keppra 優開內服液劑", unit: "盒", max: 5 }
         ]
       },
       {
         col: 2, group: "專用台 - SZK / SZL / SZP / SZW / SZZ 料位區", isWarn: false,
         items: [
-          { id: "szk38", name: "SZK38 Memary Oral 美憶內服液劑", unit: "盒", max: 4 },
-          { id: "szl48", name: "SZL48 Hya-Joint(專用) 海捷特關節腔注射劑", unit: "", max: 2 },
-          { id: "szp18", name: "SZP18 Piracetam ORAL 派卡登內服液劑", unit: "", max: 2 },
-          { id: "szw42", name: "SZW42 【15mg】Lixiana 里先安", unit: "", max: 2 },
-          { id: "szz18", name: "SZZ18 Scrat 保胃懸乳液", unit: "", max: 2 }
+          { id: "szk38", name: "SZK38 Memary Oral 美憶內服液劑", unit: "盒", max: 5 },
+          { id: "szl48", name: "SZL48 Hya-Joint(專用) 海捷特關節腔注射劑", unit: "", max: 5 },
+          { id: "szp18", name: "SZP18 Piracetam ORAL 派卡登內服液劑", unit: "", max: 5 },
+          { id: "szw42", name: "SZW42 【15mg】Lixiana 里先安", unit: "", max: 5 },
+          { id: "szz18", name: "SZZ18 Scrat 保胃懸乳液", unit: "", max: 5 }
         ]
       },
       {
         col: 3, group: "專用台 - 胰島素冷藏區", isInsulin: true,
         items: [
-          { id: "novorapid", name: "NovoRapid(橘筆)", unit: "盒", max: 2 },
-          { id: "mix25_kwikpen", name: "Mix25 KwikPen(黃筆)", unit: "盒", max: 2 }
+          { id: "novorapid", name: "NovoRapid(橘筆)", unit: "盒", max: 5 },
+          { id: "mix25_kwikpen", name: "Mix25 KwikPen(黃筆)", unit: "盒", max: 5 }
         ]
       },
       {
         col: 3, group: "專用台 - 夜刻 / 特定管制區", isNight: true,
         items: [
-          { id: "biktarvy", name: "Biktarvy 吉他偉 (夜刻)", unit: "", max: 2 }
+          { id: "biktarvy", name: "Biktarvy 吉他偉 (夜刻)", unit: "", max: 5 }
         ]
       }
     ];
@@ -1208,6 +1226,7 @@
     let draftOrders = {};
     let activeOrdersList = [];
     let checkedItems = {};
+    let editingMedId = null; // 當前正開啟打字輸入的藥品 ID
     let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}");
     let appMode = "pharmacist";
     let editorTab = "general";
@@ -1216,7 +1235,7 @@
     let dbMenuRef = null;
     let dbShortfallRef = null;
     let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v11_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v12_channel");
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has("station")) {
@@ -1261,14 +1280,14 @@
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v11");
+        dbOrdersRef = db.ref("active_orders_v12");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v11");
+        dbMenuRef = db.ref("menu_config_v12");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1280,7 +1299,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v11");
+        dbStaffRef = db.ref("staff_config_v12");
         dbStaffRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1289,7 +1308,7 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v11");
+        dbShortfallRef = db.ref("shortfalls_v12");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1329,6 +1348,7 @@
     function changeStation(val) {
       currentStation = val;
       draftOrders = {};
+      editingMedId = null;
       updateStationHeader();
       checkAndRenderShortfallBanner();
       renderAll();
@@ -1382,7 +1402,7 @@
 
       const cur = draftOrders[med.id] || 0;
       let next = cur + 1;
-      if (next > (med.max || 2)) next = 0;
+      if (next > (med.max || 5)) next = 0;
 
       if (next === 0) {
         delete draftOrders[med.id];
@@ -1406,6 +1426,37 @@
 
     function cancelLongPress() {
       if (pressTimer) clearTimeout(pressTimer);
+    }
+
+    // 點擊數量方格直接打字輸入
+    function startDirectEditQty(e, medId) {
+      e.stopPropagation(); // 阻止觸發整列 +1
+      editingMedId = medId;
+      renderPharmacistBoard();
+      setTimeout(() => {
+        const inputEl = document.getElementById(`badgeInput_${medId}`);
+        if (inputEl) {
+          inputEl.focus();
+          inputEl.select();
+        }
+      }, 50);
+    }
+
+    function finishDirectEditQty(medId, inputVal, maxLimit) {
+      const valStr = inputVal.trim();
+      if (valStr === "" || isNaN(valStr)) {
+        delete draftOrders[medId];
+      } else {
+        let num = parseInt(valStr, 10);
+        if (num <= 0) {
+          delete draftOrders[medId];
+        } else {
+          if (num > (maxLimit || 5)) num = (maxLimit || 5);
+          draftOrders[medId] = num;
+        }
+      }
+      editingMedId = null;
+      renderPharmacistBoard();
     }
 
     // 助理端零層級點退微調
@@ -1458,6 +1509,7 @@
     // 切換分頁
     function switchMode(mode) {
       appMode = mode;
+      editingMedId = null;
       document.getElementById("tabPharmacist").className = `mode-tab ${mode === 'pharmacist' ? 'active' : ''}`;
       document.getElementById("tabAssistant").className = `mode-tab ${mode === 'assistant' ? 'active' : ''}`;
       document.getElementById("viewPharmacist").style.display = mode === 'pharmacist' ? 'block' : 'none';
@@ -1504,7 +1556,9 @@
 
           (group.items || []).forEach(med => {
             const count = draftOrders[med.id] || 0;
-            const isAtMax = count >= (med.max || 2);
+            const maxLimit = med.max || 5;
+            const isAtMax = count >= maxLimit;
+            const isEditingThis = (editingMedId === med.id);
 
             const itemDiv = document.createElement("div");
             itemDiv.className = `med-item ${count > 0 ? 'selected' : ''} ${isAtMax ? 'at-max' : ''} ${med.disabled ? 'disabled' : ''}`;
@@ -1521,13 +1575,28 @@
             if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">⏳欠藥</span>`;
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
+            // 數量方格：正常顯示 vs 直接打字模式
+            let badgeContent = "";
+            if (isEditingThis) {
+              badgeContent = `
+                <input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}"
+                  onclick="event.stopPropagation()"
+                  onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})"
+                  onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">
+              `;
+            } else {
+              badgeContent = `
+                ${count > 0 ? count : ''}
+                ${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}
+              `;
+            }
+
             itemDiv.innerHTML = `
               <div class="med-name">${med.name}</div>
               <div class="med-status-icons">${badgesHtml}</div>
               ${med.unit ? `<div class="med-unit-badge">${med.unit}</div>` : ''}
-              <div class="med-badge">
-                ${count > 0 ? count : ''}
-                ${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}
+              <div class="med-badge" onclick="startDirectEditQty(event, '${med.id}')" title="點擊直接修改數字">
+                ${badgeContent}
               </div>
             `;
             block.appendChild(itemDiv);
@@ -1552,7 +1621,7 @@
       }
     }
 
-    // 渲染助理端矩陣 (僅凍結第 1、2 欄)
+    // 渲染助理取藥矩陣 (嚴格依架位動線順序排序，絕不受點單先後影響)
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
@@ -1581,9 +1650,17 @@
       tbody.innerHTML = "";
       let hasAnyOrder = false;
 
-      const combinedAllGroups = [...generalMedData, ...specialMedData];
+      // 嚴格依照藥局架位動線順序走訪 (一般台依序 -> 專用台依序)
+      const canonicalGroupsOrder = [
+        ...generalMedData.filter(g => g.col === 1),
+        ...generalMedData.filter(g => g.col === 2),
+        ...generalMedData.filter(g => g.col === 3),
+        ...specialMedData.filter(g => g.col === 1),
+        ...specialMedData.filter(g => g.col === 2),
+        ...specialMedData.filter(g => g.col === 3)
+      ];
 
-      combinedAllGroups.forEach(group => {
+      canonicalGroupsOrder.forEach(group => {
         (group.items || []).forEach(med => {
           let totalReqQty = 0;
           let totalActualQty = 0;
@@ -1600,6 +1677,7 @@
             return { req, actual, orderId: col.orderObj.id };
           });
 
+          // 只要有任何一台點了該藥品，就依嚴格架位順序輸出此行
           if (totalReqQty > 0) {
             hasAnyOrder = true;
             const isDone = !!checkedItems[med.id];
@@ -1742,6 +1820,7 @@
 
       activeOrdersList.push(newOrder);
       draftOrders = {};
+      editingMedId = null;
       syncActiveOrders();
       closeSubmitModal();
       alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`);
@@ -1751,6 +1830,7 @@
     function resetCurrentDraft() {
       if (confirm("確定要清空當前草稿嗎？")) {
         draftOrders = {};
+        editingMedId = null;
         renderPharmacistBoard();
       }
     }
@@ -1786,7 +1866,7 @@
     }
 
     // ==========================================
-    // 直覺可視化管理後台 (支援滑鼠與手機觸控長按拖曳換位)
+    // 直覺可視化管理後台
     // ==========================================
     function openConfigModal() {
       switchEditorTab('general');
@@ -1923,7 +2003,7 @@
             <span class="drag-handle" title="按住拖曳排序">☰</span>
             <input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名">
             <input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位">
-            <input type="number" min="1" max="9" value="${med.max || 2}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數">
+            <input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數">
             <div style="display:flex; gap:2px;">
               <button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button>
               <button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">欠藥</button>
@@ -2056,7 +2136,7 @@
         id: "custom_" + Date.now(),
         name: medName.trim(),
         unit: "",
-        max: 2,
+        max: 5,
         pkgChange: false,
         shortage: false,
         disabled: false
@@ -2084,7 +2164,7 @@
     }
 
     function resetToDefaultConfig() {
-      if (confirm("確定要將藥品、櫃位與人員還原為出廠預設值並同步至所有載具嗎？")) {
+      if (confirm("確定要將藥品（上限5）、櫃位與人員還原為出廠預設值並同步至所有載具嗎？")) {
         generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS));
         specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS));
         staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG));
@@ -2093,7 +2173,7 @@
         localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
         syncMenuConfig();
         syncStaffConfig();
-        alert("已還原出廠預設並同步！");
+        alert("已還原出廠預設（上限預設為5）並同步！");
         closeConfigModal();
         renderAll();
       }
