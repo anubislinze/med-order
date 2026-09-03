@@ -764,8 +764,8 @@
         <div id="shortfallBannerContent"></div>
       </div>
 
-      <div class="sheet-title" id="currentStationTitle">【綠籃 - 藥品劃記看板】</div>
-      <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 0.5 秒可直接歸零 ｜ 點擊數量格可直接打字輸入</div>
+      <div class="sheet-title" id="currentStationTitle">【黃籃 - 藥品劃記看板】</div>
+      <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 1 秒可直接歸零 ｜ 點擊數量格可直接打字輸入</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
     </div>
 
@@ -1097,7 +1097,7 @@
         col: 2, group: "GZO (背面)", isWarn: false,
         items: [
           { id: "procal", name: "Procal / 普羅鈣", unit: "盒", max: 5 },
-          { id: "algitab", name: "Algitab / 艾胃逆服", unit: "", max: 5 },
+          { id: "algitab", name: "Algitab / 艾胃逆服", unit: "", max: 2 },
           { id: "polupi", name: "Polupi / 僕樂彼", unit: "盒", max: 5 },
           { id: "takepron", name: "Takepron / 泰克胃通", unit: "", max: 5 },
           { id: "creon", name: "Creon / 卡利消", unit: "", max: 5 },
@@ -1221,8 +1221,8 @@
     let specialMedData = JSON.parse(localStorage.getItem("pharmacy_special_meds") || JSON.stringify(DEFAULT_SPECIAL_MEDS));
     let staffConfig = JSON.parse(localStorage.getItem("pharmacy_staff_config") || JSON.stringify(DEFAULT_STAFF_CONFIG));
 
-    // 全域變數
-    let currentStation = "綠籃";
+    // 全域變數：預設由儲存紀錄或下拉選單第一個選項（黃籃）起跑
+    let currentStation = localStorage.getItem("pharmacy_station") || "黃籃";
     let draftOrders = {};
     let activeOrdersList = [];
     let checkedItems = {};
@@ -1235,17 +1235,19 @@
     let dbMenuRef = null;
     let dbShortfallRef = null;
     let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v12_channel");
+    const channel = new BroadcastChannel("pharmacy_order_v13_channel");
 
+    // 網址參數初始化
     const urlParams = new URLSearchParams(window.location.search);
+    const validStations = ["黃籃", "綠籃", "青籃", "紅籃", "藍籃", "專用區"];
     if (urlParams.has("station")) {
       const st = urlParams.get("station");
-      const validStations = ["黃籃", "綠籃", "青籃", "紅籃", "藍籃", "專用區"];
       if (validStations.includes(st)) {
         currentStation = st;
-        document.getElementById("stationSelect").value = st;
       }
     }
+    // 確保下拉選單與內部狀態 100% 同步一致
+    document.getElementById("stationSelect").value = currentStation;
 
     initSync();
     updateStationHeader();
@@ -1280,14 +1282,14 @@
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v12");
+        dbOrdersRef = db.ref("active_orders_v13");
         dbOrdersRef.on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v12");
+        dbMenuRef = db.ref("menu_config_v13");
         dbMenuRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1299,7 +1301,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v12");
+        dbStaffRef = db.ref("staff_config_v13");
         dbStaffRef.on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
@@ -1308,7 +1310,7 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v12");
+        dbShortfallRef = db.ref("shortfalls_v13");
         dbShortfallRef.on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
@@ -1347,6 +1349,7 @@
 
     function changeStation(val) {
       currentStation = val;
+      localStorage.setItem("pharmacy_station", val);
       draftOrders = {};
       editingMedId = null;
       updateStationHeader();
@@ -1355,6 +1358,8 @@
     }
 
     function updateStationHeader() {
+      const actualSelected = document.getElementById("stationSelect").value;
+      currentStation = actualSelected;
       const sameStationCount = activeOrdersList.filter(o => o.station === currentStation).length;
       let displayTitle = currentStation;
       if (sameStationCount > 0) {
@@ -1412,16 +1417,17 @@
       renderPharmacistBoard();
     }
 
+    // 長按 1 秒 (1000ms) 直接歸零
     function startLongPress(medId) {
       isLongPress = false;
       pressTimer = setTimeout(() => {
         isLongPress = true;
         if (draftOrders[medId]) {
           delete draftOrders[medId];
-          if (navigator.vibrate) navigator.vibrate(50);
+          if (navigator.vibrate) navigator.vibrate(60);
           renderPharmacistBoard();
         }
-      }, 450);
+      }, 1000);
     }
 
     function cancelLongPress() {
@@ -1804,13 +1810,17 @@
         return;
       }
 
-      const existingCount = activeOrdersList.filter(o => o.station === currentStation).length;
+      // 雙重保險：永遠以目前下拉選單選取的真實值為準
+      const targetStation = document.getElementById("stationSelect").value;
+      currentStation = targetStation;
+
+      const existingCount = activeOrdersList.filter(o => o.station === targetStation).length;
       const seq = existingCount + 1;
-      const displayLabel = `${currentStation}${seq > 1 ? seq : ''}`;
+      const displayLabel = `${targetStation}${seq > 1 ? seq : ''}`;
 
       const newOrder = {
         id: "ord_" + Date.now(),
-        station: currentStation,
+        station: targetStation,
         orderSeq: seq,
         displayLabel: displayLabel,
         staffCode: staffCode,
@@ -2011,7 +2021,7 @@
               <button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button>
             </div>
             <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button>
-            <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
             <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
 
