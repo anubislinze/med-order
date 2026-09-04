@@ -846,6 +846,24 @@
     </div>
   </div>
 
+  <!-- 匯出目前設定彈窗 -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="modal-header">
+        <span>📋 匯出目前完整設定代碼</span>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeExportModal()">✕</button>
+      </div>
+      <p style="font-size:12.5px; color:#555; margin:4px 0 8px;">
+        點擊下方「一鍵複製」按鈕，直接貼在與 AI 的對話框中，AI 即可為您比對所有異動並升級為新出廠預設值：
+      </p>
+      <textarea id="exportTextarea" style="width:100%; height:200px; font-family:monospace; font-size:11px; padding:8px; border:1.5px solid #cbd5e1; border-radius:4px; box-sizing:border-box; resize:vertical;"></textarea>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+        <button class="btn-act btn-clear" onclick="closeExportModal()">關閉</button>
+        <button class="btn-act btn-submit" style="background:#4338ca;" onclick="copyExportText()">📋 一鍵複製代碼</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 可視化設定與櫃位/人員管理彈窗 -->
   <div class="modal-overlay" id="configModal">
     <div class="modal-box">
@@ -868,8 +886,11 @@
         <!-- 動態渲染櫃位/藥品或人員名單 -->
       </div>
 
-      <div style="display:flex; justify-content:space-between; gap:8px; margin-top:12px;">
-        <button class="btn-act btn-clear" style="color:#d32f2f;" onclick="resetToDefaultConfig()">還原出廠預設</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;">
+        <div style="display:flex; gap:6px;">
+          <button class="btn-act btn-clear" style="color:#d32f2f;" onclick="resetToDefaultConfig()">還原出廠預設</button>
+          <button class="btn-act btn-clear" style="background:#e0e7ff; color:#4338ca;" onclick="openExportModal()">📋 匯出目前設定代碼</button>
+        </div>
         <div style="display:flex; gap:8px;">
           <button class="btn-act btn-clear" onclick="closeConfigModal()">取消</button>
           <button class="btn-act btn-submit" onclick="saveVisualConfigs()">儲存變更並同步雲端</button>
@@ -2188,6 +2209,34 @@
         closeConfigModal();
         renderAll();
       }
+    }
+
+    function openExportModal() {
+      const fullConfig = {
+        general: generalMedData,
+        special: specialMedData,
+        staff: staffConfig,
+        exportedAt: new Date().toLocaleString()
+      };
+      const ta = document.getElementById("exportTextarea");
+      ta.value = JSON.stringify(fullConfig, null, 2);
+      document.getElementById("exportModal").style.display = "flex";
+      setTimeout(() => ta.select(), 100);
+    }
+
+    function closeExportModal() {
+      document.getElementById("exportModal").style.display = "none";
+    }
+
+    function copyExportText() {
+      const ta = document.getElementById("exportTextarea");
+      ta.select();
+      navigator.clipboard.writeText(ta.value).then(() => {
+        alert("已成功複製目前完整設定代碼！\n直接貼給 AI 即可為您比對所有異動並升級出廠設定。");
+        closeExportModal();
+      }).catch(() => {
+        alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！");
+      });
     }
 
     function findMedAcrossAll(id) {
