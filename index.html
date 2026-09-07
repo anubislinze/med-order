@@ -431,6 +431,14 @@
       align-items: center;
       justify-content: center;
       gap: 2px;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 4px;
+      padding: 2px 0;
+      transition: background-color 0.15s;
+    }
+    .matrix-total-cell:active {
+      transform: scale(0.94);
     }
 
     .matrix-total {
@@ -774,7 +782,7 @@
       <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
         <div>
           <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理取藥動線矩陣（嚴格依架位動線排序）</h3>
-          <span style="font-size:11px; color:#64748b;">💡 庫存不足時，直接點擊各台數量即可「點退/循環微調實出數」</span>
+          <span style="font-size:11px; color:#64748b;">💡 微調實出數：各台點擊循環遞減 ｜ 各台長按 1 秒單獨歸零 ｜ 總量長按 1 秒整列全歸零</span>
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 員工送單紀錄</button>
@@ -1225,8 +1233,8 @@
       {
         col: 3, group: "專用台 - 胰島素冷藏區", isInsulin: true,
         items: [
-          { id: "novorapid", name: "NovoRapid(橘筆)", unit: "盒", max: 5 },
-          { id: "mix25_kwikpen", name: "Mix25 KwikPen(黃筆)", unit: "盒", max: 5 }
+          { id: "novorapid", name: "NovoRapid(橘筆)", unit: "盒", max: 2 },
+          { id: "mix25_kwikpen", name: "Mix25 KwikPen(黃筆)", unit: "盒", max: 2 }
         ]
       },
       {
@@ -1486,7 +1494,21 @@
       renderPharmacistBoard();
     }
 
-    // 助理端零層級點退微調
+    // ==========================================
+    // 助理端實出數微調（支援點擊循環、各台長按1秒歸零、總量長按1秒全歸零）
+    // ==========================================
+    let asstPressTimer = null;
+    let isAsstLongPress = false;
+
+    // 1. 各台單一數量格點擊
+    function handleAsstCellClick(orderId, medId) {
+      if (isAsstLongPress) {
+        isAsstLongPress = false;
+        return;
+      }
+      cycleStationFulfillment(orderId, medId);
+    }
+
     function cycleStationFulfillment(orderId, medId) {
       const order = activeOrdersList.find(o => o.id === orderId);
       if (!order) return;
@@ -1503,6 +1525,59 @@
       order.fulfilled[medId] = nextFulfilled;
       syncActiveOrders();
       renderAssistantMatrix();
+    }
+
+    // 2. 各台單一數量格長按 1 秒直接歸零（或再次長按還原）
+    function startAsstCellLongPress(orderId, medId) {
+      isAsstLongPress = false;
+      asstPressTimer = setTimeout(() => {
+        isAsstLongPress = true;
+        const order = activeOrdersList.find(o => o.id === orderId);
+        if (!order) return;
+        if (!order.fulfilled) order.fulfilled = {};
+        const reqQty = order.items?.[medId] || 0;
+        const cur = (order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
+        
+        // 若已為 0 則長按還原為原需求數；若大於 0 則長按直接歸零
+        order.fulfilled[medId] = (cur === 0) ? reqQty : 0;
+        if (navigator.vibrate) navigator.vibrate(60);
+        syncActiveOrders();
+        renderAssistantMatrix();
+      }, 1000);
+    }
+
+    function cancelAsstCellLongPress() {
+      if (asstPressTimer) clearTimeout(asstPressTimer);
+    }
+
+    // 3. 總需量欄位長按 1 秒全單歸零（或再次長按全數還原）
+    let asstTotalPressTimer = null;
+    function startAsstTotalLongPress(medId) {
+      asstTotalPressTimer = setTimeout(() => {
+        let totalActual = 0;
+        activeOrdersList.forEach(o => {
+          const req = o.items?.[medId] || 0;
+          const actual = (o.fulfilled?.[medId] !== undefined) ? o.fulfilled[medId] : req;
+          totalActual += actual;
+        });
+
+        // 若目前總實出 > 0，則全單全部歸零；若全單已全為 0，則全部還原原需求數
+        const setToZero = (totalActual > 0);
+        activeOrdersList.forEach(o => {
+          if (o.items && o.items[medId]) {
+            if (!o.fulfilled) o.fulfilled = {};
+            o.fulfilled[medId] = setToZero ? 0 : o.items[medId];
+          }
+        });
+
+        if (navigator.vibrate) navigator.vibrate(70);
+        syncActiveOrders();
+        renderAssistantMatrix();
+      }, 1000);
+    }
+
+    function cancelAsstTotalLongPress() {
+      if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer);
     }
 
     // 助理端密碼驗證
@@ -1721,7 +1796,13 @@
               <td class="col-name">${med.name}</td>
               <td>${med.unit || '-'}</td>
               <td>
-                <div class="matrix-total-cell">
+                <div class="matrix-total-cell"
+                  onmousedown="startAsstTotalLongPress('${med.id}')"
+                  onmouseup="cancelAsstTotalLongPress()"
+                  onmouseleave="cancelAsstTotalLongPress()"
+                  ontouchstart="startAsstTotalLongPress('${med.id}')"
+                  ontouchend="cancelAsstTotalLongPress()"
+                  title="長按 1 秒：本藥全單全部歸零 / 全數還原">
                   <span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>
                   ${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}
                 </div>
@@ -1736,7 +1817,14 @@
 
                 rowHtml += `
                   <td>
-                    <div class="${cellClass}" onclick="cycleStationFulfillment('${c.orderId}', '${med.id}')" title="點擊調整實出數 (原需求: ${c.req})">
+                    <div class="${cellClass}"
+                      onmousedown="startAsstCellLongPress('${c.orderId}', '${med.id}')"
+                      onmouseup="cancelAsstCellLongPress()"
+                      onmouseleave="cancelAsstCellLongPress()"
+                      ontouchstart="startAsstCellLongPress('${c.orderId}', '${med.id}')"
+                      ontouchend="cancelAsstCellLongPress()"
+                      onclick="handleAsstCellClick('${c.orderId}', '${med.id}')"
+                      title="點擊循環遞減 ｜ 長按 1 秒本台歸零 (原需求: ${c.req})">
                       <span>${c.actual}</span>
                       ${c.actual !== c.req ? `<span class="sub-qty-hint">/${c.req}</span>` : ''}
                     </div>
@@ -2042,7 +2130,7 @@
               <button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button>
             </div>
             <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button>
-            <button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
             <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
 
