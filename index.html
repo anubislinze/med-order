@@ -2014,12 +2014,15 @@
             displayLabel: order.displayLabel,
             staffCode: order.staffCode,
             staffName: order.staffName || "",
-            orderTime: order.time,
-            completeDate: dateStr,
-            completeTime: timeStr,
+            createDate: order.createDate || dateStr, // 新增：送單日期 (相容舊資料)
+            createTime: order.time, // 新增：送單時間文字
+            createTimestamp: order.createTimestamp || Date.now(), // 新增：送單時間戳記
+            completeDate: dateStr, // 完成歸檔日期
+            completeTime: timeStr, // 完成歸檔時間文字
             completeHour: currentHour,
             completeMinute: currentMinute,
-            timestamp: Date.now(),
+            completeTimestamp: Date.now(), // 新增：完成歸檔時間戳記
+            timestamp: Date.now(), // 用於舊版排序相容
             items: archivedItems
           };
           saveHistoryRecord(historyRecord);
@@ -2073,6 +2076,7 @@
       const seq = existingCount + 1;
       const displayLabel = `${targetStation}${seq > 1 ? seq : ''}`;
 
+      const now = new Date();
       const newOrder = {
         id: "ord_" + Date.now(),
         station: targetStation,
@@ -2080,7 +2084,9 @@
         displayLabel: displayLabel,
         staffCode: staffCode,
         staffName: validPharmacist.name,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        createDate: now.toISOString().split("T")[0],
+        createTimestamp: now.getTime(),
         items: { ...draftOrders },
         fulfilled: {}
       };
@@ -2712,19 +2718,29 @@
       }
 
       const headers = [
-        "歸檔ID", "完成日期", "完成時間", "時段小時", "調劑台色籃", "送單序號", "員工代碼", "藥師姓名",
+        "歸檔ID", "送單日期", "送單時間", "完成歸檔日期", "完成歸檔時間", "處理耗時(分)", "時段小時", 
+        "調劑台色籃", "送單序號", "員工代碼", "藥師姓名",
         "藥品代碼", "藥品名稱", "單位", "需求數量", "實出數量", "少發數量", "是否短缺"
       ];
 
       const rows = [];
       records.forEach(rec => {
+        // 計算處理耗時 (分鐘)
+        let processTimeMin = "";
+        if (rec.createTimestamp && rec.completeTimestamp) {
+          processTimeMin = ((rec.completeTimestamp - rec.createTimestamp) / 60000).toFixed(1);
+        }
+
         (rec.items || []).forEach(item => {
           const isShort = (item.shortfall || 0) > 0 ? "是" : "否";
           rows.push([
             `"${rec.id || ''}"`,
+            `"${rec.createDate || rec.completeDate || ''}"`,
+            `"${rec.createTime || rec.orderTime || ''}"`,
             `"${rec.completeDate || ''}"`,
             `"${rec.completeTime || ''}"`,
-            `"${rec.completeHour || ''}"`,
+            `${processTimeMin}`,
+            `"${rec.completeHour !== undefined ? rec.completeHour : ''}"`,
             `"${rec.station || ''}"`,
             `"${rec.displayLabel || ''}"`,
             `"${rec.staffCode || ''}"`,
