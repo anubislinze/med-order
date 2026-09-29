@@ -886,7 +886,7 @@
           </div>
           <div style="font-size:12px; color:#64748b; margin-bottom:6px;">區間點單需求數：<b id="biStatTotalReq" style="color:#1e293b;">0</b> 單位 ｜ 實出少發數：<b id="biStatTotalShortfall" style="color:#dc2626;">0</b> 單位</div>
           <div style="font-size:11.5px; font-weight:bold; color:#475569; margin-bottom:4px;">🔥 常缺/少發藥品 Top 10 排行：</div>
-          <div id="biTopShortfallList" class="bi-custom-scrollbar" style="font-size:11.5px; color:#334155; max-height:120px; overflow-y:auto; padding-right:4px;">無短缺紀錄</div>
+          <div id="biTopShortfallList" class="bi-custom-scrollbar" style="font-size:11.5px; color:#334155; max-height:240px; overflow-y:auto; padding-right:4px;">無短缺紀錄</div>
         </div>
 
         <!-- 卡片 B: 時段分析 (Theme 3, Point 3: 上午 07:30起, 數量為主體, 單位, 單) -->
@@ -915,7 +915,7 @@
           <div style="font-weight:bold; color:#0f172a; font-size:14px; margin-bottom:8px;">
             <span>👥 藥師同仁送單習慣統計</span>
           </div>
-          <div class="bi-custom-scrollbar" style="max-height:120px; overflow-y:auto; overflow-x:auto;">
+          <div class="bi-custom-scrollbar" style="max-height:240px; overflow-y:auto; overflow-x:auto;">
             <table style="width:100%; font-size:11.5px; border-collapse:collapse;" id="biStaffHabitsTable">
               <thead>
                 <tr style="background:#f8fafc; color:#64748b; text-align:left;">
@@ -2677,13 +2677,13 @@
       document.getElementById("biSlotAfternoon").innerText = `${slotStats.afternoonQty} 單位 (${slotStats.afternoonOrders} 單)`;
       document.getElementById("biSlotNight").innerText = `${slotStats.nightQty} 單位 (${slotStats.nightOrders} 單)`;
 
-      // 3. 卡片 C: 藥師習慣 (欄位加寬，隱藏工號)
+      // 3. 卡片 C: 藥師習慣 (欄位加寬，隱藏工號，加長至 10 筆)
       const staffBody = document.getElementById("biStaffHabitsBody");
       const staffArray = Object.entries(staffStats).sort((a, b) => b[1].totalQty - a[1].totalQty);
       if (staffArray.length === 0) {
         staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">無送單紀錄</td></tr>`;
       } else {
-        staffBody.innerHTML = staffArray.slice(0, 8).map(([code, data]) => {
+        staffBody.innerHTML = staffArray.slice(0, 10).map(([code, data]) => {
           const topMed = Object.entries(data.medCounts).sort((a, b) => b[1] - a[1])[0];
           const topMedTxt = topMed ? `${topMed[0].split('/')[0]} (${topMed[1]}單位)` : '-';
           return `
