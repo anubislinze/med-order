@@ -11,6 +11,9 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  
+  <!-- SheetJS SDK (Excel 匯出使用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
     :root {
@@ -47,6 +50,11 @@
       color: #222;
       padding-bottom: 90px;
     }
+
+    /* 自訂滾動條 (儀表板 Top 10 使用) */
+    .bi-custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .bi-custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .bi-custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
     /* 頂部導航 */
     .nav-bar {
@@ -341,7 +349,7 @@
       line-height: 1;
     }
 
-    /* 助理揀貨矩陣 (僅凍結第 1、2 欄) */
+    /* 助理揀貨矩陣 */
     .matrix-card {
       background: #fff;
       border-radius: 8px;
@@ -863,8 +871,8 @@
             <button class="btn-act btn-clear" style="font-size:11.5px; padding:3px 7px;" onclick="setBiQuickRange('all')">全部歷史</button>
           </div>
         </div>
-        <button class="btn-act btn-submit" style="background:#15803d; font-size:13px; display:flex; align-items:center; gap:4px;" onclick="exportHistoryCsv()">
-          <span>📥 匯出選取期間 CSV (Excel)</span>
+        <button class="btn-act btn-submit" style="background:#15803d; font-size:13px; display:flex; align-items:center; gap:4px;" onclick="exportHistoryExcel()">
+          <span>📥 匯出選取期間 Excel 報表</span>
         </button>
       </div>
 
@@ -877,8 +885,8 @@
             <span id="biStatShortfallRate" style="background:#fef3c7; padding:1px 6px; border-radius:4px; font-size:12px;">短缺率: 0%</span>
           </div>
           <div style="font-size:12px; color:#64748b; margin-bottom:6px;">區間點單需求數：<b id="biStatTotalReq" style="color:#1e293b;">0</b> 單位 ｜ 實出少發數：<b id="biStatTotalShortfall" style="color:#dc2626;">0</b> 單位</div>
-          <div style="font-size:11.5px; font-weight:bold; color:#475569; margin-bottom:4px;">🔥 常缺/少發藥品 Top 5 排行：</div>
-          <div id="biTopShortfallList" style="font-size:11.5px; color:#334155; min-height:80px;">無短缺紀錄</div>
+          <div style="font-size:11.5px; font-weight:bold; color:#475569; margin-bottom:4px;">🔥 常缺/少發藥品 Top 10 排行：</div>
+          <div id="biTopShortfallList" class="bi-custom-scrollbar" style="font-size:11.5px; color:#334155; max-height:120px; overflow-y:auto; padding-right:4px;">無短缺紀錄</div>
         </div>
 
         <!-- 卡片 B: 時段分析 (Theme 3, Point 3: 上午 07:30起, 數量為主體, 單位, 單) -->
@@ -907,9 +915,16 @@
           <div style="font-weight:bold; color:#0f172a; font-size:14px; margin-bottom:8px;">
             <span>👥 藥師同仁送單習慣統計</span>
           </div>
-          <div style="max-height:120px; overflow-y:auto;">
+          <div class="bi-custom-scrollbar" style="max-height:120px; overflow-y:auto; overflow-x:auto;">
             <table style="width:100%; font-size:11.5px; border-collapse:collapse;" id="biStaffHabitsTable">
-              <thead><tr style="background:#f8fafc; color:#64748b; text-align:left;"><th style="padding:2px 4px;">工號/姓名</th><th style="padding:2px 4px;">總點藥量</th><th style="padding:2px 4px;">送單次數</th><th style="padding:2px 4px;">常點藥品</th></tr></thead>
+              <thead>
+                <tr style="background:#f8fafc; color:#64748b; text-align:left;">
+                  <th style="padding:2px 4px; white-space:nowrap; width:80px;">姓名</th>
+                  <th style="padding:2px 4px; white-space:nowrap; width:70px;">總點藥量</th>
+                  <th style="padding:2px 4px; white-space:nowrap; width:60px;">送單次數</th>
+                  <th style="padding:2px 4px; min-width:100px;">常點藥品</th>
+                </tr>
+              </thead>
               <tbody id="biStaffHabitsBody"><tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">暫無資料</td></tr></tbody>
             </table>
           </div>
@@ -922,7 +937,7 @@
           <span>📋 歷史歸檔紀錄列表 (<span id="biFilteredCount">0</span> 筆)</span>
           <span style="font-size:11px; color:#64748b;">資料儲存於 Firebase 永久保存庫</span>
         </div>
-        <div style="max-height:220px; overflow-y:auto;">
+        <div class="bi-custom-scrollbar" style="max-height:220px; overflow-y:auto;">
           <table style="width:100%; border-collapse:collapse; font-size:12px;">
             <thead>
               <tr style="background:#f8fafc; position:sticky; top:0; border-bottom:1px solid #cbd5e1; color:#475569;">
@@ -2490,7 +2505,7 @@
     }
 
     // ==========================================
-    // 歷史資料庫存取、分析與 CSV 匯出 (Theme 2, 3, 4)
+    // 歷史資料庫存取、分析與 Excel 匯出 (Theme 2, 3, 4)
     // ==========================================
     let dbHistoryRef = null;
     let archivedHistoryList = [];
@@ -2621,9 +2636,7 @@
 
         staffStats[sKey].totalQty += orderQty;
 
-        // 時段劃分：上午從 07:30 (450 分鐘) 開始，至 12:00 (720 分鐘)
-        // 下午：12:00 (720) 至 17:00 (1020)
-        // 夜間：17:00 (1020) 至 07:30 (450)
+        // 時段劃分
         if (minuteOfDay >= 450 && minuteOfDay < 720) {
           slotStats.morningOrders++;
           slotStats.morningQty += orderQty;
@@ -2636,19 +2649,19 @@
         }
       });
 
-      // 1. 卡片 A: 短缺率計算
+      // 1. 卡片 A: 短缺率計算 (擴展為 Top 10)
       const shortfallRate = totalReq > 0 ? ((totalShortfall / totalReq) * 100).toFixed(1) : 0;
       document.getElementById("biStatShortfallRate").innerText = `短缺率: ${shortfallRate}%`;
       document.getElementById("biStatTotalReq").innerText = totalReq;
       document.getElementById("biStatTotalShortfall").innerText = totalShortfall;
 
       const sortedMeds = Object.values(medStats).sort((a, b) => b.shortfall - a.shortfall);
-      const top5Meds = sortedMeds.filter(m => m.shortfall > 0).slice(0, 5);
+      const top10Meds = sortedMeds.filter(m => m.shortfall > 0).slice(0, 10);
       const topListEl = document.getElementById("biTopShortfallList");
-      if (top5Meds.length === 0) {
+      if (top10Meds.length === 0) {
         topListEl.innerHTML = `<div style="color:#94a3b8; padding:8px 0;">此區間無任何短缺少發紀錄（全數實出）</div>`;
       } else {
-        topListEl.innerHTML = top5Meds.map((m, idx) => {
+        topListEl.innerHTML = top10Meds.map((m, idx) => {
           const rate = m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(0) : 0;
           return `
             <div style="display:flex; justify-content:space-between; margin-bottom:3px; padding:2px 0; border-bottom:1px dashed #f1f5f9;">
@@ -2659,12 +2672,12 @@
         }).join("");
       }
 
-      // 2. 卡片 B: 時段分析（數量為主體，次數為附體改稱[單]，單位改稱[單位]）
+      // 2. 卡片 B: 時段分析
       document.getElementById("biSlotMorning").innerText = `${slotStats.morningQty} 單位 (${slotStats.morningOrders} 單)`;
       document.getElementById("biSlotAfternoon").innerText = `${slotStats.afternoonQty} 單位 (${slotStats.afternoonOrders} 單)`;
       document.getElementById("biSlotNight").innerText = `${slotStats.nightQty} 單位 (${slotStats.nightOrders} 單)`;
 
-      // 3. 卡片 C: 藥師習慣（總點藥量為主體放在次數前）
+      // 3. 卡片 C: 藥師習慣 (欄位加寬，隱藏工號)
       const staffBody = document.getElementById("biStaffHabitsBody");
       const staffArray = Object.entries(staffStats).sort((a, b) => b[1].totalQty - a[1].totalQty);
       if (staffArray.length === 0) {
@@ -2675,16 +2688,16 @@
           const topMedTxt = topMed ? `${topMed[0].split('/')[0]} (${topMed[1]}單位)` : '-';
           return `
             <tr style="border-bottom:1px solid #f1f5f9;">
-              <td style="padding:4px;">${data.name || code}</td>
-              <td style="padding:4px; font-weight:bold; color:var(--primary-green);">${data.totalQty} 單位</td>
-              <td style="padding:4px; color:#64748b;">${data.count} 單</td>
+              <td style="padding:4px; white-space:nowrap;">${data.name || code}</td>
+              <td style="padding:4px; font-weight:bold; white-space:nowrap; color:var(--primary-green);">${data.totalQty} 單位</td>
+              <td style="padding:4px; white-space:nowrap; color:#64748b;">${data.count} 單</td>
               <td style="padding:4px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px;">${topMedTxt}</td>
             </tr>
           `;
         }).join("");
       }
 
-      // 4. 明細列表
+      // 4. 明細列表 (手機版日期與時間斷行顯示)
       const recordsBody = document.getElementById("biRecordsTableBody");
       if (records.length === 0) {
         recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8;">所選區間無任何歸檔紀錄</td></tr>`;
@@ -2697,10 +2710,13 @@
 
           return `
             <tr style="border-bottom:1px solid #e2e8f0;">
-              <td style="padding:6px; text-align:center; color:#64748b;">${rec.completeDate} ${rec.completeTime}</td>
-              <td style="padding:6px; text-align:center; font-weight:bold; color:var(--primary-green);">${rec.displayLabel || rec.station}</td>
-              <td style="padding:6px; text-align:center;">${rec.staffName || ''} (${rec.staffCode})</td>
-              <td style="padding:6px; text-align:left; font-size:11.5px;">${itemsTxt}</td>
+              <td style="padding:5px; text-align:center; color:#64748b; vertical-align:top;">
+                <div style="white-space: nowrap;">${rec.completeDate || rec.createDate || ''}</div>
+                <div style="white-space: nowrap; font-size:11px;">${rec.completeTime || rec.createTime || ''}</div>
+              </td>
+              <td style="padding:5px; text-align:center; font-weight:bold; color:var(--primary-green); vertical-align:top;">${rec.displayLabel || rec.station}</td>
+              <td style="padding:5px; text-align:center; vertical-align:top;">${rec.staffName || ''} <br><span style="font-size:10px; color:#94a3b8;">(${rec.staffCode})</span></td>
+              <td style="padding:5px; text-align:left; font-size:11.5px;">${itemsTxt}</td>
             </tr>
           `;
         }).join("");
@@ -2708,71 +2724,87 @@
     }
 
     // ==========================================
-    // Theme 4: 匯出選取期間 CSV (Excel UTF-8 BOM 格式)
+    // Theme 4: 雙工作表 Excel 匯出 (利用 SheetJS)
     // ==========================================
-    function exportHistoryCsv() {
+    function exportHistoryExcel() {
+      const startVal = document.getElementById("biStartDate").value;
+      const endVal = document.getElementById("biEndDate").value;
+      
       const records = getFilteredHistoryRecords();
       if (records.length === 0) {
         alert("目前選取的日期區間內沒有任何歷史紀錄可匯出！");
         return;
       }
 
-      const headers = [
-        "歸檔ID", "送單日期", "送單時間", "完成歸檔日期", "完成歸檔時間", "處理耗時(分)", "時段小時", 
-        "調劑台色籃", "送單序號", "員工代碼", "藥師姓名",
-        "藥品代碼", "藥品名稱", "單位", "需求數量", "實出數量", "少發數量", "是否短缺"
-      ];
+      // 準備雙工作表資料
+      const historyData = [];
+      const medStats = {};
 
-      const rows = [];
       records.forEach(rec => {
-        // 計算處理耗時 (分鐘)
         let processTimeMin = "";
         if (rec.createTimestamp && rec.completeTimestamp) {
           processTimeMin = ((rec.completeTimestamp - rec.createTimestamp) / 60000).toFixed(1);
         }
 
         (rec.items || []).forEach(item => {
-          const isShort = (item.shortfall || 0) > 0 ? "是" : "否";
-          rows.push([
-            `"${rec.id || ''}"`,
-            `"${rec.createDate || rec.completeDate || ''}"`,
-            `"${rec.createTime || rec.orderTime || ''}"`,
-            `"${rec.completeDate || ''}"`,
-            `"${rec.completeTime || ''}"`,
-            `${processTimeMin}`,
-            `"${rec.completeHour !== undefined ? rec.completeHour : ''}"`,
-            `"${rec.station || ''}"`,
-            `"${rec.displayLabel || ''}"`,
-            `"${rec.staffCode || ''}"`,
-            `"${rec.staffName || ''}"`,
-            `"${item.medId || ''}"`,
-            `"${(item.medName || '').replace(/"/g, '""')}"`,
-            `"${item.unit || ''}"`,
-            item.req || 0,
-            item.actual || 0,
-            item.shortfall || 0,
-            `"${isShort}"`
-          ]);
+          // 工作表 1 資料
+          historyData.push({
+            "歸檔ID": rec.id || "",
+            "歸檔日期": rec.completeDate || rec.createDate || "",
+            "歸檔時間": rec.completeTime || rec.createTime || "",
+            "處理耗時(分)": processTimeMin,
+            "色籃台號": rec.displayLabel || rec.station,
+            "人員姓名": rec.staffName || "",
+            "人員工號": rec.staffCode || "",
+            "藥品名稱": item.medName || "",
+            "單位": item.unit || "",
+            "需求數量": item.req || 0,
+            "實出數量": item.actual || 0,
+            "少發數量": item.shortfall || 0,
+            "是否短缺": (item.shortfall || 0) > 0 ? "是" : "否"
+          });
+
+          // 工作表 2 計算準備
+          if (!medStats[item.medName]) {
+             medStats[item.medName] = { req: 0, actual: 0, shortfall: 0 };
+          }
+          medStats[item.medName].req += (item.req || 0);
+          medStats[item.medName].actual += (item.actual || 0);
+          medStats[item.medName].shortfall += (item.shortfall || 0);
         });
       });
 
-      let csvContent = "\uFEFF" + headers.join(",") + "\r\n";
-      rows.forEach(r => {
-        csvContent += r.join(",") + "\r\n";
-      });
+      // 產生 Top 10 陣列
+      const shortfallExportData = Object.entries(medStats)
+        .map(([name, data]) => ({ name, ...data }))
+        .filter(m => m.shortfall > 0)
+        .sort((a, b) => b.shortfall - a.shortfall)
+        .slice(0, 10)
+        .map((m, index) => ({
+          "排名": index + 1,
+          "藥品名稱": m.name,
+          "總需求數": m.req,
+          "少發數量": m.shortfall,
+          "短缺率": m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(1) + "%" : "0%"
+        }));
 
-      const startStr = document.getElementById("biStartDate").value || "start";
-      const endStr = document.getElementById("biEndDate").value || "end";
-      const fileName = `藥局點藥歷史數據_${startStr}_至_${endStr}.csv`;
+      // 使用 SheetJS 產生 Excel 檔案
+      const wb = XLSX.utils.book_new();
+      
+      const wsHistory = XLSX.utils.json_to_sheet(historyData);
+      XLSX.utils.book_append_sheet(wb, wsHistory, "歷史紀錄明細");
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      alert(`已成功匯出「${fileName}」！\n可直接以 Excel 開啟進行樞紐分析、製作管理報表。`);
+      if (shortfallExportData.length > 0) {
+        const wsShortfall = XLSX.utils.json_to_sheet(shortfallExportData);
+        XLSX.utils.book_append_sheet(wb, wsShortfall, "Top10缺藥排行");
+      } else {
+        const wsNoShortfall = XLSX.utils.json_to_sheet([{"訊息": "此日期區間無任何短缺紀錄"}]);
+        XLSX.utils.book_append_sheet(wb, wsNoShortfall, "Top10缺藥排行");
+      }
+
+      const fileName = `藥局點藥歷史數據_${startVal || '全部'}_至_${endVal || '全部'}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      alert(`已成功產生多工作表 Excel 檔案：「${fileName}」！`);
     }
   </script>
 </body>
