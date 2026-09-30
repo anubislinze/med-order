@@ -2724,7 +2724,7 @@
     }
 
     // ==========================================
-    // Theme 4: 雙工作表 Excel 匯出 (利用 SheetJS)
+    // Theme 4: 雙工作表 Excel 匯出 (利用 SheetJS) - 新增送單時間欄位
     // ==========================================
     function exportHistoryExcel() {
       const startVal = document.getElementById("biStartDate").value;
@@ -2747,11 +2747,13 @@
         }
 
         (rec.items || []).forEach(item => {
-          // 工作表 1 資料
+          // 工作表 1 資料 (補齊送單起點與完成終點時間)
           historyData.push({
             "歸檔ID": rec.id || "",
-            "歸檔日期": rec.completeDate || rec.createDate || "",
-            "歸檔時間": rec.completeTime || rec.createTime || "",
+            "送單日期": rec.createDate || rec.completeDate || "",
+            "送單時間": rec.createTime || "",
+            "完成(歸檔)日期": rec.completeDate || "",
+            "完成(歸檔)時間": rec.completeTime || "",
             "處理耗時(分)": processTimeMin,
             "色籃台號": rec.displayLabel || rec.station,
             "人員姓名": rec.staffName || "",
