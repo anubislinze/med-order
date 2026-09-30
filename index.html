@@ -82,14 +82,17 @@
       color: var(--primary-green);
     }
 
+    /* 下拉選單改為膠囊過渡設計 */
     .station-select {
       font-size: 14px;
       font-weight: bold;
-      padding: 4px 6px;
-      border-radius: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
       border: 1.5px solid var(--primary-green);
       background: #fff;
       color: #1b5e20;
+      transition: all 0.2s ease;
+      outline: none;
     }
 
     .mode-tabs {
@@ -156,9 +159,13 @@
       text-align: center;
       font-size: 21px;
       font-weight: 900;
-      margin: 6px 0 2px;
-      color: var(--primary-green);
+      margin: 6px 0 6px;
+      color: var(--border-color);
       letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
 
     .sheet-subtitle-hint {
@@ -388,7 +395,7 @@
     }
 
     .matrix-table th.th-station {
-      background: #f8fafc; /* 改為淺底，讓色籃標籤更突出 */
+      background: #f8fafc;
     }
 
     /* 左側第 1、2 欄凍結 (Sticky Columns 1 & 2) */
@@ -595,7 +602,6 @@
       overflow-y: auto;
     }
 
-    /* 大螢幕 BI 儀表板專用加寬 */
     #biDashboardModal .modal-box {
       max-width: 1150px;
     }
@@ -784,7 +790,8 @@
         <div id="shortfallBannerContent"></div>
       </div>
 
-      <div class="sheet-title" id="currentStationTitle">【黃籃 - 藥品劃記看板】</div>
+      <!-- 藥師點藥標題區 (導入色籃膠囊) -->
+      <div class="sheet-title" id="currentStationTitle">【 藍籃 - 藥品劃記看板 】</div>
       <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 1 秒可直接歸零 ｜ 點擊數量格可直接打字輸入</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
     </div>
@@ -817,6 +824,26 @@
     <div style="display: flex; gap: 6px;">
       <button class="btn-act btn-clear" onclick="resetCurrentDraft()">清空本台草稿</button>
       <button class="btn-act btn-submit" onclick="openSubmitModal()">🚀 送出領藥單</button>
+    </div>
+  </div>
+
+  <!-- 助理端智慧欠藥建議彈窗 (Smart Shortage Suggestion) -->
+  <div class="modal-overlay" id="shortageSuggestModal">
+    <div class="modal-box" style="max-width:400px; padding:20px;">
+      <div class="modal-header" style="margin-bottom:16px;">
+        <span style="font-size:18px; color:#0f172a;">💡 智慧欠藥狀態建議</span>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;" onclick="skipShortageSuggestions()">✕</button>
+      </div>
+      <p style="font-size:12px; color:#64748b; margin-bottom:12px; line-height:1.5;">系統偵測到剛才取藥批次中有異常短缺率，是否要同步一鍵更新後台的【欠藥】標籤以提醒後續點餐同仁？</p>
+      
+      <div id="shortageSuggestContent" class="bi-custom-scrollbar" style="max-height:60vh; overflow-y:auto; margin-bottom:16px; padding-right:4px;">
+        <!-- 動態渲染建議區 -->
+      </div>
+      
+      <div style="display:flex; justify-content:space-between; gap:8px;">
+        <button class="btn-act btn-clear" style="flex:1;" onclick="skipShortageSuggestions()">暫不更新 (略過)</button>
+        <button class="btn-act btn-submit" style="flex:2; background:#4f46e5; box-shadow:0 2px 6px rgba(79,70,229,0.3);" onclick="submitShortageSuggestions()">✅ 確認勾選並同步雲端</button>
+      </div>
     </div>
   </div>
 
@@ -855,7 +882,7 @@
 
   <!-- 藥局數據分析與歷史匯出 (BI Dashboard) 彈窗 -->
   <div class="modal-overlay" id="biDashboardModal">
-    <div class="modal-box" style="width: 95%;">
+    <div class="modal-box" style="max-width: 1150px; width: 95%;">
       <div class="modal-header">
         <span style="font-size: 18px; color: var(--primary-green);">📊 藥局調劑數據分析與商業智慧儀表板</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeBiDashboardModal()">✕</button>
@@ -882,8 +909,7 @@
 
       <!-- 三大主題分析卡片 -->
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:14px;">
-        
-        <!-- 卡片 A: 缺藥與短缺率分析 (膠囊化與微型表頭) -->
+        <!-- 卡片 A: 缺藥與短缺率分析 -->
         <div style="background:#fff; border:1.5px solid #fde68a; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
           <div style="font-weight:bold; color:#b45309; font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <span>⏳ 藥品短缺率分析 (Shortfall)</span>
@@ -902,7 +928,6 @@
           </div>
 
           <div style="font-size:11.5px; font-weight:bold; color:#475569; margin-bottom:4px;">🔥 常缺/少發藥品 Top 10 排行：</div>
-          <!-- 微型表頭 -->
           <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; border-bottom:1px solid #f1f5f9; padding-bottom:4px; margin-bottom:4px;">
             <span>藥品名稱</span>
             <span>少發單位(短少率)</span>
@@ -910,7 +935,7 @@
           <div id="biTopShortfallList" class="bi-custom-scrollbar" style="font-size:11.5px; color:#334155; max-height:165px; overflow-y:auto; padding-right:4px;">無短缺紀錄</div>
         </div>
 
-        <!-- 卡片 B: 時段分析 (單位數放大主體) -->
+        <!-- 卡片 B: 時段分析 -->
         <div style="background:#fff; border:1.5px solid #bfdbfe; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
           <div style="font-weight:bold; color:#1d4ed8; font-size:14px; margin-bottom:12px;">
             <span>⏰ 點藥時段分析 (時段分佈)</span>
@@ -1148,9 +1173,8 @@
       ]
     };
 
-    // 3. 一般台出廠預設資料庫 (全部藥品預設上限 max: 5)
+    // 3. 一般台出廠預設資料庫
     const DEFAULT_GENERAL_MEDS = [
-      // 欄 1
       {
         col: 1, group: "GZA", isWarn: false,
         items: [
@@ -1213,7 +1237,6 @@
           { id: "lyrica", name: "Lyrica / 利瑞卡", unit: "", max: 5 }
         ]
       },
-      // 欄 2
       {
         col: 2, group: "GZE", isWarn: false,
         items: [
@@ -1274,7 +1297,6 @@
           { id: "sandimmun25", name: "Sandimmun 25mg / 新體睦", unit: "盒", max: 5 }
         ]
       },
-      // 欄 3
       {
         col: 3, group: "GZ-I + J", isWarn: false,
         items: [
@@ -1331,7 +1353,7 @@
       }
     ];
 
-    // 4. 專用調劑台出廠預設資料庫 (全部藥品預設上限 max: 5)
+    // 4. 專用調劑台出廠預設資料庫
     const DEFAULT_SPECIAL_MEDS = [
       {
         col: 1, group: "專用台 - LZ 料位區", isWarn: false,
@@ -1391,7 +1413,7 @@
     let specialMedData = JSON.parse(localStorage.getItem("pharmacy_special_meds") || JSON.stringify(DEFAULT_SPECIAL_MEDS));
     let staffConfig = JSON.parse(localStorage.getItem("pharmacy_staff_config") || JSON.stringify(DEFAULT_STAFF_CONFIG));
 
-    // 全域變數：預設由儲存紀錄或下拉選單第一個選項（黃籃）起跑
+    // 全域變數
     let currentStation = localStorage.getItem("pharmacy_station") || "黃籃";
     let draftOrders = {};
     let activeOrdersList = [];
@@ -1416,8 +1438,8 @@
         currentStation = st;
       }
     }
-    // 確保下拉選單與內部狀態 100% 同步一致
     document.getElementById("stationSelect").value = currentStation;
+    updateSelectCapsule(currentStation);
 
     initSync();
     updateStationHeader();
@@ -1517,14 +1539,44 @@
       if (dbShortfallRef) dbShortfallRef.set(latestShortfalls);
     }
 
+    // 更新點藥台下拉選單的膠囊顏色
+    function updateSelectCapsule(val) {
+      const sel = document.getElementById("stationSelect");
+      let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
+      if(val.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
+      else if(val.includes("綠")) { bg = "#dcfce7"; col = "#166534"; border = "#86efac"; }
+      else if(val.includes("藍")) { bg = "#dbeafe"; col = "#1e3a8a"; border = "#93c5fd"; }
+      else if(val.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
+      else if(val.includes("青")) { bg = "#ccfbf1"; col = "#115e59"; border = "#5eead4"; }
+      else if(val.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
+      
+      sel.style.backgroundColor = bg;
+      sel.style.color = col;
+      sel.style.borderColor = border;
+    }
+
     function changeStation(val) {
       currentStation = val;
       localStorage.setItem("pharmacy_station", val);
       draftOrders = {};
       editingMedId = null;
+      updateSelectCapsule(val);
       updateStationHeader();
       checkAndRenderShortfallBanner();
       renderAll();
+    }
+
+    // 取得色籃專屬膠囊樣式 HTML (支援標題與表格)
+    function getBasketBadge(station) {
+      let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
+      if(station.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
+      else if(station.includes("綠")) { bg = "#dcfce7"; col = "#166534"; border = "#86efac"; }
+      else if(station.includes("藍")) { bg = "#dbeafe"; col = "#1e3a8a"; border = "#93c5fd"; }
+      else if(station.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
+      else if(station.includes("青")) { bg = "#ccfbf1"; col = "#115e59"; border = "#5eead4"; }
+      else if(station.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
+      
+      return `<span style="background:${bg}; color:${col}; border:1.5px solid ${border}; padding:3px 10px; border-radius:12px; font-size:12.5px; font-weight:900; white-space:nowrap; display:inline-block; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${station}</span>`;
     }
 
     function updateStationHeader() {
@@ -1535,7 +1587,7 @@
       if (sameStationCount > 0) {
         displayTitle = `${currentStation}${sameStationCount + 1}`;
       }
-      document.getElementById("currentStationTitle").innerText = `【${displayTitle} - 藥品劃記看板】`;
+      document.getElementById("currentStationTitle").innerHTML = `【 ${getBasketBadge(displayTitle)} <span style="vertical-align:middle;">- 藥品劃記看板</span> 】`;
     }
 
     function checkAndRenderShortfallBanner() {
@@ -1564,20 +1616,16 @@
       return currentStation === "專用區" ? specialMedData : generalMedData;
     }
 
-    // 取得色籃專屬膠囊樣式
-    function getBasketBadge(station) {
-      let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
-      if(station.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
-      else if(station.includes("綠")) { bg = "#dcfce7"; col = "#166534"; border = "#86efac"; }
-      else if(station.includes("藍")) { bg = "#dbeafe"; col = "#1e3a8a"; border = "#93c5fd"; }
-      else if(station.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
-      else if(station.includes("青")) { bg = "#ccfbf1"; col = "#115e59"; border = "#5eead4"; }
-      else if(station.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
-      
-      return `<span style="background:${bg}; color:${col}; border:1.5px solid ${border}; padding:3px 10px; border-radius:12px; font-size:12.5px; font-weight:900; white-space:nowrap; display:inline-block; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${station}</span>`;
+    function findMedAcrossAll(id) {
+      for (const g of [...generalMedData, ...specialMedData]) {
+        for (const item of g.items || []) {
+          if (item.id === id) return item;
+        }
+      }
+      return null;
     }
 
-    // 藥師點藥操作 (循環 + 長按歸零)
+    // 藥師點藥操作
     let pressTimer = null;
     let isLongPress = false;
 
@@ -1600,7 +1648,6 @@
       renderPharmacistBoard();
     }
 
-    // 長按 1 秒 (1000ms) 直接歸零
     function startLongPress(medId) {
       isLongPress = false;
       pressTimer = setTimeout(() => {
@@ -1617,7 +1664,6 @@
       if (pressTimer) clearTimeout(pressTimer);
     }
 
-    // 點擊數量方格直接打字輸入
     function startDirectEditQty(e, medId) {
       e.stopPropagation();
       editingMedId = medId;
@@ -1648,13 +1694,10 @@
       renderPharmacistBoard();
     }
 
-    // ==========================================
-    // 助理端實出數微調（支援點擊循環、各台長按1秒歸零、總量長按1秒全歸零）
-    // ==========================================
+    // 助理端微調
     let asstPressTimer = null;
     let isAsstLongPress = false;
 
-    // 1. 各台單一數量格點擊
     function handleAsstCellClick(orderId, medId) {
       if (isAsstLongPress) {
         isAsstLongPress = false;
@@ -1681,7 +1724,6 @@
       renderAssistantMatrix();
     }
 
-    // 2. 各台單一數量格長按 1 秒直接歸零（或再次長按還原）
     function startAsstCellLongPress(orderId, medId) {
       isAsstLongPress = false;
       asstPressTimer = setTimeout(() => {
@@ -1692,7 +1734,6 @@
         const reqQty = order.items?.[medId] || 0;
         const cur = (order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
         
-        // 若已為 0 則長按還原為原需求數；若大於 0 則長按直接歸零
         order.fulfilled[medId] = (cur === 0) ? reqQty : 0;
         if (navigator.vibrate) navigator.vibrate(60);
         syncActiveOrders();
@@ -1704,7 +1745,6 @@
       if (asstPressTimer) clearTimeout(asstPressTimer);
     }
 
-    // 3. 總需量欄位長按 1 秒全單歸零（或再次長按全數還原）
     let asstTotalPressTimer = null;
     function startAsstTotalLongPress(medId) {
       asstTotalPressTimer = setTimeout(() => {
@@ -1715,7 +1755,6 @@
           totalActual += actual;
         });
 
-        // 若目前總實出 > 0，則全單全部歸零；若全單已全為 0，則全部還原原需求數
         const setToZero = (totalActual > 0);
         activeOrdersList.forEach(o => {
           if (o.items && o.items[medId]) {
@@ -1734,7 +1773,6 @@
       if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer);
     }
 
-    // 助理端密碼驗證
     function promptAssistantAccess() {
       if (isAssistantAuthenticated) {
         switchMode('assistant');
@@ -1762,7 +1800,6 @@
       }
     }
 
-    // 切換分頁
     function switchMode(mode) {
       appMode = mode;
       editingMedId = null;
@@ -1785,7 +1822,6 @@
       }
     }
 
-    // 渲染藥師看板
     function renderPharmacistBoard() {
       const board = document.getElementById("pharmacistBoard");
       board.innerHTML = "";
@@ -1869,14 +1905,13 @@
         summaryEl.innerText = "未點選藥品";
       } else {
         const txt = activeList.map(([id, qty]) => {
-          const med = findMedAcrossAll(id);
+          const med = findMedAcrossAll(id) || {name:id};
           return `${med.name}×${qty}`;
         }).join("、");
         summaryEl.innerText = `草稿 (${activeList.length}項)：${txt}`;
       }
     }
 
-    // 渲染助理取藥矩陣 (直欄依台號權重排序，行依架位排序)
     function renderAssistantMatrix() {
       const thead = document.getElementById("matrixHead");
       const tbody = document.getElementById("matrixBody");
@@ -1903,7 +1938,6 @@
           <th style="width: 45px; min-width: 45px;">單位</th>
           <th style="width: 70px; min-width: 70px;">實出/總需</th>
       `;
-      // 助理取藥矩陣：導入色籃膠囊標籤 (虛實整合)
       stationColumns.forEach(col => {
         headHtml += `<th class="th-station" style="min-width: 75px; padding:4px;">${getBasketBadge(col.label)}</th>`;
       });
@@ -2019,6 +2053,9 @@
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
+      // 追蹤這次處理批次的總需求與實出，用於智慧欠藥建議
+      const medBatchStats = {}; 
+
       activeOrdersList.forEach(order => {
         const stKey = order.station;
         const archivedItems = [];
@@ -2028,7 +2065,12 @@
           if (req > 0) {
             const actual = (order.fulfilled?.[medId] !== undefined) ? order.fulfilled[medId] : req;
             const shortfall = Math.max(0, req - actual);
-            const med = findMedAcrossAll(medId);
+            const med = findMedAcrossAll(medId) || {name: medId};
+
+            // 統計智慧欠藥數據
+            if (!medBatchStats[medId]) medBatchStats[medId] = { req: 0, actual: 0 };
+            medBatchStats[medId].req += req;
+            medBatchStats[medId].actual += actual;
 
             if (actual < req) {
               if (!latestShortfalls[stKey]) latestShortfalls[stKey] = [];
@@ -2055,7 +2097,6 @@
           }
         });
 
-        // 寫入雲端與本機歷史歸檔 (Theme 2)
         if (archivedItems.length > 0) {
           const historyRecord = {
             id: "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
@@ -2064,15 +2105,15 @@
             displayLabel: order.displayLabel,
             staffCode: order.staffCode,
             staffName: order.staffName || "",
-            createDate: order.createDate || dateStr, // 新增：送單日期 (相容舊資料)
-            createTime: order.time, // 新增：送單時間文字
-            createTimestamp: order.createTimestamp || Date.now(), // 新增：送單時間戳記
-            completeDate: dateStr, // 完成歸檔日期
-            completeTime: timeStr, // 完成歸檔時間文字
+            createDate: order.createDate || dateStr,
+            createTime: order.time,
+            createTimestamp: order.createTimestamp || Date.now(),
+            completeDate: dateStr,
+            completeTime: timeStr,
             completeHour: currentHour,
             completeMinute: currentMinute,
-            completeTimestamp: Date.now(), // 新增：完成歸檔時間戳記
-            timestamp: Date.now(), // 用於舊版排序相容
+            completeTimestamp: Date.now(),
+            timestamp: Date.now(),
             items: archivedItems
           };
           saveHistoryRecord(historyRecord);
@@ -2084,11 +2125,113 @@
       
       syncActiveOrders();
       syncShortfalls();
-      alert("已完成本批取藥！數據已自動歸檔，若有少發項目已即時回報至調劑台看板。");
-      renderAll();
+
+      // === 啟動智慧欠藥標籤判斷 ===
+      let suggestOn = [];
+      let suggestOff = [];
+      
+      for (const [mId, stats] of Object.entries(medBatchStats)) {
+          const rate = stats.req > 0 ? (stats.req - stats.actual) / stats.req : 0;
+          const medRef = findMedAcrossAll(mId);
+          if (medRef && medRef.id) { 
+              if (rate > 0.5 && !medRef.shortage) {
+                  suggestOn.push({ id: mId, name: medRef.name, rate: Math.round(rate * 100) });
+              } else if (rate < 0.2 && medRef.shortage) {
+                  suggestOff.push({ id: mId, name: medRef.name, rate: Math.round(rate * 100) });
+              }
+          }
+      }
+
+      if (suggestOn.length > 0 || suggestOff.length > 0) {
+          showShortageSuggestModal(suggestOn, suggestOff);
+      } else {
+          finishClearDoneItems(); // 正常結束流程
+      }
     }
 
-    // 藥師送單
+    // 顯示智慧欠藥建議彈窗
+    function showShortageSuggestModal(onList, offList) {
+        let html = "";
+        
+        if (onList.length > 0) {
+            html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b; display:flex; justify-content:space-between; align-items:center;">
+                    <span>⚠️ 建議【開啟】欠藥標籤 (短缺率 > 50%)</span>
+                    <label style="font-size:12.5px; cursor:pointer; background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #fca5a5;"><input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)"> 全選</label>
+                </div>
+                <div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">
+                    ${onList.map(m => `
+                        <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
+                            <input type="checkbox" class="chk-suggest-on" style="transform:scale(1.2);" value="${m.id}" checked>
+                            <span style="flex:1; color:#334155;">${m.name}</span>
+                            <span style="color:#dc2626; font-weight:bold; background:#fee2e2; padding:2px 6px; border-radius:10px; font-size:11.5px;">短缺 ${m.rate}%</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+
+        if (offList.length > 0) {
+            html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534; display:flex; justify-content:space-between; align-items:center;">
+                    <span>✅ 建議【取消】欠藥標籤 (短缺率 < 20%)</span>
+                    <label style="font-size:12.5px; cursor:pointer; background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #86efac;"><input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)"> 全選</label>
+                </div>
+                <div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">
+                    ${offList.map(m => `
+                        <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
+                            <input type="checkbox" class="chk-suggest-off" style="transform:scale(1.2);" value="${m.id}" checked>
+                            <span style="flex:1; color:#334155;">${m.name}</span>
+                            <span style="color:#166534; font-weight:bold; background:#dcfce7; padding:2px 6px; border-radius:10px; font-size:11.5px;">供貨率已達 ${100 - m.rate}%</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>`;
+        }
+
+        document.getElementById("shortageSuggestContent").innerHTML = html;
+        document.getElementById("shortageSuggestModal").style.display = "flex";
+    }
+
+    function toggleAllSuggest(type, isChecked) {
+        const checkboxes = document.querySelectorAll(`.chk-suggest-${type}`);
+        checkboxes.forEach(chk => chk.checked = isChecked);
+    }
+
+    function submitShortageSuggestions() {
+        const onChecked = Array.from(document.querySelectorAll('.chk-suggest-on:checked')).map(c => c.value);
+        const offChecked = Array.from(document.querySelectorAll('.chk-suggest-off:checked')).map(c => c.value);
+
+        let changed = false;
+        onChecked.forEach(id => {
+            const med = findMedAcrossAll(id);
+            if (med && !med.shortage) { med.shortage = true; changed = true; }
+        });
+        offChecked.forEach(id => {
+            const med = findMedAcrossAll(id);
+            if (med && med.shortage) { med.shortage = false; changed = true; }
+        });
+
+        if (changed) {
+            localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
+            localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+            syncMenuConfig(); // 關鍵：同步至 Firebase，讓藥師端即時顯示欠藥圖示
+        }
+
+        document.getElementById("shortageSuggestModal").style.display = "none";
+        finishClearDoneItems();
+    }
+
+    function skipShortageSuggestions() {
+        document.getElementById("shortageSuggestModal").style.display = "none";
+        finishClearDoneItems();
+    }
+
+    function finishClearDoneItems() {
+        alert("已完成本批取藥！數據已自動歸檔，若有少發項目已即時回報至調劑台看板。");
+        renderAll();
+    }
+
     function openSubmitModal() {
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       if (activeList.length === 0) {
@@ -2097,8 +2240,8 @@
       }
       const previewEl = document.getElementById("submitSummaryPreview");
       previewEl.innerHTML = activeList.map(([id, qty]) => {
-        const med = findMedAcrossAll(id);
-        return `<div>• ${med.name} × <b>${qty}</b> ${med.unit}</div>`;
+        const med = findMedAcrossAll(id) || {name:id};
+        return `<div>• ${med.name} × <b>${qty}</b> ${med.unit || ''}</div>`;
       }).join("");
       document.getElementById("staffCodeInput").value = "";
       document.getElementById("submitModal").style.display = "flex";
@@ -2118,7 +2261,6 @@
         return;
       }
 
-      // 雙重保險：永遠以目前下拉選單選取的真實值為準
       const targetStation = document.getElementById("stationSelect").value;
       currentStation = targetStation;
 
@@ -2171,10 +2313,10 @@
             </div>
             <div style="font-size:12px; color:#444;">
               ${Object.entries(order.items || {}).map(([id, qty]) => {
-                const med = findMedAcrossAll(id);
+                const med = findMedAcrossAll(id) || {name:id};
                 const actual = (order.fulfilled?.[id] !== undefined) ? order.fulfilled[id] : qty;
                 const isShort = actual < qty;
-                return `<span style="${isShort ? 'color:#d97706; font-weight:bold;' : ''}">${med.name}×${actual}${actual !== qty ? `(原:${qty})` : ''}${med.unit}</span>`;
+                return `<span style="${isShort ? 'color:#d97706; font-weight:bold;' : ''}">${med.name}×${actual}${actual !== qty ? `(原:${qty})` : ''}${med.unit || ''}</span>`;
               }).join("、 ")}
             </div>
           </div>
@@ -2529,16 +2671,6 @@
       });
     }
 
-    function findMedAcrossAll(id) {
-      const all = [...generalMedData, ...specialMedData];
-      for (const g of all) {
-        for (const item of (g.items || [])) {
-          if (item.id === id) return item;
-        }
-      }
-      return { name: id, unit: "" };
-    }
-
     // ==========================================
     // 歷史資料庫存取、分析與 Excel 匯出 (Theme 2, 3, 4)
     // ==========================================
@@ -2710,7 +2842,7 @@
         }).join("");
       }
 
-      // 2. 卡片 B: 時段分析 (單位數放大為主體)
+      // 2. 卡片 B: 時段分析
       document.getElementById("biSlotMorning").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.morningQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.morningOrders} 單)</div></div>`;
       
       document.getElementById("biSlotAfternoon").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.afternoonQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.afternoonOrders} 單)</div></div>`;
@@ -2737,7 +2869,7 @@
         }).join("");
       }
 
-      // 4. 明細列表 (手機版日期與時間斷行顯示 + 虛實整合色籃標籤)
+      // 4. 明細列表
       const recordsBody = document.getElementById("biRecordsTableBody");
       if (records.length === 0) {
         recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8;">所選區間無任何歸檔紀錄</td></tr>`;
@@ -2767,7 +2899,7 @@
     }
 
     // ==========================================
-    // Theme 4: 雙工作表 Excel 匯出 (利用 SheetJS) - 新增送單時間欄位
+    // Theme 4: 雙工作表 Excel 匯出 (利用 SheetJS)
     // ==========================================
     function exportHistoryExcel() {
       const startVal = document.getElementById("biStartDate").value;
@@ -2790,7 +2922,7 @@
         }
 
         (rec.items || []).forEach(item => {
-          // 工作表 1 資料 (補齊送單起點與完成終點時間)
+          // 工作表 1 資料
           historyData.push({
             "歸檔ID": rec.id || "",
             "送單日期": rec.createDate || rec.completeDate || "",
