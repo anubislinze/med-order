@@ -51,8 +51,8 @@
       padding-bottom: 90px;
     }
 
-    /* 自訂滾動條 (儀表板 Top 10 使用) */
-    .bi-custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    /* 自訂滾動條 */
+    .bi-custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .bi-custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .bi-custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
@@ -388,8 +388,7 @@
     }
 
     .matrix-table th.th-station {
-      background: #e8f5e9;
-      color: var(--primary-green);
+      background: #f8fafc; /* 改為淺底，讓色籃標籤更突出 */
     }
 
     /* 左側第 1、2 欄凍結 (Sticky Columns 1 & 2) */
@@ -594,6 +593,11 @@
       padding: 16px;
       max-height: 92vh;
       overflow-y: auto;
+    }
+
+    /* 大螢幕 BI 儀表板專用加寬 */
+    #biDashboardModal .modal-box {
+      max-width: 1150px;
     }
 
     .modal-header {
@@ -851,7 +855,7 @@
 
   <!-- 藥局數據分析與歷史匯出 (BI Dashboard) 彈窗 -->
   <div class="modal-overlay" id="biDashboardModal">
-    <div class="modal-box" style="max-width: 980px; width: 95%;">
+    <div class="modal-box" style="width: 95%;">
       <div class="modal-header">
         <span style="font-size: 18px; color: var(--primary-green);">📊 藥局調劑數據分析與商業智慧儀表板</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeBiDashboardModal()">✕</button>
@@ -876,41 +880,58 @@
         </button>
       </div>
 
-      <!-- 三大主題分析卡片 (主題 3: 2-4 點) -->
+      <!-- 三大主題分析卡片 -->
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:14px;">
-        <!-- 卡片 A: 缺藥與短缺率分析 (Theme 3, Point 2) -->
+        
+        <!-- 卡片 A: 缺藥與短缺率分析 (膠囊化與微型表頭) -->
         <div style="background:#fff; border:1.5px solid #fde68a; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-          <div style="font-weight:bold; color:#b45309; font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between;">
+          <div style="font-weight:bold; color:#b45309; font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
             <span>⏳ 藥品短缺率分析 (Shortfall)</span>
-            <span id="biStatShortfallRate" style="background:#fef3c7; padding:1px 6px; border-radius:4px; font-size:12px;">短缺率: 0%</span>
+            <span id="biStatShortfallRate" style="background:#fef3c7; padding:2px 8px; border-radius:12px; font-size:12px; border:1px solid #fde68a;">短缺率: 0%</span>
           </div>
-          <div style="font-size:12px; color:#64748b; margin-bottom:6px;">區間點單需求數：<b id="biStatTotalReq" style="color:#1e293b;">0</b> 單位 ｜ 實出少發數：<b id="biStatTotalShortfall" style="color:#dc2626;">0</b> 單位</div>
+          
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:right;">
+              <div style="font-size:11px; color:#64748b; text-align:left; margin-bottom:2px;">區間點單需求數</div>
+              <span id="biStatTotalReq" style="font-size:20px; font-weight:900; color:#1e293b;">0</span> <span style="font-size:12px; color:#64748b;">單位</span>
+            </div>
+            <div style="flex:1; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:8px; text-align:right;">
+              <div style="font-size:11px; color:#991b1b; text-align:left; margin-bottom:2px;">實出少發數</div>
+              <span id="biStatTotalShortfall" style="font-size:20px; font-weight:900; color:#dc2626;">0</span> <span style="font-size:12px; color:#dc2626;">單位</span>
+            </div>
+          </div>
+
           <div style="font-size:11.5px; font-weight:bold; color:#475569; margin-bottom:4px;">🔥 常缺/少發藥品 Top 10 排行：</div>
-          <div id="biTopShortfallList" class="bi-custom-scrollbar" style="font-size:11.5px; color:#334155; max-height:240px; overflow-y:auto; padding-right:4px;">無短缺紀錄</div>
+          <!-- 微型表頭 -->
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; border-bottom:1px solid #f1f5f9; padding-bottom:4px; margin-bottom:4px;">
+            <span>藥品名稱</span>
+            <span>少發單位(短少率)</span>
+          </div>
+          <div id="biTopShortfallList" class="bi-custom-scrollbar" style="font-size:11.5px; color:#334155; max-height:165px; overflow-y:auto; padding-right:4px;">無短缺紀錄</div>
         </div>
 
-        <!-- 卡片 B: 時段分析 (Theme 3, Point 3: 上午 07:30起, 數量為主體, 單位, 單) -->
+        <!-- 卡片 B: 時段分析 (單位數放大主體) -->
         <div style="background:#fff; border:1.5px solid #bfdbfe; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-          <div style="font-weight:bold; color:#1d4ed8; font-size:14px; margin-bottom:8px;">
+          <div style="font-weight:bold; color:#1d4ed8; font-size:14px; margin-bottom:12px;">
             <span>⏰ 點藥時段分析 (時段分佈)</span>
           </div>
-          <div style="display:flex; flex-direction:column; gap:6px; font-size:12px;" id="biTimeSlotsContainer">
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:5px 8px; border-radius:4px;">
-              <span>🌅 上午 (07:30 - 12:00)</span>
-              <span id="biSlotMorning" style="font-weight:bold; color:#1e293b;">0 單位 (0 單)</span>
+          <div style="display:flex; flex-direction:column; gap:8px;" id="biTimeSlotsContainer">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 12px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:13px; color:#334155; font-weight:bold;">🌅 上午 <span style="font-size:11px; font-weight:normal; color:#64748b;">(07:30-12:00)</span></span>
+              <span id="biSlotMorning">0</span>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:5px 8px; border-radius:4px;">
-              <span>☀️ 下午 (12:00 - 17:00)</span>
-              <span id="biSlotAfternoon" style="font-weight:bold; color:#1e293b;">0 單位 (0 單)</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 12px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:13px; color:#334155; font-weight:bold;">☀️ 下午 <span style="font-size:11px; font-weight:normal; color:#64748b;">(12:00-17:00)</span></span>
+              <span id="biSlotAfternoon">0</span>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; padding:5px 8px; border-radius:4px;">
-              <span>🌙 夜間 (17:00 - 07:30)</span>
-              <span id="biSlotNight" style="font-weight:bold; color:#1e293b;">0 單位 (0 單)</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 12px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:13px; color:#334155; font-weight:bold;">🌙 夜間 <span style="font-size:11px; font-weight:normal; color:#64748b;">(17:00-07:30)</span></span>
+              <span id="biSlotNight">0</span>
             </div>
           </div>
         </div>
 
-        <!-- 卡片 C: 同仁點藥習慣分析 (Theme 3, Point 4) -->
+        <!-- 卡片 C: 同仁點藥習慣分析 -->
         <div style="background:#fff; border:1.5px solid #cbd5e1; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
           <div style="font-weight:bold; color:#0f172a; font-size:14px; margin-bottom:8px;">
             <span>👥 藥師同仁送單習慣統計</span>
@@ -919,10 +940,10 @@
             <table style="width:100%; font-size:11.5px; border-collapse:collapse;" id="biStaffHabitsTable">
               <thead>
                 <tr style="background:#f8fafc; color:#64748b; text-align:left;">
-                  <th style="padding:2px 4px; white-space:nowrap; width:80px;">姓名</th>
-                  <th style="padding:2px 4px; white-space:nowrap; width:70px;">總點藥量</th>
-                  <th style="padding:2px 4px; white-space:nowrap; width:60px;">送單次數</th>
-                  <th style="padding:2px 4px; min-width:100px;">常點藥品</th>
+                  <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">姓名</th>
+                  <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">總點藥量</th>
+                  <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">送單次數</th>
+                  <th style="padding:4px 6px; min-width:120px; border-bottom:1px solid #e2e8f0;">常點藥品</th>
                 </tr>
               </thead>
               <tbody id="biStaffHabitsBody"><tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">暫無資料</td></tr></tbody>
@@ -937,14 +958,14 @@
           <span>📋 歷史歸檔紀錄列表 (<span id="biFilteredCount">0</span> 筆)</span>
           <span style="font-size:11px; color:#64748b;">資料儲存於 Firebase 永久保存庫</span>
         </div>
-        <div class="bi-custom-scrollbar" style="max-height:220px; overflow-y:auto;">
+        <div class="bi-custom-scrollbar" style="max-height:260px; overflow-y:auto;">
           <table style="width:100%; border-collapse:collapse; font-size:12px;">
             <thead>
               <tr style="background:#f8fafc; position:sticky; top:0; border-bottom:1px solid #cbd5e1; color:#475569;">
-                <th style="padding:5px; text-align:center;">完成時間</th>
-                <th style="padding:5px; text-align:center;">色籃</th>
-                <th style="padding:5px; text-align:center;">送單人員</th>
-                <th style="padding:5px; text-align:left;">品項明細 (實出 / 需求)</th>
+                <th style="padding:6px; text-align:center; width:80px;">完成時間</th>
+                <th style="padding:6px; text-align:center; width:70px;">色籃</th>
+                <th style="padding:6px; text-align:center; width:90px;">送單人員</th>
+                <th style="padding:6px; text-align:left;">品項明細 (實出 / 需求)</th>
               </tr>
             </thead>
             <tbody id="biRecordsTableBody">
@@ -1543,6 +1564,19 @@
       return currentStation === "專用區" ? specialMedData : generalMedData;
     }
 
+    // 取得色籃專屬膠囊樣式
+    function getBasketBadge(station) {
+      let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
+      if(station.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
+      else if(station.includes("綠")) { bg = "#dcfce7"; col = "#166534"; border = "#86efac"; }
+      else if(station.includes("藍")) { bg = "#dbeafe"; col = "#1e3a8a"; border = "#93c5fd"; }
+      else if(station.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
+      else if(station.includes("青")) { bg = "#ccfbf1"; col = "#115e59"; border = "#5eead4"; }
+      else if(station.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
+      
+      return `<span style="background:${bg}; color:${col}; border:1.5px solid ${border}; padding:3px 10px; border-radius:12px; font-size:12.5px; font-weight:900; white-space:nowrap; display:inline-block; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${station}</span>`;
+    }
+
     // 藥師點藥操作 (循環 + 長按歸零)
     let pressTimer = null;
     let isLongPress = false;
@@ -1869,8 +1903,9 @@
           <th style="width: 45px; min-width: 45px;">單位</th>
           <th style="width: 70px; min-width: 70px;">實出/總需</th>
       `;
+      // 助理取藥矩陣：導入色籃膠囊標籤 (虛實整合)
       stationColumns.forEach(col => {
-        headHtml += `<th class="th-station" style="min-width: 58px;">${col.label}</th>`;
+        headHtml += `<th class="th-station" style="min-width: 75px; padding:4px;">${getBasketBadge(col.label)}</th>`;
       });
       headHtml += `</tr>`;
       thead.innerHTML = headHtml;
@@ -2649,7 +2684,7 @@
         }
       });
 
-      // 1. 卡片 A: 短缺率計算 (擴展為 Top 10)
+      // 1. 卡片 A: 短缺率計算 (擴展為 Top 10 + 膠囊設計)
       const shortfallRate = totalReq > 0 ? ((totalShortfall / totalReq) * 100).toFixed(1) : 0;
       document.getElementById("biStatShortfallRate").innerText = `短缺率: ${shortfallRate}%`;
       document.getElementById("biStatTotalReq").innerText = totalReq;
@@ -2659,25 +2694,30 @@
       const top10Meds = sortedMeds.filter(m => m.shortfall > 0).slice(0, 10);
       const topListEl = document.getElementById("biTopShortfallList");
       if (top10Meds.length === 0) {
-        topListEl.innerHTML = `<div style="color:#94a3b8; padding:8px 0;">此區間無任何短缺少發紀錄（全數實出）</div>`;
+        topListEl.innerHTML = `<div style="color:#94a3b8; padding:8px 0; text-align:center;">此區間無任何短缺少發紀錄</div>`;
       } else {
         topListEl.innerHTML = top10Meds.map((m, idx) => {
           const rate = m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(0) : 0;
           return `
-            <div style="display:flex; justify-content:space-between; margin-bottom:3px; padding:2px 0; border-bottom:1px dashed #f1f5f9;">
-              <span><b>${idx + 1}. ${m.name}</b></span>
-              <span>少發 <b style="color:#dc2626;">${m.shortfall}</b> 單位 (率 ${rate}%)</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding:3px 0; border-bottom:1px dashed #f1f5f9;">
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:8px; color:#334155;"><b>${idx + 1}.</b> ${m.name}</span>
+              <span style="white-space:nowrap;">
+                <b style="color:#dc2626; font-size:13px;">${m.shortfall}</b>
+                <span style="color:#94a3b8; font-size:10px; margin-left:2px;">(${rate}%)</span>
+              </span>
             </div>
           `;
         }).join("");
       }
 
-      // 2. 卡片 B: 時段分析
-      document.getElementById("biSlotMorning").innerText = `${slotStats.morningQty} 單位 (${slotStats.morningOrders} 單)`;
-      document.getElementById("biSlotAfternoon").innerText = `${slotStats.afternoonQty} 單位 (${slotStats.afternoonOrders} 單)`;
-      document.getElementById("biSlotNight").innerText = `${slotStats.nightQty} 單位 (${slotStats.nightOrders} 單)`;
+      // 2. 卡片 B: 時段分析 (單位數放大為主體)
+      document.getElementById("biSlotMorning").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.morningQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.morningOrders} 單)</div></div>`;
+      
+      document.getElementById("biSlotAfternoon").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.afternoonQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.afternoonOrders} 單)</div></div>`;
+      
+      document.getElementById("biSlotNight").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.nightQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.nightOrders} 單)</div></div>`;
 
-      // 3. 卡片 C: 藥師習慣 (欄位加寬，隱藏工號，加長至 10 筆)
+      // 3. 卡片 C: 藥師習慣
       const staffBody = document.getElementById("biStaffHabitsBody");
       const staffArray = Object.entries(staffStats).sort((a, b) => b[1].totalQty - a[1].totalQty);
       if (staffArray.length === 0) {
@@ -2688,16 +2728,16 @@
           const topMedTxt = topMed ? `${topMed[0].split('/')[0]} (${topMed[1]}單位)` : '-';
           return `
             <tr style="border-bottom:1px solid #f1f5f9;">
-              <td style="padding:4px; white-space:nowrap;">${data.name || code}</td>
-              <td style="padding:4px; font-weight:bold; white-space:nowrap; color:var(--primary-green);">${data.totalQty} 單位</td>
-              <td style="padding:4px; white-space:nowrap; color:#64748b;">${data.count} 單</td>
-              <td style="padding:4px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px;">${topMedTxt}</td>
+              <td style="padding:5px 6px; white-space:nowrap; color:#334155;">${data.name || code}</td>
+              <td style="padding:5px 6px; font-weight:bold; white-space:nowrap; color:var(--primary-green);">${data.totalQty} 單位</td>
+              <td style="padding:5px 6px; white-space:nowrap; color:#64748b;">${data.count} 單</td>
+              <td style="padding:5px 6px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px;">${topMedTxt}</td>
             </tr>
           `;
         }).join("");
       }
 
-      // 4. 明細列表 (手機版日期與時間斷行顯示)
+      // 4. 明細列表 (手機版日期與時間斷行顯示 + 虛實整合色籃標籤)
       const recordsBody = document.getElementById("biRecordsTableBody");
       if (records.length === 0) {
         recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8;">所選區間無任何歸檔紀錄</td></tr>`;
@@ -2710,13 +2750,16 @@
 
           return `
             <tr style="border-bottom:1px solid #e2e8f0;">
-              <td style="padding:5px; text-align:center; color:#64748b; vertical-align:top;">
-                <div style="white-space: nowrap;">${rec.completeDate || rec.createDate || ''}</div>
-                <div style="white-space: nowrap; font-size:11px;">${rec.completeTime || rec.createTime || ''}</div>
+              <td style="padding:6px; text-align:center; color:#64748b; vertical-align:middle; width:80px;">
+                <div style="font-weight:bold; color:#334155; font-size:12px;">${rec.completeDate || rec.createDate || ''}</div>
+                <div style="font-size:11px;">${rec.completeTime || rec.createTime || ''}</div>
               </td>
-              <td style="padding:5px; text-align:center; font-weight:bold; color:var(--primary-green); vertical-align:top;">${rec.displayLabel || rec.station}</td>
-              <td style="padding:5px; text-align:center; vertical-align:top;">${rec.staffName || ''} <br><span style="font-size:10px; color:#94a3b8;">(${rec.staffCode})</span></td>
-              <td style="padding:5px; text-align:left; font-size:11.5px;">${itemsTxt}</td>
+              <td style="padding:6px; text-align:center; vertical-align:middle;">${getBasketBadge(rec.displayLabel || rec.station)}</td>
+              <td style="padding:6px; text-align:center; vertical-align:middle; line-height:1.2;">
+                <div style="color:#334155; font-weight:bold;">${rec.staffName || ''}</div>
+                <div style="font-size:10px; color:#94a3b8;">(${rec.staffCode})</div>
+              </td>
+              <td style="padding:6px; text-align:left; font-size:11.5px; color:#475569;">${itemsTxt}</td>
             </tr>
           `;
         }).join("");
