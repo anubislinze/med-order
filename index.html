@@ -790,7 +790,7 @@
         <div id="shortfallBannerContent"></div>
       </div>
 
-      <!-- 藥師點藥標題區 (導入色籃膠囊) -->
+      <!-- 藥師點藥標題區 -->
       <div class="sheet-title" id="currentStationTitle">【 藍籃 - 藥品劃記看板 】</div>
       <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 1 秒可直接歸零 ｜ 點擊數量格可直接打字輸入</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
@@ -827,7 +827,7 @@
     </div>
   </div>
 
-  <!-- 助理端智慧欠藥建議彈窗 (Smart Shortage Suggestion) -->
+  <!-- 助理端智慧欠藥建議彈窗 -->
   <div class="modal-overlay" id="shortageSuggestModal">
     <div class="modal-box" style="max-width:400px; padding:20px;">
       <div class="modal-header" style="margin-bottom:16px;">
@@ -967,7 +967,7 @@
                 <tr style="background:#f8fafc; color:#64748b; text-align:left;">
                   <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">姓名</th>
                   <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">總點藥量</th>
-                  <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">送單次數</th>
+                  <th style="padding:4px 6px; white-space:nowrap; border-bottom:1px solid #e2e8f0;">處理批次</th>
                   <th style="padding:4px 6px; min-width:120px; border-bottom:1px solid #e2e8f0;">常點藥品</th>
                 </tr>
               </thead>
@@ -979,9 +979,8 @@
 
       <!-- 歷史歸檔明細流水表 -->
       <div style="border:1px solid #cbd5e1; border-radius:6px; overflow:hidden;">
-        <div style="background:#f1f5f9; padding:6px 10px; font-weight:bold; font-size:12.5px; color:#334155; display:flex; justify-content:space-between;">
-          <span>📋 歷史歸檔紀錄列表 (<span id="biFilteredCount">0</span> 筆)</span>
-          <span style="font-size:11px; color:#64748b;">資料儲存於 Firebase 永久保存庫</span>
+        <div style="background:#f1f5f9; padding:6px 10px; font-weight:bold; font-size:12.5px; color:#334155; display:flex; justify-content:space-between; align-items:center;">
+          <span>📋 歷史歸檔紀錄列表 (<span id="biFilteredCount">0</span> 筆) <span style="font-size:11px; color:#eab308; margin-left:8px; font-weight:normal;">⚠️ 系統為保證效能，圖表與匯出最多僅涵蓋近期 1,000 筆批次紀錄</span></span>
         </div>
         <div class="bi-custom-scrollbar" style="max-height:260px; overflow-y:auto;">
           <table style="width:100%; border-collapse:collapse; font-size:12px;">
@@ -1074,6 +1073,18 @@
   </div>
 
   <script>
+    // 嚴格定義台灣時間產生器，解決半夜跨日問題
+    function getTwDate(d = new Date()) {
+      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' });
+      return formatter.format(d); 
+    }
+    
+    function getTwTime(d = new Date(), showSeconds = true) {
+      const options = { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false };
+      if (showSeconds) options.second = '2-digit';
+      return d.toLocaleTimeString('en-GB', options); 
+    }
+
     // 1. 內建 Firebase 雲端配置
     const BUILTIN_FIREBASE_CONFIG = {
       apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg",
@@ -1083,7 +1094,7 @@
       storageBucket: "pharmacy-order-20f00.firebasestorage.app"
     };
 
-    // 2. 出廠預設人員權限名單 (共 67 名可點餐，15 名助理端)
+    // 2. 出廠預設人員權限名單
     const DEFAULT_STAFF_CONFIG = {
       "pharmacists": [
             { "code": "1501072", "name": "吳明欣" },
@@ -1429,6 +1440,9 @@
     let dbStaffRef = null;
     const channel = new BroadcastChannel("pharmacy_order_v13_channel");
 
+    // 用來儲存尚未寫入雲端的歸檔狀態 (確保非同步寫入成功前不清除畫面)
+    let pendingArchiveData = null;
+
     const urlParams = new URLSearchParams(window.location.search);
     const validStations = ["黃籃", "綠籃", "青籃", "紅籃", "藍籃", "專用區"];
     if (urlParams.has("station")) {
@@ -1519,13 +1533,11 @@
 
     function syncActiveOrders() {
       channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList });
-      if (dbOrdersRef) dbOrdersRef.set(activeOrdersList);
     }
 
     function syncMenuConfig() {
       const payload = { general: generalMedData, special: specialMedData };
       channel.postMessage({ type: "UPDATE_MENU_CONFIG", payload });
-      if (dbMenuRef) dbMenuRef.set(payload);
     }
 
     function syncStaffConfig() {
@@ -1535,7 +1547,6 @@
 
     function syncShortfalls() {
       channel.postMessage({ type: "UPDATE_SHORTFALLS", payload: latestShortfalls });
-      if (dbShortfallRef) dbShortfallRef.set(latestShortfalls);
     }
 
     function updateSelectCapsule(val) {
@@ -1606,6 +1617,11 @@
       delete latestShortfalls[currentStation];
       localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
       syncShortfalls();
+      
+      // 確保非同步寫入 Firebase
+      if (firebase.apps.length) {
+          firebase.database().ref("shortfalls_v13").set(latestShortfalls).catch(e => console.error("清除橫幅失敗", e));
+      }
       document.getElementById("shortfallBanner").style.display = "none";
     }
 
@@ -1661,7 +1677,7 @@
       if (pressTimer) clearTimeout(pressTimer);
     }
 
-    // ★ 修補 Bug：阻擋禁點藥品的點擊數字輸入
+    // 🏆 BUG FIXED: 阻擋禁點藥品的點擊數字輸入防護
     function startDirectEditQty(e, medId, isDisabled) {
       e.stopPropagation();
       if (isDisabled) return; 
@@ -1706,7 +1722,9 @@
     }
 
     function cycleStationFulfillment(orderId, medId) {
-      const order = activeOrdersList.find(o => o.id === orderId);
+      // 在助理矩陣操作，必須即時更新 activeOrdersList 並存回雲端
+      const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList));
+      const order = updatedOrders.find(o => o.id === orderId);
       if (!order) return;
       if (!order.fulfilled) order.fulfilled = {};
 
@@ -1719,6 +1737,11 @@
       }
 
       order.fulfilled[medId] = nextFulfilled;
+      activeOrdersList = updatedOrders;
+      
+      if (firebase.apps.length) {
+          firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
+      }
       syncActiveOrders();
       renderAssistantMatrix();
     }
@@ -1727,7 +1750,8 @@
       isAsstLongPress = false;
       asstPressTimer = setTimeout(() => {
         isAsstLongPress = true;
-        const order = activeOrdersList.find(o => o.id === orderId);
+        const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList));
+        const order = updatedOrders.find(o => o.id === orderId);
         if (!order) return;
         if (!order.fulfilled) order.fulfilled = {};
         const reqQty = order.items?.[medId] || 0;
@@ -1735,6 +1759,11 @@
         
         order.fulfilled[medId] = (cur === 0) ? reqQty : 0;
         if (navigator.vibrate) navigator.vibrate(60);
+        
+        activeOrdersList = updatedOrders;
+        if (firebase.apps.length) {
+            firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
+        }
         syncActiveOrders();
         renderAssistantMatrix();
       }, 1000);
@@ -1748,14 +1777,15 @@
     function startAsstTotalLongPress(medId) {
       asstTotalPressTimer = setTimeout(() => {
         let totalActual = 0;
-        activeOrdersList.forEach(o => {
+        const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList));
+        updatedOrders.forEach(o => {
           const req = o.items?.[medId] || 0;
           const actual = (o.fulfilled?.[medId] !== undefined) ? o.fulfilled[medId] : req;
           totalActual += actual;
         });
 
         const setToZero = (totalActual > 0);
-        activeOrdersList.forEach(o => {
+        updatedOrders.forEach(o => {
           if (o.items && o.items[medId]) {
             if (!o.fulfilled) o.fulfilled = {};
             o.fulfilled[medId] = setToZero ? 0 : o.items[medId];
@@ -1763,6 +1793,11 @@
         });
 
         if (navigator.vibrate) navigator.vibrate(70);
+        
+        activeOrdersList = updatedOrders;
+        if (firebase.apps.length) {
+            firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
+        }
         syncActiveOrders();
         renderAssistantMatrix();
       }, 1000);
@@ -2039,6 +2074,7 @@
       renderAssistantMatrix();
     }
 
+    // 🏆 階段 1：保護資料安全與統一時區的歸檔核心邏輯
     function clearDoneItems() {
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
       if (doneIds.length === 0) {
@@ -2046,16 +2082,20 @@
         return;
       }
 
+      // 嚴格使用台灣時間，避免跨日午夜時段錯歸為昨天
       const now = new Date();
-      const dateStr = now.toISOString().split("T")[0];
-      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
+      const dateStr = getTwDate(now);
+      const timeStr = getTwTime(now, true);
+      const currentHour = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', hour: 'numeric', hour12: false }));
+      const currentMinute = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', minute: 'numeric' }));
 
-      // 追蹤這次處理批次的總需求與實出，用於智慧欠藥建議
+      // 準備「即將異動」的虛擬拷貝，成功後才正式套用
+      const clonedOrdersList = JSON.parse(JSON.stringify(activeOrdersList));
+      const clonedShortfalls = JSON.parse(JSON.stringify(latestShortfalls));
+      const newHistoryRecords = [];
       const medBatchStats = {}; 
 
-      activeOrdersList.forEach(order => {
+      clonedOrdersList.forEach(order => {
         const stKey = order.station;
         const archivedItems = [];
 
@@ -2066,19 +2106,18 @@
             const shortfall = Math.max(0, req - actual);
             const med = findMedAcrossAll(medId) || {name: medId};
 
-            // 統計智慧欠藥數據
             if (!medBatchStats[medId]) medBatchStats[medId] = { req: 0, actual: 0 };
             medBatchStats[medId].req += req;
             medBatchStats[medId].actual += actual;
 
             if (actual < req) {
-              if (!latestShortfalls[stKey]) latestShortfalls[stKey] = [];
-              latestShortfalls[stKey].push({
+              if (!clonedShortfalls[stKey]) clonedShortfalls[stKey] = [];
+              clonedShortfalls[stKey].push({
                 medName: med.name,
                 unit: med.unit || '盒',
                 req: req,
                 actual: actual,
-                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                time: getTwTime(now, false)
               });
             }
 
@@ -2097,7 +2136,7 @@
         });
 
         if (archivedItems.length > 0) {
-          const historyRecord = {
+          newHistoryRecords.push({
             id: "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
             orderId: order.id,
             station: order.station,
@@ -2114,18 +2153,13 @@
             completeTimestamp: Date.now(),
             timestamp: Date.now(),
             items: archivedItems
-          };
-          saveHistoryRecord(historyRecord);
+          });
         }
       });
 
-      activeOrdersList = activeOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
-      checkedItems = {};
-      
-      syncActiveOrders();
-      syncShortfalls();
+      const finalOrdersList = clonedOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
 
-      // === 啟動智慧欠藥標籤判斷 ===
+      // === 智慧欠藥標籤判斷 ===
       let suggestOn = [];
       let suggestOff = [];
       
@@ -2141,24 +2175,29 @@
           }
       }
 
+      // 暫存資料準備執行非同步寫入
+      pendingArchiveData = {
+          newHistoryRecords,
+          finalOrdersList,
+          clonedShortfalls
+      };
+
       if (suggestOn.length > 0 || suggestOff.length > 0) {
           showShortageSuggestModal(suggestOn, suggestOff);
       } else {
-          finishClearDoneItems(); // 正常結束流程
+          executeArchive(null); // 無建議時，直接傳入 null 進行雲端存檔
       }
     }
 
-    // 顯示智慧欠藥建議彈窗
     function showShortageSuggestModal(onList, offList) {
         let html = "";
         
-        // ★ 修補 Bug：調整版面，讓全選框與下方對齊，文字不被切斷
         if (onList.length > 0) {
             html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                 <div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b; display:flex; align-items:flex-start; gap:8px;">
                     <input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)" style="transform:scale(1.2); margin-top:4px;">
                     <label for="chkAllOn" style="flex:1; cursor:pointer; line-height:1.4;">
-                        ⚠️ 建議【開啟】欠藥標籤<br><span style="font-size:12px; font-weight:normal; color:#b91c1c;">(因該批次短缺率 > 50%)</span>
+                        ⚠️️ 建議【開啟】欠藥標籤<br><span style="font-size:12px; font-weight:normal; color:#b91c1c;">(因該批次短缺率 > 50%)</span>
                     </label>
                 </div>
                 <div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">
@@ -2202,61 +2241,106 @@
         checkboxes.forEach(chk => chk.checked = isChecked);
     }
 
-    function submitShortageSuggestions() {
+    async function submitShortageSuggestions() {
         const onChecked = Array.from(document.querySelectorAll('.chk-suggest-on:checked')).map(c => c.value);
         const offChecked = Array.from(document.querySelectorAll('.chk-suggest-off:checked')).map(c => c.value);
 
-        let changed = false;
-        onChecked.forEach(id => {
-            const med = findMedAcrossAll(id);
-            if (med && !med.shortage) { med.shortage = true; changed = true; }
-        });
-        offChecked.forEach(id => {
-            const med = findMedAcrossAll(id);
-            if (med && med.shortage) { med.shortage = false; changed = true; }
-        });
+        let menuChanged = false;
+        const tempGen = JSON.parse(JSON.stringify(generalMedData));
+        const tempSpec = JSON.parse(JSON.stringify(specialMedData));
 
-        if (changed) {
-            localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
-            localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
-            syncMenuConfig(); // 關鍵：同步至 Firebase，讓藥師端即時顯示欠藥圖示
+        const updateTempMenu = (id, isShortage) => {
+            for (const g of [...tempGen, ...tempSpec]) {
+                for (const item of g.items || []) {
+                    if (item.id === id) {
+                        if (item.shortage !== isShortage) {
+                            item.shortage = isShortage;
+                            menuChanged = true;
+                        }
+                        return;
+                    }
+                }
+            }
+        };
+
+        onChecked.forEach(id => updateTempMenu(id, true));
+        offChecked.forEach(id => updateTempMenu(id, false));
+
+        document.getElementById("shortageSuggestModal").style.display = "none";
+        
+        // 進入保護的非同步寫入流程
+        await executeArchive(menuChanged ? { general: tempGen, special: tempSpec } : null);
+    }
+
+    async function skipShortageSuggestions() {
+        document.getElementById("shortageSuggestModal").style.display = "none";
+        // 略過建議，直接寫入核心資料
+        await executeArchive(null);
+    }
+
+    // 🛡️ 核心資料保護：等待 Firebase 回傳成功才套用畫面與本機資料
+    async function executeArchive(newMenuData) {
+        const { newHistoryRecords, finalOrdersList, clonedShortfalls } = pendingArchiveData;
+        const cloudBadge = document.getElementById("cloudBadge");
+        
+        try {
+            if (firebase.apps.length) {
+                cloudBadge.innerText = "⏳ 寫入雲端中...";
+                cloudBadge.style.backgroundColor = "#fef08a";
+                const db = firebase.database();
+                
+                // 準備一次性的 Promise 群組，確保歷史、訂單、缺藥與菜單同步儲存
+                const promises = [];
+                newHistoryRecords.forEach(rec => {
+                    promises.push(db.ref("order_history_v13").child(rec.id).set(rec));
+                });
+                promises.push(db.ref("active_orders_v13").set(finalOrdersList));
+                promises.push(db.ref("shortfalls_v13").set(clonedShortfalls));
+                
+                if (newMenuData) {
+                    promises.push(db.ref("menu_config_v13").set(newMenuData));
+                }
+                
+                // 等待全數雲端寫入成功
+                await Promise.all(promises);
+            }
+
+            // --- 雲端寫入成功後，才正式套用至畫面與記憶體 ---
+            activeOrdersList = finalOrdersList;
+            latestShortfalls = clonedShortfalls;
+            if (newMenuData) {
+                generalMedData = newMenuData.general;
+                specialMedData = newMenuData.special;
+                localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
+                localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
+            }
+            
+            // 本機歷史備份
+            let historyList = JSON.parse(localStorage.getItem("pharmacy_order_history") || "[]");
+            newHistoryRecords.forEach(rec => historyList.unshift(rec));
+            if (historyList.length > 500) historyList = historyList.slice(0, 500);
+            localStorage.setItem("pharmacy_order_history", JSON.stringify(historyList));
+            
+            checkedItems = {};
+            pendingArchiveData = null; // 清除暫存
+
+            cloudBadge.innerText = "☁️ 雲端同步中";
+            cloudBadge.style.backgroundColor = "#e8f5e9";
+            
+            alert("已完成本批取藥！數據已安全歸檔。");
+            renderAll();
+            
+        } catch (err) {
+            console.error("Archive Error:", err);
+            cloudBadge.innerText = "❌ 連線失敗";
+            cloudBadge.style.backgroundColor = "#fecaca";
+            // 寫入失敗，畫面與原本的資料不會被清除
+            alert("寫入雲端失敗！請檢查網路連線。\n為確保資料正確，系統已中斷歸檔，請稍後重試。");
         }
-
-        document.getElementById("shortageSuggestModal").style.display = "none";
-        finishClearDoneItems();
     }
 
-    function skipShortageSuggestions() {
-        document.getElementById("shortageSuggestModal").style.display = "none";
-        finishClearDoneItems();
-    }
-
-    function finishClearDoneItems() {
-        alert("已完成本批取藥！數據已自動歸檔，若有少發項目已即時回報至調劑台看板。");
-        renderAll();
-    }
-
-    function openSubmitModal() {
-      const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
-      if (activeList.length === 0) {
-        alert("請先點選藥品再送單！");
-        return;
-      }
-      const previewEl = document.getElementById("submitSummaryPreview");
-      previewEl.innerHTML = activeList.map(([id, qty]) => {
-        const med = findMedAcrossAll(id) || {name:id};
-        return `<div>• ${med.name} × <b>${qty}</b> ${med.unit || ''}</div>`;
-      }).join("");
-      document.getElementById("staffCodeInput").value = "";
-      document.getElementById("submitModal").style.display = "flex";
-      setTimeout(() => document.getElementById("staffCodeInput").focus(), 100);
-    }
-
-    function closeSubmitModal() {
-      document.getElementById("submitModal").style.display = "none";
-    }
-
-    function confirmSubmitOrder() {
+    // 🛡️ 藥師送單防護：等待回傳成功再清空草稿
+    async function confirmSubmitOrder() {
       const staffCode = document.getElementById("staffCodeInput").value.trim();
       
       const validPharmacist = (staffConfig.pharmacists || []).find(p => p.code === staffCode);
@@ -2280,20 +2364,58 @@
         displayLabel: displayLabel,
         staffCode: staffCode,
         staffName: validPharmacist.name,
-        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        createDate: now.toISOString().split("T")[0],
+        time: getTwTime(now, true),
+        createDate: getTwDate(now),
         createTimestamp: now.getTime(),
         items: { ...draftOrders },
         fulfilled: {}
       };
 
-      activeOrdersList.push(newOrder);
-      draftOrders = {};
-      editingMedId = null;
-      syncActiveOrders();
-      closeSubmitModal();
-      alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`);
-      renderAll();
+      const updatedOrders = [...activeOrdersList, newOrder];
+
+      try {
+          if (firebase.apps.length) {
+              document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中...";
+              document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+              await firebase.database().ref("active_orders_v13").set(updatedOrders);
+          }
+          
+          // 雲端確認成功後才清空草稿
+          activeOrdersList = updatedOrders;
+          draftOrders = {};
+          editingMedId = null;
+          
+          document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
+          document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
+          closeSubmitModal();
+          alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`);
+          renderAll();
+      } catch (err) {
+          console.error("Submit Error:", err);
+          document.getElementById("cloudBadge").innerText = "❌ 連線失敗";
+          document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
+          alert("送單寫入失敗！請檢查網路連線並稍後再試。");
+      }
+    }
+
+    function openSubmitModal() {
+      const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
+      if (activeList.length === 0) {
+        alert("請先點選藥品再送單！");
+        return;
+      }
+      const previewEl = document.getElementById("submitSummaryPreview");
+      previewEl.innerHTML = activeList.map(([id, qty]) => {
+        const med = findMedAcrossAll(id) || {name:id};
+        return `<div>• ${med.name} × <b>${qty}</b> ${med.unit || ''}</div>`;
+      }).join("");
+      document.getElementById("staffCodeInput").value = "";
+      document.getElementById("submitModal").style.display = "flex";
+      setTimeout(() => document.getElementById("staffCodeInput").focus(), 100);
+    }
+
+    function closeSubmitModal() {
+      document.getElementById("submitModal").style.display = "none";
     }
 
     function resetCurrentDraft() {
@@ -2307,7 +2429,7 @@
     function openHistoryModal() {
       const content = document.getElementById("historyListContent");
       if (activeOrdersList.length === 0) {
-        content.innerHTML = "<p style='color:#888; text-align:center;'>目前無送單記錄</p>";
+        content.innerHTML = "<p style='color:#888; text-align:center;'>目前無待處理紀錄</p>";
       } else {
         content.innerHTML = activeOrdersList.map(order => `
           <div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa;">
@@ -2675,24 +2797,7 @@
     // ==========================================
     // 歷史資料庫存取、分析與 Excel 匯出 (Theme 2, 3, 4)
     // ==========================================
-    let dbHistoryRef = null;
     let archivedHistoryList = [];
-
-    function saveHistoryRecord(record) {
-      try {
-        const localHist = JSON.parse(localStorage.getItem("pharmacy_order_history") || "[]");
-        localHist.unshift(record);
-        if (localHist.length > 500) localHist.pop();
-        localStorage.setItem("pharmacy_order_history", JSON.stringify(localHist));
-      } catch (e) {
-        console.warn("Local storage write error:", e);
-      }
-
-      if (firebase.apps.length) {
-        const db = firebase.database();
-        db.ref("order_history_v13").child(record.id).set(record);
-      }
-    }
 
     function openBiDashboardModal() {
       document.getElementById("biDashboardModal").style.display = "flex";
@@ -2728,20 +2833,20 @@
 
     function setBiQuickRange(type) {
       const now = new Date();
-      const endStr = now.toISOString().split("T")[0];
+      const endStr = getTwDate(now);
       let start = new Date();
 
       if (type === 'today') {
-        // 今日
+        // 今日不做處理
       } else if (type === '7days') {
-        start.setDate(now.getDate() - 7);
+        start.setDate(now.getDate() - 6);
       } else if (type === '30days') {
-        start.setDate(now.getDate() - 30);
+        start.setDate(now.getDate() - 29);
       } else if (type === 'all') {
         start = new Date(2025, 0, 1);
       }
 
-      document.getElementById("biStartDate").value = start.toISOString().split("T")[0];
+      document.getElementById("biStartDate").value = getTwDate(start);
       document.getElementById("biEndDate").value = endStr;
       refreshBiDashboard();
     }
@@ -2750,7 +2855,7 @@
       const startStr = document.getElementById("biStartDate").value;
       const endStr = document.getElementById("biEndDate").value;
       return archivedHistoryList.filter(rec => {
-        const d = rec.completeDate || (new Date(rec.timestamp).toISOString().split("T")[0]);
+        const d = rec.completeDate || rec.createDate || "";
         if (startStr && d < startStr) return false;
         if (endStr && d > endStr) return false;
         return true;
@@ -2770,9 +2875,8 @@
 
       records.forEach(rec => {
         let orderQty = 0;
-        const dObj = new Date(rec.timestamp);
-        const hr = (rec.completeHour !== undefined) ? rec.completeHour : dObj.getHours();
-        const min = (rec.completeMinute !== undefined) ? rec.completeMinute : dObj.getMinutes();
+        const hr = (rec.completeHour !== undefined) ? rec.completeHour : 12;
+        const min = (rec.completeMinute !== undefined) ? rec.completeMinute : 0;
         const minuteOfDay = hr * 60 + min;
 
         // 員工習慣分析
@@ -2817,7 +2921,7 @@
         }
       });
 
-      // 1. 卡片 A: 短缺率計算 (擴展為 Top 10 + 膠囊設計)
+      // 1. 卡片 A: 短缺率計算
       const shortfallRate = totalReq > 0 ? ((totalShortfall / totalReq) * 100).toFixed(1) : 0;
       document.getElementById("biStatShortfallRate").innerText = `短缺率: ${shortfallRate}%`;
       document.getElementById("biStatTotalReq").innerText = totalReq;
@@ -2843,18 +2947,18 @@
         }).join("");
       }
 
-      // 2. 卡片 B: 時段分析 (單位數放大為主體)
-      document.getElementById("biSlotMorning").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.morningQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.morningOrders} 單)</div></div>`;
+      // 2. 卡片 B: 時段分析 
+      document.getElementById("biSlotMorning").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.morningQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.morningOrders} 批)</div></div>`;
       
-      document.getElementById("biSlotAfternoon").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.afternoonQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.afternoonOrders} 單)</div></div>`;
+      document.getElementById("biSlotAfternoon").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.afternoonQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.afternoonOrders} 批)</div></div>`;
       
-      document.getElementById("biSlotNight").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.nightQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.nightOrders} 單)</div></div>`;
+      document.getElementById("biSlotNight").innerHTML = `<div style="text-align:right;"><div style="font-size:15px; font-weight:900; color:#1e293b;">${slotStats.nightQty} <span style="font-size:11px; font-weight:normal;">單位</span></div><div style="font-size:11px; color:#64748b;">(${slotStats.nightOrders} 批)</div></div>`;
 
-      // 3. 卡片 C: 藥師習慣
+      // 3. 卡片 C: 藥師習慣 (正名為處理批次)
       const staffBody = document.getElementById("biStaffHabitsBody");
       const staffArray = Object.entries(staffStats).sort((a, b) => b[1].totalQty - a[1].totalQty);
       if (staffArray.length === 0) {
-        staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">無送單紀錄</td></tr>`;
+        staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">無歸檔紀錄</td></tr>`;
       } else {
         staffBody.innerHTML = staffArray.slice(0, 10).map(([code, data]) => {
           const topMed = Object.entries(data.medCounts).sort((a, b) => b[1] - a[1])[0];
@@ -2863,7 +2967,7 @@
             <tr style="border-bottom:1px solid #f1f5f9;">
               <td style="padding:5px 6px; white-space:nowrap; color:#334155;">${data.name || code}</td>
               <td style="padding:5px 6px; font-weight:bold; white-space:nowrap; color:var(--primary-green);">${data.totalQty} 單位</td>
-              <td style="padding:5px 6px; white-space:nowrap; color:#64748b;">${data.count} 單</td>
+              <td style="padding:5px 6px; white-space:nowrap; color:#64748b;">${data.count} 批</td>
               <td style="padding:5px 6px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px;">${topMedTxt}</td>
             </tr>
           `;
@@ -2900,7 +3004,7 @@
     }
 
     // ==========================================
-    // Theme 4: 雙工作表 Excel 匯出 (利用 SheetJS) - 新增送單時間欄位
+    // Theme 4: 雙工作表 Excel 匯出
     // ==========================================
     function exportHistoryExcel() {
       const startVal = document.getElementById("biStartDate").value;
@@ -2912,7 +3016,6 @@
         return;
       }
 
-      // 準備雙工作表資料
       const historyData = [];
       const medStats = {};
 
@@ -2923,7 +3026,6 @@
         }
 
         (rec.items || []).forEach(item => {
-          // 工作表 1 資料 (補齊送單起點與完成終點時間)
           historyData.push({
             "歸檔ID": rec.id || "",
             "送單日期": rec.createDate || rec.completeDate || "",
@@ -2942,7 +3044,6 @@
             "是否短缺": (item.shortfall || 0) > 0 ? "是" : "否"
           });
 
-          // 工作表 2 計算準備
           if (!medStats[item.medName]) {
              medStats[item.medName] = { req: 0, actual: 0, shortfall: 0 };
           }
@@ -2952,7 +3053,6 @@
         });
       });
 
-      // 產生 Top 10 陣列
       const shortfallExportData = Object.entries(medStats)
         .map(([name, data]) => ({ name, ...data }))
         .filter(m => m.shortfall > 0)
@@ -2966,7 +3066,6 @@
           "短缺率": m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(1) + "%" : "0%"
         }));
 
-      // 使用 SheetJS 產生 Excel 檔案
       const wb = XLSX.utils.book_new();
       
       const wsHistory = XLSX.utils.json_to_sheet(historyData);
