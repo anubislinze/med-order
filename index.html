@@ -1076,7 +1076,7 @@
     // 🛡️ [防呆] 建立產生超時錯誤的 Promise
     const timeoutPromise = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("Network Timeout")), ms));
 
-    // 嚴格定義台灣時間產生器，解決半夜跨日問題
+    // 嚴格定義台灣時間產生器
     function getTwDate(d = new Date()) {
       const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' });
       return formatter.format(d); 
@@ -1097,354 +1097,25 @@
       storageBucket: "pharmacy-order-20f00.firebasestorage.app"
     };
 
-    // 2. 出廠預設人員權限名單
-    const DEFAULT_STAFF_CONFIG = {
-      "pharmacists": [
-            { "code": "1501072", "name": "吳明欣" },
-            { "code": "1506227", "name": "仙女" },
-            { "code": "1507175", "name": "詹智琳" },
-            { "code": "1508152", "name": "林盟桔" },
-            { "code": "1513095", "name": "童玟津" },
-            { "code": "1516302", "name": "張綜瑋" },
-            { "code": "1501559", "name": "方心靜" },
-            { "code": "1520043", "name": "劉育如" },
-            { "code": "1520646", "name": "林宥妡" },
-            { "code": "1521107", "name": "黃宜瑄" },
-            { "code": "1521823", "name": "劉伊菁" },
-            { "code": "1523870", "name": "謝馨慧" },
-            { "code": "1525503", "name": "陳郁婷" },
-            { "code": "1527904", "name": "洪淑麗" },
-            { "code": "1528713", "name": "黃家萱" },
-            { "code": "1502204", "name": "龔洲弘" },
-            { "code": "1505488", "name": "胡妙貞" },
-            { "code": "1507247", "name": "陳婷婷" },
-            { "code": "1509161", "name": "劉彥廷" },
-            { "code": "1511318", "name": "林佳慧" },
-            { "code": "1512513", "name": "蒲詩青" },
-            { "code": "1512851", "name": "黃俊瑋" },
-            { "code": "1512964", "name": "陳怡均" },
-            { "code": "1515415", "name": "林香如" },
-            { "code": "1515840", "name": "蔡聖儲" },
-            { "code": "1515971", "name": "吳礎宇" },
-            { "code": "1516035", "name": "郭素如" },
-            { "code": "1520164", "name": "楊佩軒" },
-            { "code": "1520174", "name": "陳緯真" },
-            { "code": "1520229", "name": "張珮茹" },
-            { "code": "1520388", "name": "杜駿廷" },
-            { "code": "1520396", "name": "楊富喻" },
-            { "code": "1520787", "name": "盧昱伶" },
-            { "code": "1520788", "name": "施懿芸" },
-            { "code": "1520841", "name": "彭銘麒" },
-            { "code": "1520846", "name": "陳浩承" },
-            { "code": "1520885", "name": "李讚耿" },
-            { "code": "1521524", "name": "張君綺" },
-            { "code": "1521737", "name": "蕭邑霖" },
-            { "code": "1522302", "name": "李俊賢" },
-            { "code": "1522623", "name": "謝奕萱" },
-            { "code": "1525322", "name": "李建宏" },
-            { "code": "1525390", "name": "施秉承" },
-            { "code": "1525673", "name": "游皓翔" },
-            { "code": "1525841", "name": "胡庭嘉" },
-            { "code": "1526094", "name": "黃凌軒" },
-            { "code": "1526325", "name": "蘇文娸" },
-            { "code": "1526596", "name": "蕭爲哲" },
-            { "code": "1527572", "name": "李孟霓" },
-            { "code": "1528019", "name": "杜宜玲" },
-            { "code": "1528405", "name": "曾宥誠" },
-            { "code": "1528523", "name": "張君華" },
-            { "code": "1529958", "name": "張諶" },
-            { "code": "1530179", "name": "曹良亘" },
-            { "code": "1530404", "name": "李子騰" },
-            { "code": "1530559", "name": "陳盈恩" },
-            { "code": "1530565", "name": "李昀軒" },
-            { "code": "1530821", "name": "廖庭妤" },
-            { "code": "1530831", "name": "陳品臻" },
-            { "code": "1514848", "name": "管紋萱" },
-            { "code": "1520605", "name": "洪銘竣" },
-            { "code": "1527221", "name": "黃湘瑩" },
-            { "code": "1528196", "name": "周湧樺" },
-            { "code": "1529310", "name": "林晏竹" },
-            { "code": "1529350", "name": "林姍諭" },
-            { "code": "1531621", "name": "林麗秋" },
-            { "code": "1531673", "name": "顧國棟" }
-      ],
-      "assistants": [
-            { "code": "1501072", "name": "吳明欣" },
-            { "code": "1506227", "name": "仙女" },
-            { "code": "1507175", "name": "詹智琳" },
-            { "code": "1508152", "name": "林盟桔" },
-            { "code": "1513095", "name": "童玟津" },
-            { "code": "1516302", "name": "張綜瑋" },
-            { "code": "1501559", "name": "方心靜" },
-            { "code": "1520043", "name": "劉育如" },
-            { "code": "1520646", "name": "林宥妡" },
-            { "code": "1521107", "name": "黃宜瑄" },
-            { "code": "1521823", "name": "劉伊菁" },
-            { "code": "1523870", "name": "謝馨慧" },
-            { "code": "1525503", "name": "陳郁婷" },
-            { "code": "1527904", "name": "洪淑麗" },
-            { "code": "1528713", "name": "黃家萱" }
-      ]
-    };
-
-    // 3. 一般台出廠預設資料庫
-    const DEFAULT_GENERAL_MEDS = [
-      {
-        col: 1, group: "GZA", isWarn: false,
-        items: [
-          { id: "iwell", name: "IWELL / 宜胃", unit: "盒", max: 5 },
-          { id: "nexium", name: "NEXium / 耐適恩", unit: "盒", max: 5 },
-          { id: "febuxostat", name: "Febuxostat / 達理痛", unit: "", max: 5 },
-          { id: "strocain", name: "Strocain / 習痛佳音", unit: "", max: 5 },
-          { id: "lipitor40", name: "Lipitor 40 / 立普妥 40", unit: "", max: 5 },
-          { id: "suzin", name: "Suzin / 舒腦", unit: "", max: 5 },
-          { id: "plavix", name: "Plavix / 保栓通", unit: "", max: 5 },
-          { id: "urief", name: "Urief / 優列扶", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 1, group: "GZB", isWarn: false,
-        items: [
-          { id: "folic_acid", name: "Folic acid / 葉酸", unit: "盒", max: 5 },
-          { id: "furosemide", name: "Furosemide / 舒利諾", unit: "盒", max: 5 },
-          { id: "jardiance_duo", name: "Jardiance Duo / 恩美糖", unit: "", max: 5 },
-          { id: "desora", name: "Desora / 治敏樂", unit: "", max: 5 },
-          { id: "arax", name: "Arax / 克胺錠", unit: "盒", max: 5 },
-          { id: "loxol", name: "LOXol / 樂咳痰舒", unit: "盒", max: 5 },
-          { id: "ppc", name: "P.P.C. / 必克風", unit: "盒", max: 5 },
-          { id: "cephalexin", name: "CephaLEXIN / 信保欣", unit: "盒", max: 5 },
-          { id: "minlife_p", name: "Minlife-P / 特敏福", unit: "盒", max: 5 },
-          { id: "tamlosin_d", name: "Tamlosin D / 暢利淨D", unit: "", max: 5 },
-          { id: "ferrous_gluco_b", name: "Ferrous Gluco-B / 鐵他葡萄糖酸鐵", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 1, group: "GZC + D", isWarn: false,
-        items: [
-          { id: "peace", name: "Peace / 鼻福", unit: "", max: 5 },
-          { id: "meptin_mini", name: "Meptin-Mini / 滅喘淨微", unit: "", max: 5 },
-          { id: "joinlo", name: "Joinlo / 降樂脂", unit: "", max: 5 },
-          { id: "exforge_hct", name: "Exforge HCT / 力安穩", unit: "", max: 5 },
-          { id: "co_tareg", name: "CO-TAREG / 可道樂", unit: "", max: 5 },
-          { id: "co_midis", name: "CO-Midis / 倍壓妥", unit: "", max: 5 },
-          { id: "doxaben", name: "Doxaben / 可迅", unit: "", max: 5 },
-          { id: "throne", name: "Throne / 克栓", unit: "盒", max: 5 },
-          { id: "herbesser", name: "Herbesser / 合必爽", unit: "盒", max: 5 },
-          { id: "lipanthyl", name: "Lipanthyl / 弗尼利脂寧", unit: "", max: 5 },
-          { id: "zanidip", name: "Zanidip / 利壓", unit: "", max: 5 },
-          { id: "coxine", name: "Coxine / 冠欣", unit: "盒", max: 5 },
-          { id: "spironolactone", name: "Spironolactone / 輸泌來", unit: "盒", max: 5 },
-          { id: "ginkgo", name: "Ginkgocentrate / 杏銀", unit: "盒", max: 5 },
-          { id: "sigmart", name: "Sigmart / 喜革脈", unit: "", max: 5 },
-          { id: "caltrate", name: "Caltrate / 挺立鈣", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 1, group: "GZM (背面)", isWarn: false,
-        items: [
-          { id: "qtern", name: "Qtern / 控醣穩", unit: "", max: 5 },
-          { id: "irbetan", name: "Irbetan / 爾壓順", unit: "", max: 5 },
-          { id: "entecavir", name: "Entecavir / 欣苷", unit: "", max: 5 },
-          { id: "daflon", name: "Daflon / 達促朗", unit: "", max: 5 },
-          { id: "sinmaron", name: "Sinmaron / 舒解憂", unit: "", max: 5 },
-          { id: "synorid", name: "Synorid / 欣律", unit: "", max: 5 },
-          { id: "lyrica", name: "Lyrica / 利瑞卡", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 2, group: "GZE", isWarn: false,
-        items: [
-          { id: "nitrostat", name: "Nitrostat / 耐絞寧", unit: "盒", max: 5 },
-          { id: "pletaal", name: "Pletaal / 普達錠", unit: "盒", max: 5 },
-          { id: "atozet", name: "Atozet / 優泰脂", unit: "", max: 5 },
-          { id: "acerine", name: "Acerine / 抑血凝", unit: "", max: 5 },
-          { id: "ibimo", name: "Ibimo / 愛彼脈", unit: "", max: 5 },
-          { id: "conslife", name: "Conslife / 秘福", unit: "盒", max: 5 },
-          { id: "syntrend25", name: "Syntrend 25mg / 心全", unit: "", max: 5 },
-          { id: "sod_bicarb", name: "Sodium Bicarbonate / 碳酸氫鈉片", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 2, group: "GZF", isWarn: false,
-        items: [
-          { id: "edarbi", name: "Edarbi / 易得平", unit: "", max: 5 },
-          { id: "neuquinon", name: "Neuquinon / 能澍奇朗", unit: "", max: 5 },
-          { id: "klaricid", name: "Klaricid / 開羅理黴素", unit: "", max: 5 },
-          { id: "morcasin", name: "Morcasin / 孟克杏", unit: "盒", max: 5 },
-          { id: "duxetine", name: "Duxetine / 萬憂停", unit: "", max: 5 },
-          { id: "juxac", name: "Juxac / 解鬱", unit: "", max: 5 },
-          { id: "keppra", name: "Keppra / 優開", unit: "", max: 5 },
-          { id: "dopadine", name: "Dopadine / 多巴定", unit: "", max: 5 },
-          { id: "rafax", name: "Rafax / 羅菲思", unit: "", max: 5 },
-          { id: "seroxat", name: "SeroXAT / 克憂果", unit: "", max: 5 },
-          { id: "depakine", name: "Depakine / 帝拔癲", unit: "束", max: 5 },
-          { id: "aabilify", name: "Aabilify / 安立復", unit: "", max: 5 },
-          { id: "avodart", name: "Avodart / 適尿通", unit: "", max: 5 },
-          { id: "imolex", name: "Imolex / 依莫瀉", unit: "盒", max: 5 },
-          { id: "genurso", name: "GenURSO / 健膽舒錠", unit: "盒", max: 5 },
-          { id: "wecoli", name: "Wecoli / 胃可麗錠", unit: "盒", max: 5 },
-          { id: "ketosteril", name: "Ketosteril / 吉多利", unit: "", max: 5 },
-          { id: "u_ca", name: "U-Ca / 活維D", unit: "", max: 5 },
-          { id: "methimazole", name: "Methimazole / 甲硫嗎唑", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 2, group: "GZN (背面)", isWarn: false,
-        items: [
-          { id: "lamictal", name: "LamicTAL / 樂命達", unit: "", max: 5 },
-          { id: "trileptal", name: "Trileptal / 除癲達", unit: "", max: 5 },
-          { id: "topamax25", name: "Topamax 25mg / 妥泰(裸錠)", unit: "", max: 5 },
-          { id: "olan", name: "Olan / 若寧", unit: "", max: 5 },
-          { id: "nifedipine", name: "NiFEdipine / 恆脈循", unit: "", max: 5 },
-          { id: "seroquel300", name: "SeroQUEL 300mg / 思樂康", unit: "", max: 5 },
-          { id: "monkast10", name: "Monkast 10mg / 樂息喘", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 2, group: "GZO (背面)", isWarn: false,
-        items: [
-          { id: "procal", name: "Procal / 普羅鈣", unit: "盒", max: 5 },
-          { id: "algitab", name: "Algitab / 艾胃逆服", unit: "", max: 2 },
-          { id: "polupi", name: "Polupi / 僕樂彼", unit: "盒", max: 5 },
-          { id: "takepron", name: "Takepron / 泰克胃通", unit: "", max: 5 },
-          { id: "creon", name: "Creon / 卡利消", unit: "", max: 5 },
-          { id: "sandimmun25", name: "Sandimmun 25mg / 新體睦", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 3, group: "GZ-I + J", isWarn: false,
-        items: [
-          { id: "mesyrel", name: "Mesyrel / 美舒鬱", unit: "", max: 5 },
-          { id: "tonec", name: "Tonec / 痛停", unit: "盒", max: 5 },
-          { id: "etor60", name: "Etor 60mg / 伊托", unit: "", max: 5 },
-          { id: "hydroquine", name: "Hydroquine / 瘧寧", unit: "", max: 5 },
-          { id: "colchicine", name: "Colchicine / 秋水仙鹼片", unit: "盒", max: 5 },
-          { id: "euricon", name: "EuriCON / 優力康", unit: "盒", max: 5 },
-          { id: "seroquel25", name: "SeroQUEL 25mg / 思樂康", unit: "", max: 5 },
-          { id: "mocalm", name: "Mocalm / 永康緒", unit: "", max: 5 },
-          { id: "switane", name: "Switane / 瑞丹", unit: "", max: 5 },
-          { id: "aricept", name: "Aricept / 愛億欣", unit: "", max: 5 },
-          { id: "leeyo", name: "Leeyo / 離憂", unit: "", max: 5 },
-          { id: "dulcolax", name: "Dulcolax / 樂可舒", unit: "", max: 5 },
-          { id: "catilon", name: "Catilon / 腸必寧", unit: "盒", max: 5 },
-          { id: "betmiga", name: "Betmiga / 貝坦利", unit: "", max: 5 },
-          { id: "fronil", name: "Fronil / 福樂你", unit: "", max: 5 },
-          { id: "oxbu", name: "Oxbu / 歐舒", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 3, group: "GZK", isWarn: false,
-        items: [
-          { id: "glyxambi", name: "Glyxambi / 糖順平", unit: "", max: 5 },
-          { id: "actos", name: "Actos / 愛妥糖", unit: "", max: 5 },
-          { id: "forxiga", name: "Forxiga / 福適佳", unit: "", max: 5 },
-          { id: "trajenta", name: "Trajenta / 糖漸平", unit: "", max: 5 },
-          { id: "relinide", name: "Relinide / 醣立定", unit: "", max: 5 },
-          { id: "acarose", name: "Acarose / 降醣佳", unit: "盒", max: 5 },
-          { id: "nolvadex", name: "Nolvadex / 諾瓦得士", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 3, group: "高警訊 抽屜+架上", isWarn: true,
-        items: [
-          { id: "amaryl", name: "Amaryl / 瑪爾胰", unit: "", max: 5 },
-          { id: "jardiance25", name: "25mg Jardiance / 恩排糖", unit: "", max: 5 },
-          { id: "lixiana60", name: "Lixiana 60mg / 里先安", unit: "", max: 5 },
-          { id: "pradaxa110", name: "Pradaxa 110mg / 普栓達", unit: "", max: 5 },
-          { id: "thoin", name: "ThoIN / 端克", unit: "盒", max: 5 },
-          { id: "xarelto15", name: "Xarelto 15mg / 拜瑞妥", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 3, group: "胰島素 架(桌)上庫存區", isInsulin: true,
-        items: [
-          { id: "xigduo", name: "Xigduo / 釋多糖", unit: "", max: 5 },
-          { id: "toujeo", name: "Toujeo / 糖德仕", unit: "", max: 5 },
-          { id: "tresiba", name: "Tresiba / 諾胰保", unit: "盒", max: 5 },
-          { id: "mix50_kwikpen", name: "Mix50 KwikPen(紅筆)", unit: "盒", max: 5 },
-          { id: "ryzodeg", name: "Ryzodeg / 諾胰得(藍筆)", unit: "盒", max: 5 }
-        ]
-      }
-    ];
-
-    // 4. 專用調劑台出廠預設資料庫
-    const DEFAULT_SPECIAL_MEDS = [
-      {
-        col: 1, group: "專用台 - LZ 料位區", isWarn: false,
-        items: [
-          { id: "lzd18", name: "LZD18 Megatus ORAL 美佳特口服懸液劑", unit: "盒", max: 5 },
-          { id: "lzl24", name: "LZL24 Mycostatin 滅菌靈懸液用粉劑", unit: "盒", max: 5 },
-          { id: "lzj18", name: "LZJ18 Mezavant 安適凡特緩釋腸溶膜衣錠", unit: "束", max: 5 },
-          { id: "lzl28", name: "LZL28 Trileptal 除癲達口服懸浮液", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 1, group: "專用台 - SX / SZC 料位區", isWarn: false,
-        items: [
-          { id: "sxy22", name: "SXY22 ASACOL 安腸克栓劑", unit: "盒", max: 5 },
-          { id: "sxz12", name: "SXZ12 Crinone 快孕隆", unit: "盒", max: 5 },
-          { id: "szc18", name: "SZC18 Advanced 優麗舒加強型單支裝眼用乳劑(自費)", unit: "盒", max: 5 },
-          { id: "szc38", name: "SZC38 Seridol Oral 賽力多內服液劑", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 2, group: "專用台 - SZD / SZG / SZH 料位區", isWarn: false,
-        items: [
-          { id: "szd38", name: "SZD38 Restasis OPH 麗眼達眼用乳劑", unit: "盒", max: 5 },
-          { id: "szg18", name: "SZG18 Depakine 200mg 帝拔癲液", unit: "盒", max: 5 },
-          { id: "szg38", name: "SZG38 Qting ORAL 康停懸液劑", unit: "盒", max: 5 },
-          { id: "szh18", name: "SZH18 Sandimmun100 新體睦", unit: "", max: 5 },
-          { id: "szh28", name: "SZH28 Keppra 優開內服液劑", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 2, group: "專用台 - SZK / SZL / SZP / SZW / SZZ 料位區", isWarn: false,
-        items: [
-          { id: "szk38", name: "SZK38 Memary Oral 美憶內服液劑", unit: "盒", max: 5 },
-          { id: "szl48", name: "SZL48 Hya-Joint(專用) 海捷特關節腔注射劑", unit: "", max: 5 },
-          { id: "szp18", name: "SZP18 Piracetam ORAL 派卡登內服液劑", unit: "", max: 5 },
-          { id: "szw42", name: "SZW42 【15mg】Lixiana 里先安", unit: "", max: 5 },
-          { id: "szz18", name: "SZZ18 Scrat 保胃懸乳液", unit: "", max: 5 }
-        ]
-      },
-      {
-        col: 3, group: "專用台 - 胰島素冷藏區", isInsulin: true,
-        items: [
-          { id: "novorapid", name: "NovoRapid(橘筆)", unit: "盒", max: 5 },
-          { id: "mix25_kwikpen", name: "Mix25 KwikPen(黃筆)", unit: "盒", max: 5 }
-        ]
-      },
-      {
-        col: 3, group: "專用台 - 夜刻 / 特定管制區", isNight: true,
-        items: [
-          { id: "biktarvy", name: "Biktarvy 吉他偉 (夜刻)", unit: "", max: 5 }
-        ]
-      }
-    ];
-
-    // 本機記憶體動態資料
-    let generalMedData = JSON.parse(localStorage.getItem("pharmacy_general_meds") || JSON.stringify(DEFAULT_GENERAL_MEDS));
-    let specialMedData = JSON.parse(localStorage.getItem("pharmacy_special_meds") || JSON.stringify(DEFAULT_SPECIAL_MEDS));
-    let staffConfig = JSON.parse(localStorage.getItem("pharmacy_staff_config") || JSON.stringify(DEFAULT_STAFF_CONFIG));
-
     // 全域變數
     let currentStation = localStorage.getItem("pharmacy_station") || "黃籃";
     let draftOrders = {};
     let activeOrdersList = [];
     let checkedItems = {};
     let editingMedId = null;
-    let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}");
     let appMode = "pharmacist";
     let editorTab = "general";
     let isAssistantAuthenticated = false;
-    let dbOrdersRef = null;
-    let dbMenuRef = null;
-    let dbShortfallRef = null;
-    let dbStaffRef = null;
-    const channel = new BroadcastChannel("pharmacy_order_v13_channel");
-
-    // 暫存資料：確保雲端回傳成功前，不提早清空畫面
     let pendingArchiveData = null;
+    let isFirebaseConnected = false; // 🛡️ 實體連線偵測狀態
+
+    // 動態載入本機記憶體
+    let generalMedData = JSON.parse(localStorage.getItem("pharmacy_general_meds") || JSON.stringify(DEFAULT_GENERAL_MEDS));
+    let specialMedData = JSON.parse(localStorage.getItem("pharmacy_special_meds") || JSON.stringify(DEFAULT_SPECIAL_MEDS));
+    let staffConfig = JSON.parse(localStorage.getItem("pharmacy_staff_config") || JSON.stringify(DEFAULT_STAFF_CONFIG));
+    let latestShortfalls = JSON.parse(localStorage.getItem("pharmacy_shortfalls") || "{}");
+
+    const channel = new BroadcastChannel("pharmacy_order_v13_channel");
 
     const urlParams = new URLSearchParams(window.location.search);
     const validStations = ["黃籃", "綠籃", "青籃", "紅籃", "藍籃", "專用區"];
@@ -1490,15 +1161,30 @@
         }
         const db = firebase.database();
         
-        dbOrdersRef = db.ref("active_orders_v13");
-        dbOrdersRef.on("value", (snapshot) => {
+        // 🛡️ 實體連線偵測器
+        db.ref(".info/connected").on("value", (snap) => {
+            isFirebaseConnected = snap.val() === true;
+            const badge = document.getElementById("cloudBadge");
+            if (isFirebaseConnected) {
+                badge.innerText = "☁️ 雲端同步中";
+                badge.className = "cloud-status online";
+                badge.style.backgroundColor = "#e8f5e9";
+                badge.style.color = "#2e7d32";
+            } else {
+                badge.innerText = "❌ 離線 (禁止操作)";
+                badge.className = "cloud-status";
+                badge.style.backgroundColor = "#fecaca";
+                badge.style.color = "#991b1b";
+            }
+        });
+
+        db.ref("active_orders_v13").on("value", (snapshot) => {
           const val = snapshot.val();
           activeOrdersList = val ? Object.values(val) : [];
           renderAll();
         });
 
-        dbMenuRef = db.ref("menu_config_v13");
-        dbMenuRef.on("value", (snapshot) => {
+        db.ref("menu_config_v13").on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
             if (val.general) generalMedData = val.general;
@@ -1509,8 +1195,7 @@
           }
         });
 
-        dbStaffRef = db.ref("staff_config_v13");
-        dbStaffRef.on("value", (snapshot) => {
+        db.ref("staff_config_v13").on("value", (snapshot) => {
           const val = snapshot.val();
           if (val) {
             staffConfig = val;
@@ -1518,39 +1203,22 @@
           }
         });
 
-        dbShortfallRef = db.ref("shortfalls_v13");
-        dbShortfallRef.on("value", (snapshot) => {
+        db.ref("shortfalls_v13").on("value", (snapshot) => {
           const val = snapshot.val();
           latestShortfalls = val || {};
           localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
           checkAndRenderShortfallBanner();
         });
 
-        document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
-        document.getElementById("cloudBadge").className = "cloud-status online";
       } catch (err) {
         console.error("Firebase 連線失敗:", err);
-        document.getElementById("cloudBadge").innerText = "同機連線";
       }
     }
 
-    function syncActiveOrders() {
-      channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList });
-    }
-
-    function syncMenuConfig() {
-      const payload = { general: generalMedData, special: specialMedData };
-      channel.postMessage({ type: "UPDATE_MENU_CONFIG", payload });
-    }
-
-    function syncStaffConfig() {
-      channel.postMessage({ type: "UPDATE_STAFF_CONFIG", payload: staffConfig });
-      if (dbStaffRef) dbStaffRef.set(staffConfig);
-    }
-
-    function syncShortfalls() {
-      channel.postMessage({ type: "UPDATE_SHORTFALLS", payload: latestShortfalls });
-    }
+    function syncActiveOrders() { channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList }); }
+    function syncMenuConfig() { channel.postMessage({ type: "UPDATE_MENU_CONFIG", payload: { general: generalMedData, special: specialMedData } }); }
+    function syncStaffConfig() { channel.postMessage({ type: "UPDATE_STAFF_CONFIG", payload: staffConfig }); }
+    function syncShortfalls() { channel.postMessage({ type: "UPDATE_SHORTFALLS", payload: latestShortfalls }); }
 
     function updateSelectCapsule(val) {
       const sel = document.getElementById("stationSelect");
@@ -1561,21 +1229,14 @@
       else if(val.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
       else if(val.includes("青")) { bg = "#ccfbf1"; col = "#115e59"; border = "#5eead4"; }
       else if(val.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
-      
-      sel.style.backgroundColor = bg;
-      sel.style.color = col;
-      sel.style.borderColor = border;
+      sel.style.backgroundColor = bg; sel.style.color = col; sel.style.borderColor = border;
     }
 
     function changeStation(val) {
       currentStation = val;
       localStorage.setItem("pharmacy_station", val);
-      draftOrders = {};
-      editingMedId = null;
-      updateSelectCapsule(val);
-      updateStationHeader();
-      checkAndRenderShortfallBanner();
-      renderAll();
+      draftOrders = {}; editingMedId = null;
+      updateSelectCapsule(val); updateStationHeader(); checkAndRenderShortfallBanner(); renderAll();
     }
 
     function getBasketBadge(station) {
@@ -1586,7 +1247,6 @@
       else if(station.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
       else if(station.includes("青")) { bg = "#ccfbf1"; col = "#115e59"; border = "#5eead4"; }
       else if(station.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
-      
       return `<span style="background:${bg}; color:${col}; border:1.5px solid ${border}; padding:3px 10px; border-radius:12px; font-size:12.5px; font-weight:900; white-space:nowrap; display:inline-block; box-shadow:0 1px 2px rgba(0,0,0,0.05);">${station}</span>`;
     }
 
@@ -1595,9 +1255,7 @@
       currentStation = actualSelected;
       const sameStationCount = activeOrdersList.filter(o => o.station === currentStation).length;
       let displayTitle = currentStation;
-      if (sameStationCount > 0) {
-        displayTitle = `${currentStation}${sameStationCount + 1}`;
-      }
+      if (sameStationCount > 0) displayTitle = `${currentStation}${sameStationCount + 1}`;
       document.getElementById("currentStationTitle").innerHTML = `【 ${getBasketBadge(displayTitle)} <span style="vertical-align:middle;">- 藥品劃記看板</span> 】`;
     }
 
@@ -1605,60 +1263,37 @@
       const banner = document.getElementById("shortfallBanner");
       const content = document.getElementById("shortfallBannerContent");
       const list = latestShortfalls[currentStation] || [];
-
       if (list.length > 0 && appMode === "pharmacist") {
-        content.innerHTML = list.map(item => `
-          <div>• <b>${item.medName}</b>：點 <b>${item.req}</b> ${item.unit} ➔ 實出 <b style="color:#d97706;">${item.actual}</b> ${item.unit} (少發 ${item.req - item.actual}) <span style="font-size:11px; color:#888;">[${item.time}]</span></div>
-        `).join("");
+        content.innerHTML = list.map(item => `<div>• <b>${item.medName}</b>：點 <b>${item.req}</b> ${item.unit} ➔ 實出 <b style="color:#d97706;">${item.actual}</b> ${item.unit} (少發 ${item.req - item.actual}) <span style="font-size:11px; color:#888;">[${item.time}]</span></div>`).join("");
         banner.style.display = "block";
-      } else {
-        banner.style.display = "none";
-      }
+      } else { banner.style.display = "none"; }
     }
 
     function dismissShortfallBanner() {
       delete latestShortfalls[currentStation];
       localStorage.setItem("pharmacy_shortfalls", JSON.stringify(latestShortfalls));
       syncShortfalls();
-      
-      if (firebase.apps.length) {
-          firebase.database().ref("shortfalls_v13").set(latestShortfalls).catch(e => console.error("清除橫幅失敗", e));
+      if (isFirebaseConnected) {
+          firebase.database().ref("shortfalls_v13").set(latestShortfalls).catch(e => console.error(e));
       }
       document.getElementById("shortfallBanner").style.display = "none";
     }
 
-    function getCurrentMenuData() {
-      return currentStation === "專用區" ? specialMedData : generalMedData;
-    }
-
+    function getCurrentMenuData() { return currentStation === "專用區" ? specialMedData : generalMedData; }
     function findMedAcrossAll(id) {
       for (const g of [...generalMedData, ...specialMedData]) {
-        for (const item of g.items || []) {
-          if (item.id === id) return item;
-        }
-      }
-      return null;
+        for (const item of g.items || []) { if (item.id === id) return item; }
+      } return null;
     }
 
-    let pressTimer = null;
-    let isLongPress = false;
-
+    let pressTimer = null; let isLongPress = false;
     function handleMedClick(med) {
-      if (isLongPress) {
-        isLongPress = false;
-        return;
-      }
+      if (isLongPress) { isLongPress = false; return; }
       if (med.disabled) return;
-
       const cur = draftOrders[med.id] || 0;
       let next = cur + 1;
       if (next > (med.max || 5)) next = 0;
-
-      if (next === 0) {
-        delete draftOrders[med.id];
-      } else {
-        draftOrders[med.id] = next;
-      }
+      if (next === 0) delete draftOrders[med.id]; else draftOrders[med.id] = next;
       renderPharmacistBoard();
     }
 
@@ -1674,52 +1309,35 @@
         }
       }, 1000);
     }
+    function cancelLongPress() { if (pressTimer) clearTimeout(pressTimer); }
 
-    function cancelLongPress() {
-      if (pressTimer) clearTimeout(pressTimer);
-    }
-
-    // 🏆 防呆：阻擋禁點藥品的數字輸入
     function startDirectEditQty(e, medId, isDisabled) {
       e.stopPropagation();
       if (isDisabled) return; 
-      
-      editingMedId = medId;
-      renderPharmacistBoard();
+      editingMedId = medId; renderPharmacistBoard();
       setTimeout(() => {
         const inputEl = document.getElementById(`badgeInput_${medId}`);
-        if (inputEl) {
-          inputEl.focus();
-          inputEl.select();
-        }
+        if (inputEl) { inputEl.focus(); inputEl.select(); }
       }, 50);
     }
 
     function finishDirectEditQty(medId, inputVal, maxLimit) {
       const valStr = inputVal.trim();
-      if (valStr === "" || isNaN(valStr)) {
-        delete draftOrders[medId];
-      } else {
+      if (valStr === "" || isNaN(valStr)) { delete draftOrders[medId]; } 
+      else {
         let num = parseInt(valStr, 10);
-        if (num <= 0) {
-          delete draftOrders[medId];
-        } else {
-          if (num > (maxLimit || 5)) num = (maxLimit || 5);
-          draftOrders[medId] = num;
-        }
+        if (num <= 0) delete draftOrders[medId];
+        else { if (num > (maxLimit || 5)) num = (maxLimit || 5); draftOrders[medId] = num; }
       }
-      editingMedId = null;
-      renderPharmacistBoard();
+      editingMedId = null; renderPharmacistBoard();
     }
 
-    let asstPressTimer = null;
-    let isAsstLongPress = false;
+    let asstPressTimer = null; let isAsstLongPress = false;
 
+    // 🛡️ 助理微調防護
     function handleAsstCellClick(orderId, medId) {
-      if (isAsstLongPress) {
-        isAsstLongPress = false;
-        return;
-      }
+      if (!isFirebaseConnected) { alert("⛔ 系統離線中！為避免資料異常，已暫停調整數量。"); return; }
+      if (isAsstLongPress) { isAsstLongPress = false; return; }
       cycleStationFulfillment(orderId, medId);
     }
 
@@ -1728,26 +1346,18 @@
       const order = updatedOrders.find(o => o.id === orderId);
       if (!order) return;
       if (!order.fulfilled) order.fulfilled = {};
-
       const reqQty = order.items?.[medId] || 0;
       const currentFulfilled = (order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
-
       let nextFulfilled = currentFulfilled - 1;
-      if (nextFulfilled < 0) {
-        nextFulfilled = reqQty;
-      }
-
+      if (nextFulfilled < 0) nextFulfilled = reqQty;
       order.fulfilled[medId] = nextFulfilled;
       activeOrdersList = updatedOrders;
-      
-      if (firebase.apps.length) {
-          firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
-      }
-      syncActiveOrders();
-      renderAssistantMatrix();
+      firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
+      syncActiveOrders(); renderAssistantMatrix();
     }
 
     function startAsstCellLongPress(orderId, medId) {
+      if (!isFirebaseConnected) return;
       isAsstLongPress = false;
       asstPressTimer = setTimeout(() => {
         isAsstLongPress = true;
@@ -1757,25 +1367,19 @@
         if (!order.fulfilled) order.fulfilled = {};
         const reqQty = order.items?.[medId] || 0;
         const cur = (order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
-        
         order.fulfilled[medId] = (cur === 0) ? reqQty : 0;
         if (navigator.vibrate) navigator.vibrate(60);
-        
         activeOrdersList = updatedOrders;
-        if (firebase.apps.length) {
-            firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
-        }
-        syncActiveOrders();
-        renderAssistantMatrix();
+        firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
+        syncActiveOrders(); renderAssistantMatrix();
       }, 1000);
     }
 
-    function cancelAsstCellLongPress() {
-      if (asstPressTimer) clearTimeout(asstPressTimer);
-    }
+    function cancelAsstCellLongPress() { if (asstPressTimer) clearTimeout(asstPressTimer); }
 
     let asstTotalPressTimer = null;
     function startAsstTotalLongPress(medId) {
+      if (!isFirebaseConnected) return;
       asstTotalPressTimer = setTimeout(() => {
         let totalActual = 0;
         const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList));
@@ -1784,7 +1388,6 @@
           const actual = (o.fulfilled?.[medId] !== undefined) ? o.fulfilled[medId] : req;
           totalActual += actual;
         });
-
         const setToZero = (totalActual > 0);
         updatedOrders.forEach(o => {
           if (o.items && o.items[medId]) {
@@ -1792,69 +1395,46 @@
             o.fulfilled[medId] = setToZero ? 0 : o.items[medId];
           }
         });
-
         if (navigator.vibrate) navigator.vibrate(70);
-        
         activeOrdersList = updatedOrders;
-        if (firebase.apps.length) {
-            firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
-        }
-        syncActiveOrders();
-        renderAssistantMatrix();
+        firebase.database().ref("active_orders_v13").set(activeOrdersList).catch(e => console.error(e));
+        syncActiveOrders(); renderAssistantMatrix();
       }, 1000);
     }
 
-    function cancelAsstTotalLongPress() {
-      if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer);
-    }
+    function cancelAsstTotalLongPress() { if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer); }
 
     function promptAssistantAccess() {
-      if (isAssistantAuthenticated) {
-        switchMode('assistant');
-      } else {
-        document.getElementById("authCodeInput").value = "";
-        document.getElementById("authModal").style.display = "flex";
+      if (isAssistantAuthenticated) { switchMode('assistant'); } 
+      else {
+        document.getElementById("authCodeInput").value = ""; document.getElementById("authModal").style.display = "flex";
         setTimeout(() => document.getElementById("authCodeInput").focus(), 100);
       }
     }
 
-    function closeAuthModal() {
-      document.getElementById("authModal").style.display = "none";
-    }
+    function closeAuthModal() { document.getElementById("authModal").style.display = "none"; }
 
     function confirmAssistantAccess() {
       const code = document.getElementById("authCodeInput").value.trim();
       const validAssistant = (staffConfig.assistants || []).find(a => a.code === code);
-
-      if (validAssistant) {
-        isAssistantAuthenticated = true;
-        closeAuthModal();
-        switchMode('assistant');
-      } else {
-        alert("授權代碼不正確或無助理取藥權限！");
-      }
+      if (validAssistant) { isAssistantAuthenticated = true; closeAuthModal(); switchMode('assistant'); } 
+      else { alert("授權代碼不正確或無助理取藥權限！"); }
     }
 
     function switchMode(mode) {
-      appMode = mode;
-      editingMedId = null;
+      appMode = mode; editingMedId = null;
       document.getElementById("tabPharmacist").className = `mode-tab ${mode === 'pharmacist' ? 'active' : ''}`;
       document.getElementById("tabAssistant").className = `mode-tab ${mode === 'assistant' ? 'active' : ''}`;
       document.getElementById("viewPharmacist").style.display = mode === 'pharmacist' ? 'block' : 'none';
       document.getElementById("pharmacistBottomBar").style.display = mode === 'pharmacist' ? 'flex' : 'none';
       document.getElementById("viewAssistant").style.display = mode === 'assistant' ? 'block' : 'none';
       document.getElementById("btnAdminGear").style.display = mode === 'assistant' ? 'block' : 'none';
-      checkAndRenderShortfallBanner();
-      renderAll();
+      checkAndRenderShortfallBanner(); renderAll();
     }
 
     function renderAll() {
       updateStationHeader();
-      if (appMode === "pharmacist") {
-        renderPharmacistBoard();
-      } else {
-        renderAssistantMatrix();
-      }
+      if (appMode === "pharmacist") renderPharmacistBoard(); else renderAssistantMatrix();
     }
 
     function renderPharmacistBoard() {
@@ -1863,21 +1443,15 @@
       const currentMenu = getCurrentMenuData();
 
       [1, 2, 3].forEach(colIdx => {
-        const colDiv = document.createElement("div");
-        colDiv.className = "col-group";
-
+        const colDiv = document.createElement("div"); colDiv.className = "col-group";
         const groups = currentMenu.filter(g => (g.col || 1) === colIdx);
         groups.forEach(group => {
-          const block = document.createElement("div");
-          block.className = "med-block";
-
+          const block = document.createElement("div"); block.className = "med-block";
           let headerClass = "block-header";
           if (group.isWarn) headerClass += " warn";
           if (group.isInsulin) headerClass += " insulin";
           if (group.isNight) headerClass += " night";
-
-          const header = document.createElement("div");
-          header.className = headerClass;
+          const header = document.createElement("div"); header.className = headerClass;
           header.innerHTML = `<span>${group.group}</span><span>${group.isWarn ? '⚠️ 高警訊' : (group.isInsulin ? '💉 胰島素' : (group.isNight ? '🌙 夜刻/管制' : ''))}</span>`;
           block.appendChild(header);
 
@@ -1904,41 +1478,23 @@
 
             let badgeContent = "";
             if (isEditingThis) {
-              badgeContent = `
-                <input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}"
-                  onclick="event.stopPropagation()"
-                  onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})"
-                  onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">
-              `;
+              badgeContent = `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">`;
             } else {
-              badgeContent = `
-                ${count > 0 ? count : ''}
-                ${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}
-              `;
+              badgeContent = `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
             }
 
-            itemDiv.innerHTML = `
-              <div class="med-name">${med.name}</div>
-              <div class="med-status-icons">${badgesHtml}</div>
-              ${med.unit ? `<div class="med-unit-badge">${med.unit}</div>` : ''}
-              <div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})" title="點擊直接修改數字">
-                ${badgeContent}
-              </div>
-            `;
+            itemDiv.innerHTML = `<div class="med-name">${med.name}</div><div class="med-status-icons">${badgesHtml}</div>${med.unit ? `<div class="med-unit-badge">${med.unit}</div>` : ''}<div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})" title="點擊直接修改數字">${badgeContent}</div>`;
             block.appendChild(itemDiv);
           });
-
           colDiv.appendChild(block);
         });
-
         board.appendChild(colDiv);
       });
 
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       const summaryEl = document.getElementById("stationSummaryText");
-      if (activeList.length === 0) {
-        summaryEl.innerText = "未點選藥品";
-      } else {
+      if (activeList.length === 0) { summaryEl.innerText = "未點選藥品"; } 
+      else {
         const txt = activeList.map(([id, qty]) => {
           const med = findMedAcrossAll(id) || {name:id};
           return `${med.name}×${qty}`;
@@ -1952,30 +1508,15 @@
       const tbody = document.getElementById("matrixBody");
 
       const stationPriority = { "黃籃": 1, "綠籃": 2, "青籃": 3, "紅籃": 4, "藍籃": 5, "專用區": 6 };
-      
-      const stationColumns = activeOrdersList.map(order => ({
-        key: order.id,
-        label: order.displayLabel,
-        station: order.station,
-        orderObj: order
-      })).sort((a, b) => {
+      const stationColumns = activeOrdersList.map(order => ({ key: order.id, label: order.displayLabel, station: order.station, orderObj: order })).sort((a, b) => {
         const pA = stationPriority[a.station] || 99;
         const pB = stationPriority[b.station] || 99;
         if (pA !== pB) return pA - pB;
         return (a.orderObj.orderSeq || 0) - (b.orderObj.orderSeq || 0);
       });
 
-      let headHtml = `
-        <tr>
-          <th class="sticky-col-check">完成</th>
-          <th class="sticky-col-shelf">架位</th>
-          <th class="col-name">藥品名稱</th>
-          <th style="width: 45px; min-width: 45px;">單位</th>
-          <th style="width: 70px; min-width: 70px;">實出/總需</th>
-      `;
-      stationColumns.forEach(col => {
-        headHtml += `<th class="th-station" style="min-width: 75px; padding:4px;">${getBasketBadge(col.label)}</th>`;
-      });
+      let headHtml = `<tr><th class="sticky-col-check">完成</th><th class="sticky-col-shelf">架位</th><th class="col-name">藥品名稱</th><th style="width: 45px; min-width: 45px;">單位</th><th style="width: 70px; min-width: 70px;">實出/總需</th>`;
+      stationColumns.forEach(col => { headHtml += `<th class="th-station" style="min-width: 75px; padding:4px;">${getBasketBadge(col.label)}</th>`; });
       headHtml += `</tr>`;
       thead.innerHTML = headHtml;
 
@@ -1983,28 +1524,18 @@
       let hasAnyOrder = false;
 
       const canonicalGroupsOrder = [
-        ...generalMedData.filter(g => g.col === 1),
-        ...generalMedData.filter(g => g.col === 2),
-        ...generalMedData.filter(g => g.col === 3),
-        ...specialMedData.filter(g => g.col === 1),
-        ...specialMedData.filter(g => g.col === 2),
-        ...specialMedData.filter(g => g.col === 3)
+        ...generalMedData.filter(g => g.col === 1), ...generalMedData.filter(g => g.col === 2), ...generalMedData.filter(g => g.col === 3),
+        ...specialMedData.filter(g => g.col === 1), ...specialMedData.filter(g => g.col === 2), ...specialMedData.filter(g => g.col === 3)
       ];
 
       canonicalGroupsOrder.forEach(group => {
         (group.items || []).forEach(med => {
-          let totalReqQty = 0;
-          let totalActualQty = 0;
-          let hasAdjustedInRow = false;
-
+          let totalReqQty = 0; let totalActualQty = 0; let hasAdjustedInRow = false;
           const colData = stationColumns.map(col => {
             const req = col.orderObj.items?.[med.id] || 0;
             const actual = (col.orderObj.fulfilled?.[med.id] !== undefined) ? col.orderObj.fulfilled[med.id] : req;
-            
-            totalReqQty += req;
-            totalActualQty += actual;
+            totalReqQty += req; totalActualQty += actual;
             if (actual !== req) hasAdjustedInRow = true;
-
             return { req, actual, orderId: col.orderObj.id };
           });
 
@@ -2014,74 +1545,34 @@
             const tr = document.createElement("tr");
             tr.className = `matrix-row ${isDone ? 'done' : ''}`;
 
-            let rowHtml = `
-              <td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td>
-              <td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td>
-              <td class="col-name">${med.name}</td>
-              <td>${med.unit || '-'}</td>
-              <td>
-                <div class="matrix-total-cell"
-                  onmousedown="startAsstTotalLongPress('${med.id}')"
-                  onmouseup="cancelAsstTotalLongPress()"
-                  onmouseleave="cancelAsstTotalLongPress()"
-                  ontouchstart="startAsstTotalLongPress('${med.id}')"
-                  ontouchend="cancelAsstTotalLongPress()"
-                  title="長按 1 秒：本藥全單全部歸零 / 全數還原">
-                  <span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>
-                  ${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}
-                </div>
-              </td>
-            `;
+            let rowHtml = `<td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td><td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td><td class="col-name">${med.name}</td><td>${med.unit || '-'}</td><td><div class="matrix-total-cell" onmousedown="startAsstTotalLongPress('${med.id}')" onmouseup="cancelAsstTotalLongPress()" onmouseleave="cancelAsstTotalLongPress()" ontouchstart="startAsstTotalLongPress('${med.id}')" ontouchend="cancelAsstTotalLongPress()" title="長按 1 秒：本藥全單全部歸零 / 全數還原"><span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}</div></td>`;
 
             colData.forEach(c => {
               if (c.req > 0) {
                 let cellClass = "station-qty-cell";
-                if (c.actual === 0) cellClass += " zero";
-                else if (c.actual < c.req) cellClass += " partial";
-
-                rowHtml += `
-                  <td>
-                    <div class="${cellClass}"
-                      onmousedown="startAsstCellLongPress('${c.orderId}', '${med.id}')"
-                      onmouseup="cancelAsstCellLongPress()"
-                      onmouseleave="cancelAsstCellLongPress()"
-                      ontouchstart="startAsstCellLongPress('${c.orderId}', '${med.id}')"
-                      ontouchend="cancelAsstCellLongPress()"
-                      onclick="handleAsstCellClick('${c.orderId}', '${med.id}')"
-                      title="點擊循環遞減 ｜ 長按 1 秒本台歸零 (原需求: ${c.req})">
-                      <span>${c.actual}</span>
-                      ${c.actual !== c.req ? `<span class="sub-qty-hint">/${c.req}</span>` : ''}
-                    </div>
-                  </td>
-                `;
-              } else {
-                rowHtml += `<td style="color:#ccc;">-</td>`;
-              }
+                if (c.actual === 0) cellClass += " zero"; else if (c.actual < c.req) cellClass += " partial";
+                rowHtml += `<td><div class="${cellClass}" onmousedown="startAsstCellLongPress('${c.orderId}', '${med.id}')" onmouseup="cancelAsstCellLongPress()" onmouseleave="cancelAsstCellLongPress()" ontouchstart="startAsstCellLongPress('${c.orderId}', '${med.id}')" ontouchend="cancelAsstCellLongPress()" onclick="handleAsstCellClick('${c.orderId}', '${med.id}')" title="點擊循環遞減 ｜ 長按 1 秒本台歸零"><span>${c.actual}</span>${c.actual !== c.req ? `<span class="sub-qty-hint">/${c.req}</span>` : ''}</div></td>`;
+              } else { rowHtml += `<td style="color:#ccc;">-</td>`; }
             });
 
-            tr.innerHTML = rowHtml;
-            tbody.appendChild(tr);
+            tr.innerHTML = rowHtml; tbody.appendChild(tr);
           }
         });
       });
-
-      if (!hasAnyOrder) {
-        tbody.innerHTML = `<tr><td colspan="${5 + stationColumns.length}" style="padding: 26px; color: #888;">目前所有調劑台均無待補藥單</td></tr>`;
-      }
+      if (!hasAnyOrder) tbody.innerHTML = `<tr><td colspan="${5 + stationColumns.length}" style="padding: 26px; color: #888;">目前所有調劑台均無待補藥單</td></tr>`;
     }
 
-    function toggleCheck(medId) {
-      checkedItems[medId] = !checkedItems[medId];
-      renderAssistantMatrix();
-    }
+    function toggleCheck(medId) { checkedItems[medId] = !checkedItems[medId]; renderAssistantMatrix(); }
 
-    // 🛡️ 重新建構：確保沒有提早清空畫面的安全歸檔流程
+    // 🛡️️ 實體連線閘門：阻擋斷網時的「幽靈」歸檔動作
     function clearDoneItems() {
-      const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
-      if (doneIds.length === 0) {
-        alert("尚未勾選任何已完成項目！");
-        return;
+      if (!isFirebaseConnected) {
+          alert("⛔ 系統目前處於離線狀態！\n為避免資料異常流失，已阻斷歸檔操作。請恢復網路後再試。");
+          return;
       }
+
+      const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
+      if (doneIds.length === 0) { alert("尚未勾選任何已完成項目！"); return; }
 
       const now = new Date();
       const dateStr = getTwDate(now);
@@ -2089,7 +1580,6 @@
       const currentHour = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', hour: 'numeric', hour12: false }));
       const currentMinute = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', minute: 'numeric' }));
 
-      // 製作預備資料（深拷貝），不在確定前修改主畫面變數
       const clonedOrdersList = JSON.parse(JSON.stringify(activeOrdersList));
       const clonedShortfalls = JSON.parse(JSON.stringify(latestShortfalls));
       const newHistoryRecords = [];
@@ -2112,24 +1602,10 @@
 
             if (actual < req) {
               if (!clonedShortfalls[stKey]) clonedShortfalls[stKey] = [];
-              clonedShortfalls[stKey].push({
-                medName: med.name,
-                unit: med.unit || '盒',
-                req: req,
-                actual: actual,
-                time: getTwTime(now, false)
-              });
+              clonedShortfalls[stKey].push({ medName: med.name, unit: med.unit || '盒', req: req, actual: actual, time: getTwTime(now, false) });
             }
 
-            archivedItems.push({
-              medId: medId,
-              medName: med.name,
-              unit: med.unit || '',
-              req: req,
-              actual: actual,
-              shortfall: shortfall
-            });
-
+            archivedItems.push({ medId: medId, medName: med.name, unit: med.unit || '', req: req, actual: actual, shortfall: shortfall });
             delete order.items[medId];
             if (order.fulfilled && order.fulfilled[medId] !== undefined) delete order.fulfilled[medId];
           }
@@ -2138,20 +1614,9 @@
         if (archivedItems.length > 0) {
           newHistoryRecords.push({
             id: "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
-            orderId: order.id,
-            station: order.station,
-            displayLabel: order.displayLabel,
-            staffCode: order.staffCode,
-            staffName: order.staffName || "",
-            createDate: order.createDate || dateStr,
-            createTime: order.time,
-            createTimestamp: order.createTimestamp || Date.now(),
-            completeDate: dateStr,
-            completeTime: timeStr,
-            completeHour: currentHour,
-            completeMinute: currentMinute,
-            completeTimestamp: Date.now(),
-            timestamp: Date.now(),
+            orderId: order.id, station: order.station, displayLabel: order.displayLabel, staffCode: order.staffCode, staffName: order.staffName || "",
+            createDate: order.createDate || dateStr, createTime: order.time, createTimestamp: order.createTimestamp || Date.now(),
+            completeDate: dateStr, completeTime: timeStr, completeHour: currentHour, completeMinute: currentMinute, completeTimestamp: Date.now(), timestamp: Date.now(),
             items: archivedItems
           });
         }
@@ -2159,88 +1624,55 @@
 
       const finalOrdersList = clonedOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
 
-      // 檢查智慧標籤
-      let suggestOn = [];
-      let suggestOff = [];
+      let suggestOn = []; let suggestOff = [];
       for (const [mId, stats] of Object.entries(medBatchStats)) {
           const rate = stats.req > 0 ? (stats.req - stats.actual) / stats.req : 0;
           const medRef = findMedAcrossAll(mId);
           if (medRef && medRef.id) { 
-              if (rate > 0.5 && !medRef.shortage) {
-                  suggestOn.push({ id: mId, name: medRef.name, rate: Math.round(rate * 100) });
-              } else if (rate < 0.2 && medRef.shortage) {
-                  suggestOff.push({ id: mId, name: medRef.name, rate: Math.round(rate * 100) });
-              }
+              if (rate > 0.5 && !medRef.shortage) { suggestOn.push({ id: mId, name: medRef.name, rate: Math.round(rate * 100) }); } 
+              else if (rate < 0.2 && medRef.shortage) { suggestOff.push({ id: mId, name: medRef.name, rate: Math.round(rate * 100) }); }
           }
       }
 
-      // 將預備資料暫存，等待寫入或建議視窗確認
-      pendingArchiveData = {
-          newHistoryRecords,
-          finalOrdersList,
-          clonedShortfalls
-      };
+      pendingArchiveData = { newHistoryRecords, finalOrdersList, clonedShortfalls };
 
-      if (suggestOn.length > 0 || suggestOff.length > 0) {
-          showShortageSuggestModal(suggestOn, suggestOff);
-      } else {
-          executeArchive(null);
-      }
+      if (suggestOn.length > 0 || suggestOff.length > 0) { showShortageSuggestModal(suggestOn, suggestOff); } 
+      else { executeArchive(null); }
     }
 
     function showShortageSuggestModal(onList, offList) {
         let html = "";
-        
         if (onList.length > 0) {
             html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                 <div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b; display:flex; align-items:flex-start; gap:8px;">
                     <input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)" style="transform:scale(1.2); margin-top:4px;">
-                    <label for="chkAllOn" style="flex:1; cursor:pointer; line-height:1.4;">
-                        ⚠️ 建議【開啟】欠藥標籤<br><span style="font-size:12px; font-weight:normal; color:#b91c1c;">(因該批次短缺率 > 50%)</span>
-                    </label>
+                    <label for="chkAllOn" style="flex:1; cursor:pointer; line-height:1.4;">⚠️ 建議【開啟】欠藥標籤<br><span style="font-size:12px; font-weight:normal; color:#b91c1c;">(因該批次短缺率 > 50%)</span></label>
                 </div>
                 <div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">
-                    ${onList.map(m => `
-                        <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
-                            <input type="checkbox" class="chk-suggest-on" style="transform:scale(1.2);" value="${m.id}" checked>
-                            <span style="flex:1; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.name}</span>
-                            <span style="color:#dc2626; font-weight:bold; background:#fee2e2; padding:2px 6px; border-radius:10px; font-size:11.5px; white-space:nowrap;">短缺 ${m.rate}%</span>
-                        </label>
-                    `).join('')}
-                </div>
-            </div>`;
+                    ${onList.map(m => `<label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;"><input type="checkbox" class="chk-suggest-on" style="transform:scale(1.2);" value="${m.id}" checked><span style="flex:1; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.name}</span><span style="color:#dc2626; font-weight:bold; background:#fee2e2; padding:2px 6px; border-radius:10px; font-size:11.5px; white-space:nowrap;">短缺 ${m.rate}%</span></label>`).join('')}
+                </div></div>`;
         }
-
         if (offList.length > 0) {
             html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                 <div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534; display:flex; align-items:flex-start; gap:8px;">
                     <input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)" style="transform:scale(1.2); margin-top:4px;">
-                    <label for="chkAllOff" style="flex:1; cursor:pointer; line-height:1.4;">
-                        ✅ 建議【取消】欠藥標籤<br><span style="font-size:12px; font-weight:normal; color:#15803d;">(因該批次短缺率 < 20%)</span>
-                    </label>
+                    <label for="chkAllOff" style="flex:1; cursor:pointer; line-height:1.4;">✅ 建議【取消】欠藥標籤<br><span style="font-size:12px; font-weight:normal; color:#15803d;">(因該批次短缺率 < 20%)</span></label>
                 </div>
                 <div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">
-                    ${offList.map(m => `
-                        <label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;">
-                            <input type="checkbox" class="chk-suggest-off" style="transform:scale(1.2);" value="${m.id}" checked>
-                            <span style="flex:1; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.name}</span>
-                            <span style="color:#166534; font-weight:bold; background:#dcfce7; padding:2px 6px; border-radius:10px; font-size:11.5px; white-space:nowrap;">恢復 ${100 - m.rate}%</span>
-                        </label>
-                    `).join('')}
-                </div>
-            </div>`;
+                    ${offList.map(m => `<label style="display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer;"><input type="checkbox" class="chk-suggest-off" style="transform:scale(1.2);" value="${m.id}" checked><span style="flex:1; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.name}</span><span style="color:#166534; font-weight:bold; background:#dcfce7; padding:2px 6px; border-radius:10px; font-size:11.5px; white-space:nowrap;">恢復 ${100 - m.rate}%</span></label>`).join('')}
+                </div></div>`;
         }
-
         document.getElementById("shortageSuggestContent").innerHTML = html;
         document.getElementById("shortageSuggestModal").style.display = "flex";
     }
 
     function toggleAllSuggest(type, isChecked) {
-        const checkboxes = document.querySelectorAll(`.chk-suggest-${type}`);
-        checkboxes.forEach(chk => chk.checked = isChecked);
+        document.querySelectorAll(`.chk-suggest-${type}`).forEach(chk => chk.checked = isChecked);
     }
 
+    // 🛡️ 實體連線閘門
     async function submitShortageSuggestions() {
+        if (!isFirebaseConnected) { alert("⛔ 系統目前處於離線狀態！請恢復連線後再試。"); return; }
         const onChecked = Array.from(document.querySelectorAll('.chk-suggest-on:checked')).map(c => c.value);
         const offChecked = Array.from(document.querySelectorAll('.chk-suggest-off:checked')).map(c => c.value);
 
@@ -2251,20 +1683,12 @@
         const updateTempMenu = (id, isShortage) => {
             for (const g of [...tempGen, ...tempSpec]) {
                 for (const item of g.items || []) {
-                    if (item.id === id) {
-                        if (item.shortage !== isShortage) {
-                            item.shortage = isShortage;
-                            menuChanged = true;
-                        }
-                        return;
-                    }
+                    if (item.id === id) { if (item.shortage !== isShortage) { item.shortage = isShortage; menuChanged = true; } return; }
                 }
             }
         };
 
-        onChecked.forEach(id => updateTempMenu(id, true));
-        offChecked.forEach(id => updateTempMenu(id, false));
-
+        onChecked.forEach(id => updateTempMenu(id, true)); offChecked.forEach(id => updateTempMenu(id, false));
         document.getElementById("shortageSuggestModal").style.display = "none";
         await executeArchive(menuChanged ? { general: tempGen, special: tempSpec } : null);
     }
@@ -2282,32 +1706,24 @@
         
         try {
             if (firebase.apps.length) {
-                cloudBadge.innerText = "⏳ 寫入雲端中...";
-                cloudBadge.style.backgroundColor = "#fef08a";
+                cloudBadge.innerText = "⏳ 寫入雲端中..."; cloudBadge.style.backgroundColor = "#fef08a";
                 const db = firebase.database();
                 
                 const promises = [];
-                newHistoryRecords.forEach(rec => {
-                    promises.push(db.ref("order_history_v13").child(rec.id).set(rec));
-                });
+                newHistoryRecords.forEach(rec => { promises.push(db.ref("order_history_v13").child(rec.id).set(rec)); });
                 promises.push(db.ref("active_orders_v13").set(finalOrdersList));
                 promises.push(db.ref("shortfalls_v13").set(clonedShortfalls));
-                
-                if (newMenuData) {
-                    promises.push(db.ref("menu_config_v13").set(newMenuData));
-                }
+                if (newMenuData) { promises.push(db.ref("menu_config_v13").set(newMenuData)); }
                 
                 // ★ 超時斷網測試防呆：如果 5 秒 Firebase 沒回應，強制跳到 catch 報錯
-                const allSaves = Promise.all(promises);
-                await Promise.race([allSaves, timeoutPromise(5000)]);
+                await Promise.race([Promise.all(promises), timeoutPromise(5000)]);
             }
 
-            // ★ 確認成功後，才正式更新系統記憶體並清空畫面！
+            // ★ 確認雲端成功後，才正式更新系統記憶體並清空畫面！
             activeOrdersList = finalOrdersList;
             latestShortfalls = clonedShortfalls;
             if (newMenuData) {
-                generalMedData = newMenuData.general;
-                specialMedData = newMenuData.special;
+                generalMedData = newMenuData.general; specialMedData = newMenuData.special;
                 localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
                 localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
             }
@@ -2317,82 +1733,60 @@
             if (historyList.length > 500) historyList = historyList.slice(0, 500);
             localStorage.setItem("pharmacy_order_history", JSON.stringify(historyList));
             
-            checkedItems = {};
-            pendingArchiveData = null;
+            checkedItems = {}; pendingArchiveData = null;
 
-            cloudBadge.innerText = "☁️ 雲端同步中";
-            cloudBadge.style.backgroundColor = "#e8f5e9";
-            
-            alert("已完成本批取藥！數據已安全歸檔。");
-            renderAll();
+            cloudBadge.innerText = "☁️ 雲端同步中"; cloudBadge.className = "cloud-status online"; cloudBadge.style.backgroundColor = "#e8f5e9";
+            alert("已完成本批取藥！數據已安全歸檔。"); renderAll();
             
         } catch (err) {
             console.error("Archive Error:", err);
-            cloudBadge.innerText = "❌ 連線失敗";
-            cloudBadge.style.backgroundColor = "#fecaca";
+            cloudBadge.innerText = "❌ 連線失敗"; cloudBadge.className = "cloud-status"; cloudBadge.style.backgroundColor = "#fecaca";
             // ★ 若失敗，絕對不能清空畫面與變數，保留勾選現場
             alert("寫入雲端失敗！請檢查網路連線。\n為確保資料安全，系統已中斷歸檔，您的勾選狀態已保留，請稍後重試。");
         }
     }
 
-    // 🛡️ 送出領藥單防護：等待回傳成功再清空草稿
+    // 🛡️ 實體連線閘門：阻擋斷網時的「幽靈」送單
     async function confirmSubmitOrder() {
-      const staffCode = document.getElementById("staffCodeInput").value.trim();
-      
-      const validPharmacist = (staffConfig.pharmacists || []).find(p => p.code === staffCode);
-      if (!validPharmacist) {
-        alert("查無此點餐員工代碼，請確認或請主管於後台名單新增！");
-        return;
+      if (!isFirebaseConnected) {
+          alert("⛔ 系統目前處於離線狀態！\n為避免資料異常，已阻斷送單操作。請恢復網路後再試。");
+          return;
       }
+
+      const staffCode = document.getElementById("staffCodeInput").value.trim();
+      const validPharmacist = (staffConfig.pharmacists || []).find(p => p.code === staffCode);
+      if (!validPharmacist) { alert("查無此點餐員工代碼，請確認或請主管於後台名單新增！"); return; }
 
       const targetStation = document.getElementById("stationSelect").value;
       currentStation = targetStation;
-
       const existingCount = activeOrdersList.filter(o => o.station === targetStation).length;
       const seq = existingCount + 1;
       const displayLabel = `${targetStation}${seq > 1 ? seq : ''}`;
 
       const now = new Date();
       const newOrder = {
-        id: "ord_" + Date.now(),
-        station: targetStation,
-        orderSeq: seq,
-        displayLabel: displayLabel,
-        staffCode: staffCode,
-        staffName: validPharmacist.name,
-        time: getTwTime(now, true),
-        createDate: getTwDate(now),
-        createTimestamp: now.getTime(),
-        items: { ...draftOrders },
-        fulfilled: {}
+        id: "ord_" + Date.now(), station: targetStation, orderSeq: seq, displayLabel: displayLabel, staffCode: staffCode, staffName: validPharmacist.name,
+        time: getTwTime(now, true), createDate: getTwDate(now), createTimestamp: now.getTime(),
+        items: { ...draftOrders }, fulfilled: {}
       };
 
       const updatedOrders = [...activeOrdersList, newOrder];
 
       try {
           if (firebase.apps.length) {
-              document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中...";
-              document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-              
-              // ★ 超時斷網測試防呆：如果 5 秒 Firebase 沒回應，強制跳到 catch 報錯
-              const saveOp = firebase.database().ref("active_orders_v13").set(updatedOrders);
-              await Promise.race([saveOp, timeoutPromise(5000)]);
+              document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中..."; document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+              // ★ 超時防呆：如果 5 秒 Firebase 沒回應，強制跳到 catch
+              await Promise.race([firebase.database().ref("active_orders_v13").set(updatedOrders), timeoutPromise(5000)]);
           }
           
           // ★ 雲端確認成功後，才正式清空草稿！
-          activeOrdersList = updatedOrders;
-          draftOrders = {};
-          editingMedId = null;
+          activeOrdersList = updatedOrders; draftOrders = {}; editingMedId = null;
           
-          document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中";
-          document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
-          closeSubmitModal();
-          alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`);
-          renderAll();
+          document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
+          closeSubmitModal(); alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`); renderAll();
       } catch (err) {
           console.error("Submit Error:", err);
-          document.getElementById("cloudBadge").innerText = "❌ 連線失敗";
-          document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
+          document.getElementById("cloudBadge").innerText = "❌ 連線失敗"; document.getElementById("cloudBadge").className = "cloud-status"; document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
           // ★ 若失敗，保留未送出的草稿
           alert("送單寫入失敗！請檢查網路連線並稍後再試。");
       }
@@ -2400,37 +1794,23 @@
 
     function openSubmitModal() {
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
-      if (activeList.length === 0) {
-        alert("請先點選藥品再送單！");
-        return;
-      }
+      if (activeList.length === 0) { alert("請先點選藥品再送單！"); return; }
       const previewEl = document.getElementById("submitSummaryPreview");
-      previewEl.innerHTML = activeList.map(([id, qty]) => {
-        const med = findMedAcrossAll(id) || {name:id};
-        return `<div>• ${med.name} × <b>${qty}</b> ${med.unit || ''}</div>`;
-      }).join("");
-      document.getElementById("staffCodeInput").value = "";
-      document.getElementById("submitModal").style.display = "flex";
+      previewEl.innerHTML = activeList.map(([id, qty]) => `<div>• ${findMedAcrossAll(id)?.name||id} × <b>${qty}</b> ${findMedAcrossAll(id)?.unit||''}</div>`).join("");
+      document.getElementById("staffCodeInput").value = ""; document.getElementById("submitModal").style.display = "flex";
       setTimeout(() => document.getElementById("staffCodeInput").focus(), 100);
     }
 
-    function closeSubmitModal() {
-      document.getElementById("submitModal").style.display = "none";
-    }
+    function closeSubmitModal() { document.getElementById("submitModal").style.display = "none"; }
 
     function resetCurrentDraft() {
-      if (confirm("確定要清空當前草稿嗎？")) {
-        draftOrders = {};
-        editingMedId = null;
-        renderPharmacistBoard();
-      }
+      if (confirm("確定要清空當前草稿嗎？")) { draftOrders = {}; editingMedId = null; renderPharmacistBoard(); }
     }
 
     function openHistoryModal() {
       const content = document.getElementById("historyListContent");
-      if (activeOrdersList.length === 0) {
-        content.innerHTML = "<p style='color:#888; text-align:center;'>目前無待處理紀錄</p>";
-      } else {
+      if (activeOrdersList.length === 0) { content.innerHTML = "<p style='color:#888; text-align:center;'>目前無待處理紀錄</p>"; } 
+      else {
         content.innerHTML = activeOrdersList.map(order => `
           <div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;">
@@ -2439,30 +1819,18 @@
             </div>
             <div style="font-size:12px; color:#444;">
               ${Object.entries(order.items || {}).map(([id, qty]) => {
-                const med = findMedAcrossAll(id) || {name:id};
-                const actual = (order.fulfilled?.[id] !== undefined) ? order.fulfilled[id] : qty;
-                const isShort = actual < qty;
+                const med = findMedAcrossAll(id) || {name:id}; const actual = (order.fulfilled?.[id] !== undefined) ? order.fulfilled[id] : qty; const isShort = actual < qty;
                 return `<span style="${isShort ? 'color:#d97706; font-weight:bold;' : ''}">${med.name}×${actual}${actual !== qty ? `(原:${qty})` : ''}${med.unit || ''}</span>`;
               }).join("、 ")}
-            </div>
-          </div>
-        `).join("");
+            </div></div>`).join("");
       }
       document.getElementById("historyModal").style.display = "flex";
     }
 
-    function closeHistoryModal() {
-      document.getElementById("historyModal").style.display = "none";
-    }
+    function closeHistoryModal() { document.getElementById("historyModal").style.display = "none"; }
 
-    function openConfigModal() {
-      switchEditorTab('general');
-      document.getElementById("configModal").style.display = "flex";
-    }
-
-    function closeConfigModal() {
-      document.getElementById("configModal").style.display = "none";
-    }
+    function openConfigModal() { switchEditorTab('general'); document.getElementById("configModal").style.display = "flex"; }
+    function closeConfigModal() { document.getElementById("configModal").style.display = "none"; }
 
     function switchEditorTab(tab) {
       editorTab = tab;
@@ -2472,282 +1840,96 @@
       document.getElementById("btnEditSpecial").style.color = tab === 'special' ? '#2e7d32' : '#455a64';
       document.getElementById("btnEditStaff").style.background = tab === 'staff' ? '#fef3c7' : '#eceff1';
       document.getElementById("btnEditStaff").style.color = tab === 'staff' ? '#92400e' : '#455a64';
-
       document.getElementById("btnAddGroupBtn").style.display = tab === 'staff' ? 'none' : 'block';
-
-      if (tab === 'staff') {
-        renderStaffEditor();
-      } else {
-        renderVisualEditor();
-      }
+      if (tab === 'staff') renderStaffEditor(); else renderVisualEditor();
     }
 
     function renderStaffEditor() {
       const container = document.getElementById("visualEditorContainer");
       container.innerHTML = `
         <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; margin-bottom:12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐名單 (${staffConfig.pharmacists.length}人)</span>
-            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增人員</button>
-          </div>
-          <table class="staff-table">
-            <thead><tr><th>員工代碼</th><th>姓名/職稱</th><th>操作</th></tr></thead>
-            <tbody>
-              ${staffConfig.pharmacists.map((p, idx) => `
-                <tr>
-                  <td><input type="number" value="${p.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'code', this.value)"></td>
-                  <td><input type="text" value="${p.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'name', this.value)"></td>
-                  <td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('pharmacists', ${idx})">✕ 刪除</button></td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐名單 (${staffConfig.pharmacists.length}人)</span><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增人員</button></div>
+          <table class="staff-table"><thead><tr><th>員工代碼</th><th>姓名/職稱</th><th>操作</th></tr></thead><tbody>
+              ${staffConfig.pharmacists.map((p, idx) => `<tr><td><input type="number" value="${p.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'code', this.value)"></td><td><input type="text" value="${p.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'name', this.value)"></td><td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('pharmacists', ${idx})">✕ 刪除</button></td></tr>`).join("")}
+          </tbody></table>
         </div>
-
         <div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <span style="font-weight:bold; color:#b45309;">🔒 授權可進入助理取藥名單 (${staffConfig.assistants.length}人)</span>
-            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#fef3c7; color:#92400e;" onclick="addNewStaff('assistants')">➕ 新增助理</button>
-          </div>
-          <table class="staff-table">
-            <thead><tr><th>授權代碼</th><th>姓名/備註</th><th>操作</th></tr></thead>
-            <tbody>
-              ${staffConfig.assistants.map((a, idx) => `
-                <tr>
-                  <td><input type="text" value="${a.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'code', this.value)"></td>
-                  <td><input type="text" value="${a.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'name', this.value)"></td>
-                  <td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('assistants', ${idx})" ${staffConfig.assistants.length <= 1 ? 'disabled' : ''}>✕ 刪除</button></td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><span style="font-weight:bold; color:#b45309;">🔒 授權可進入助理取藥名單 (${staffConfig.assistants.length}人)</span><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#fef3c7; color:#92400e;" onclick="addNewStaff('assistants')">➕ 新增助理</button></div>
+          <table class="staff-table"><thead><tr><th>授權代碼</th><th>姓名/備註</th><th>操作</th></tr></thead><tbody>
+              ${staffConfig.assistants.map((a, idx) => `<tr><td><input type="text" value="${a.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'code', this.value)"></td><td><input type="text" value="${a.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'name', this.value)"></td><td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('assistants', ${idx})" ${staffConfig.assistants.length <= 1 ? 'disabled' : ''}>✕ 刪除</button></td></tr>`).join("")}
+          </tbody></table>
         </div>
       `;
     }
 
     function addNewStaff(type) {
-      const code = prompt("請輸入員工代碼 (全數字或授權碼)：");
-      if (!code) return;
+      const code = prompt("請輸入員工代碼 (全數字或授權碼)："); if (!code) return;
       const name = prompt("請輸入姓名或稱謂 (例：林藥師)：") || "同仁";
-      staffConfig[type].push({ code: code.trim(), name: name.trim() });
-      renderStaffEditor();
+      staffConfig[type].push({ code: code.trim(), name: name.trim() }); renderStaffEditor();
     }
-
-    function updateStaff(type, idx, field, val) {
-      staffConfig[type][idx][field] = val.trim();
-    }
-
-    function deleteStaff(type, idx) {
-      if (confirm(`確定要刪除「${staffConfig[type][idx].name}」的權限嗎？`)) {
-        staffConfig[type].splice(idx, 1);
-        renderStaffEditor();
-      }
-    }
+    function updateStaff(type, idx, field, val) { staffConfig[type][idx][field] = val.trim(); }
+    function deleteStaff(type, idx) { if (confirm(`確定要刪除「${staffConfig[type][idx].name}」的權限嗎？`)) { staffConfig[type].splice(idx, 1); renderStaffEditor(); } }
 
     let touchDragSrc = null;
-
     function renderVisualEditor() {
-      const container = document.getElementById("visualEditorContainer");
-      container.innerHTML = "";
+      const container = document.getElementById("visualEditorContainer"); container.innerHTML = "";
       const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
 
       targetMenu.forEach((group, gIdx) => {
-        const groupBox = document.createElement("div");
-        groupBox.className = "editor-group-box";
-
+        const groupBox = document.createElement("div"); groupBox.className = "editor-group-box";
         groupBox.innerHTML = `
-          <div class="editor-group-header">
-            <span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span>
-            <input type="text" class="editor-group-input" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)" placeholder="櫃位名稱 (例如 GZX)">
-            <div style="display:flex; gap:4px;">
-              <select style="font-size:11px;" onchange="updateGroupCol(${gIdx}, parseInt(this.value))">
-                <option value="1" ${group.col === 1 ? 'selected' : ''}>第1欄</option>
-                <option value="2" ${group.col === 2 ? 'selected' : ''}>第2欄</option>
-                <option value="3" ${group.col === 3 ? 'selected' : ''}>第3欄</option>
-              </select>
-              <button class="move-btn" onclick="moveGroup(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''}>▲</button>
-              <button class="move-btn" onclick="moveGroup(${gIdx}, 1)" ${gIdx === targetMenu.length - 1 ? 'disabled' : ''}>▼</button>
-              <button class="move-btn" style="color:#d32f2f;" onclick="deleteGroup(${gIdx})">✕</button>
-            </div>
-          </div>
+          <div class="editor-group-header"><span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span><input type="text" class="editor-group-input" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)" placeholder="櫃位名稱 (例如 GZX)">
+            <div style="display:flex; gap:4px;"><select style="font-size:11px;" onchange="updateGroupCol(${gIdx}, parseInt(this.value))"><option value="1" ${group.col === 1 ? 'selected' : ''}>第1欄</option><option value="2" ${group.col === 2 ? 'selected' : ''}>第2欄</option><option value="3" ${group.col === 3 ? 'selected' : ''}>第3欄</option></select><button class="move-btn" onclick="moveGroup(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveGroup(${gIdx}, 1)" ${gIdx === targetMenu.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteGroup(${gIdx})">✕</button></div></div>
           <div class="med-list-container" id="medListContainer_${gIdx}"></div>
-          <div style="margin-top:6px; display:flex; justify-content:flex-end;">
-            <button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e0f2fe; color:#0369a1;" onclick="addNewMed(${gIdx})">➕ 新增藥品品項</button>
-          </div>
+          <div style="margin-top:6px; display:flex; justify-content:flex-end;"><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e0f2fe; color:#0369a1;" onclick="addNewMed(${gIdx})">➕ 新增藥品品項</button></div>
         `;
-
         container.appendChild(groupBox);
 
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
         (group.items || []).forEach((med, mIdx) => {
-          const row = document.createElement("div");
-          row.className = "editor-med-row";
-          row.draggable = true;
-          row.dataset.gidx = gIdx;
-          row.dataset.midx = mIdx;
-
+          const row = document.createElement("div"); row.className = "editor-med-row"; row.draggable = true; row.dataset.gidx = gIdx; row.dataset.midx = mIdx;
           row.innerHTML = `
-            <span class="drag-handle" title="按住拖曳排序">☰</span>
-            <input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名">
-            <input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位">
-            <input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數">
-            <div style="display:flex; gap:2px;">
-              <button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button>
-              <button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">欠藥</button>
-              <button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button>
-            </div>
-            <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button>
-            <button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button>
-            <button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
+            <span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數">
+            <div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">欠藥</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div>
+            <button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>
           `;
-
-          row.ondragstart = (e) => {
-            row.classList.add("dragging");
-            e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx }));
-          };
-          row.ondragend = () => row.classList.remove("dragging");
-          row.ondragover = (e) => e.preventDefault();
-          row.ondrop = (e) => {
-            e.preventDefault();
-            const source = JSON.parse(e.dataTransfer.getData("text/plain"));
-            reorderMed(source.gIdx, source.mIdx, gIdx, mIdx);
-          };
-
+          row.ondragstart = (e) => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx })); };
+          row.ondragend = () => row.classList.remove("dragging"); row.ondragover = (e) => e.preventDefault();
+          row.ondrop = (e) => { e.preventDefault(); const source = JSON.parse(e.dataTransfer.getData("text/plain")); reorderMed(source.gIdx, source.mIdx, gIdx, mIdx); };
           const handleEl = row.querySelector(".drag-handle");
-          handleEl.ontouchstart = (e) => {
-            touchDragSrc = { gIdx, mIdx, el: row };
-            row.classList.add("touch-active");
-            if (navigator.vibrate) navigator.vibrate(30);
-          };
-
+          handleEl.ontouchstart = (e) => { touchDragSrc = { gIdx, mIdx, el: row }; row.classList.add("touch-active"); if (navigator.vibrate) navigator.vibrate(30); };
           handleEl.ontouchmove = (e) => {
-            if (!touchDragSrc) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!touchDragSrc) return; e.preventDefault(); const touch = e.touches[0]; const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
             const targetRow = targetEl ? targetEl.closest(".editor-med-row") : null;
             if (targetRow && targetRow !== touchDragSrc.el) {
-              const destGIdx = parseInt(targetRow.dataset.gidx);
-              const destMIdx = parseInt(targetRow.dataset.midx);
-              reorderMed(touchDragSrc.gIdx, touchDragSrc.mIdx, destGIdx, destMIdx);
-              touchDragSrc.gIdx = destGIdx;
-              touchDragSrc.mIdx = destMIdx;
+              const destGIdx = parseInt(targetRow.dataset.gidx); const destMIdx = parseInt(targetRow.dataset.midx);
+              reorderMed(touchDragSrc.gIdx, touchDragSrc.mIdx, destGIdx, destMIdx); touchDragSrc.gIdx = destGIdx; touchDragSrc.mIdx = destMIdx;
             }
           };
-
-          handleEl.ontouchend = () => {
-            if (touchDragSrc) {
-              touchDragSrc.el.classList.remove("touch-active");
-              touchDragSrc = null;
-            }
-          };
-
+          handleEl.ontouchend = () => { if (touchDragSrc) { touchDragSrc.el.classList.remove("touch-active"); touchDragSrc = null; } };
           medListEl.appendChild(row);
         });
       });
     }
 
-    function updateGroupName(gIdx, val) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      targetMenu[gIdx].group = val.trim();
-    }
-
-    function updateGroupCol(gIdx, col) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      targetMenu[gIdx].col = col;
-    }
-
-    function moveGroup(gIdx, dir) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      const targetIdx = gIdx + dir;
-      if (targetIdx < 0 || targetIdx >= targetMenu.length) return;
-      const [item] = targetMenu.splice(gIdx, 1);
-      targetMenu.splice(targetIdx, 0, item);
-      renderVisualEditor();
-    }
-
-    function addNewGroup() {
-      const name = prompt("請輸入新櫃位名稱 (例如 GZX 或 專用特區)：");
-      if (!name) return;
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      targetMenu.push({
-        col: 1,
-        group: name.trim(),
-        isWarn: false,
-        items: []
-      });
-      renderVisualEditor();
-    }
-
-    function deleteGroup(gIdx) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      if (confirm(`確定要刪除「${targetMenu[gIdx].group}」整個櫃位及其所有藥品嗎？`)) {
-        targetMenu.splice(gIdx, 1);
-        renderVisualEditor();
-      }
-    }
-
-    function updateMedField(gIdx, mIdx, field, val) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      targetMenu[gIdx].items[mIdx][field] = val;
-    }
-
-    function toggleMedFlag(gIdx, mIdx, flag) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      targetMenu[gIdx].items[mIdx][flag] = !targetMenu[gIdx].items[mIdx][flag];
-      renderVisualEditor();
-    }
-
-    function moveMed(gIdx, mIdx, dir) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      const items = targetMenu[gIdx].items;
-      const targetIdx = mIdx + dir;
-      if (targetIdx < 0 || targetIdx >= items.length) return;
-      const [item] = items.splice(mIdx, 1);
-      items.splice(targetIdx, 0, item);
-      renderVisualEditor();
-    }
-
-    function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      const [movedItem] = targetMenu[srcGIdx].items.splice(srcMIdx, 1);
-      targetMenu[destGIdx].items.splice(destMIdx, 0, movedItem);
-      renderVisualEditor();
-    }
-
-    function addNewMed(gIdx) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      const medName = prompt("請輸入藥品名稱 (例：Med / 中文名)：");
-      if (!medName) return;
-      targetMenu[gIdx].items.push({
-        id: "custom_" + Date.now(),
-        name: medName.trim(),
-        unit: "",
-        max: 5,
-        pkgChange: false,
-        shortage: false,
-        disabled: false
-      });
-      renderVisualEditor();
-    }
-
-    function deleteMed(gIdx, mIdx) {
-      const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
-      if (confirm(`確定要刪除「${targetMenu[gIdx].items[mIdx].name}」嗎？`)) {
-        targetMenu[gIdx].items.splice(mIdx, 1);
-        renderVisualEditor();
-      }
-    }
+    function updateGroupName(gIdx, val) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].group = val.trim(); }
+    function updateGroupCol(gIdx, col) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].col = col; }
+    function moveGroup(gIdx, dir) { const t = editorTab === 'general' ? generalMedData : specialMedData; const tIdx = gIdx + dir; if (tIdx < 0 || tIdx >= t.length) return; const [i] = t.splice(gIdx, 1); t.splice(tIdx, 0, i); renderVisualEditor(); }
+    function addNewGroup() { const name = prompt("請輸入新櫃位名稱 (例如 GZX 或 專用特區)："); if (!name) return; const t = editorTab === 'general' ? generalMedData : specialMedData; t.push({ col: 1, group: name.trim(), isWarn: false, items: [] }); renderVisualEditor(); }
+    function deleteGroup(gIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].group}」整個櫃位及其所有藥品嗎？`)) { t.splice(gIdx, 1); renderVisualEditor(); } }
+    function updateMedField(gIdx, mIdx, field, val) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][field] = val; }
+    function toggleMedFlag(gIdx, mIdx, flag) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][flag] = !t[gIdx].items[mIdx][flag]; renderVisualEditor(); }
+    function moveMed(gIdx, mIdx, dir) { const t = editorTab === 'general' ? generalMedData : specialMedData; const items = t[gIdx].items; const tIdx = mIdx + dir; if (tIdx < 0 || tIdx >= items.length) return; const [i] = items.splice(mIdx, 1); items.splice(tIdx, 0, i); renderVisualEditor(); }
+    function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; const [movedItem] = t[srcGIdx].items.splice(srcMIdx, 1); t[destGIdx].items.splice(destMIdx, 0, movedItem); renderVisualEditor(); }
+    function addNewMed(gIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; const name = prompt("請輸入藥品名稱 (例：Med / 中文名)："); if (!name) return; t[gIdx].items.push({ id: "custom_" + Date.now(), name: name.trim(), unit: "", max: 5, pkgChange: false, shortage: false, disabled: false }); renderVisualEditor(); }
+    function deleteMed(gIdx, mIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].items[mIdx].name}」嗎？`)) { t[gIdx].items.splice(mIdx, 1); renderVisualEditor(); } }
 
     function saveVisualConfigs() {
       localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
       localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
       localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
-      syncMenuConfig();
-      syncStaffConfig();
-      alert("所有櫃位架構、藥品與人員名單已儲存並同步至雲端！");
-      closeConfigModal();
-      renderAll();
+      syncMenuConfig(); syncStaffConfig();
+      alert("所有櫃位架構、藥品與人員名單已儲存並同步至雲端！"); closeConfigModal(); renderAll();
     }
 
     function resetToDefaultConfig() {
@@ -2758,67 +1940,36 @@
         localStorage.setItem("pharmacy_general_meds", JSON.stringify(generalMedData));
         localStorage.setItem("pharmacy_special_meds", JSON.stringify(specialMedData));
         localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig));
-        syncMenuConfig();
-        syncStaffConfig();
-        alert("已還原出廠預設（上限預設為5）並同步！");
-        closeConfigModal();
-        renderAll();
+        syncMenuConfig(); syncStaffConfig();
+        alert("已還原出廠預設（上限預設為5）並同步！"); closeConfigModal(); renderAll();
       }
     }
 
     function openExportModal() {
-      const fullConfig = {
-        general: generalMedData,
-        special: specialMedData,
-        staff: staffConfig,
-        exportedAt: new Date().toLocaleString()
-      };
-      const ta = document.getElementById("exportTextarea");
-      ta.value = JSON.stringify(fullConfig, null, 2);
-      document.getElementById("exportModal").style.display = "flex";
-      setTimeout(() => ta.select(), 100);
+      const fullConfig = { general: generalMedData, special: specialMedData, staff: staffConfig, exportedAt: new Date().toLocaleString() };
+      const ta = document.getElementById("exportTextarea"); ta.value = JSON.stringify(fullConfig, null, 2);
+      document.getElementById("exportModal").style.display = "flex"; setTimeout(() => ta.select(), 100);
     }
-
-    function closeExportModal() {
-      document.getElementById("exportModal").style.display = "none";
-    }
-
+    function closeExportModal() { document.getElementById("exportModal").style.display = "none"; }
     function copyExportText() {
-      const ta = document.getElementById("exportTextarea");
-      ta.select();
-      navigator.clipboard.writeText(ta.value).then(() => {
-        alert("已成功複製目前完整設定代碼！\n直接貼給 AI 即可為您比對所有異動並升級出廠設定。");
-        closeExportModal();
-      }).catch(() => {
-        alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！");
-      });
+      const ta = document.getElementById("exportTextarea"); ta.select();
+      navigator.clipboard.writeText(ta.value).then(() => { alert("已成功複製目前完整設定代碼！\n直接貼給 AI 即可為您比對所有異動並升級出廠設定。"); closeExportModal(); }).catch(() => { alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！"); });
     }
 
     // ==========================================
-    // 歷史資料庫存取、分析與 Excel 匯出 (Theme 2, 3, 4)
+    // 歷史資料庫存取、分析與 Excel 匯出
     // ==========================================
     let archivedHistoryList = [];
 
-    function openBiDashboardModal() {
-      document.getElementById("biDashboardModal").style.display = "flex";
-      setBiQuickRange('7days');
-      loadHistoryFromCloud();
-    }
-
-    function closeBiDashboardModal() {
-      document.getElementById("biDashboardModal").style.display = "none";
-    }
+    function openBiDashboardModal() { document.getElementById("biDashboardModal").style.display = "flex"; setBiQuickRange('7days'); loadHistoryFromCloud(); }
+    function closeBiDashboardModal() { document.getElementById("biDashboardModal").style.display = "none"; }
 
     function loadHistoryFromCloud() {
       if (firebase.apps.length) {
-        const db = firebase.database();
-        db.ref("order_history_v13").limitToLast(1000).once("value", (snapshot) => {
+        firebase.database().ref("order_history_v13").limitToLast(1000).once("value", (snapshot) => {
           const val = snapshot.val();
-          if (val) {
-            archivedHistoryList = Object.values(val).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-          } else {
-            archivedHistoryList = JSON.parse(localStorage.getItem("pharmacy_order_history") || "[]");
-          }
+          if (val) { archivedHistoryList = Object.values(val).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); } 
+          else { archivedHistoryList = JSON.parse(localStorage.getItem("pharmacy_order_history") || "[]"); }
           refreshBiDashboard();
         }, (err) => {
           console.error("Fetch history failed, fallback to local:", err);
@@ -2835,17 +1986,10 @@
       const now = new Date();
       const endStr = getTwDate(now);
       let start = new Date();
-
-      if (type === 'today') {
-        // 今日不做處理
-      } else if (type === '7days') {
-        start.setDate(now.getDate() - 6);
-      } else if (type === '30days') {
-        start.setDate(now.getDate() - 29);
-      } else if (type === 'all') {
-        start = new Date(2025, 0, 1);
-      }
-
+      if (type === 'today') { /* 今日不做處理 */ } 
+      else if (type === '7days') { start.setDate(now.getDate() - 6); } 
+      else if (type === '30days') { start.setDate(now.getDate() - 29); } 
+      else if (type === 'all') { start = new Date(2025, 0, 1); }
       document.getElementById("biStartDate").value = getTwDate(start);
       document.getElementById("biEndDate").value = endStr;
       refreshBiDashboard();
@@ -2866,11 +2010,8 @@
       const records = getFilteredHistoryRecords();
       document.getElementById("biFilteredCount").innerText = records.length;
 
-      let totalReq = 0;
-      let totalActual = 0;
-      let totalShortfall = 0;
-      const medStats = {};
-      const staffStats = {};
+      let totalReq = 0; let totalActual = 0; let totalShortfall = 0;
+      const medStats = {}; const staffStats = {};
       const slotStats = { morningOrders: 0, morningQty: 0, afternoonOrders: 0, afternoonQty: 0, nightOrders: 0, nightQty: 0 };
 
       records.forEach(rec => {
@@ -2880,43 +2021,21 @@
         const minuteOfDay = hr * 60 + min;
 
         const sKey = rec.staffCode || "未知";
-        if (!staffStats[sKey]) {
-          staffStats[sKey] = { name: rec.staffName || "", count: 0, totalQty: 0, medCounts: {} };
-        }
+        if (!staffStats[sKey]) { staffStats[sKey] = { name: rec.staffName || "", count: 0, totalQty: 0, medCounts: {} }; }
         staffStats[sKey].count += 1;
 
         (rec.items || []).forEach(item => {
-          const req = item.req || 0;
-          const act = item.actual || 0;
-          const short = item.shortfall || Math.max(0, req - act);
-
-          totalReq += req;
-          totalActual += act;
-          totalShortfall += short;
-          orderQty += req;
-
-          if (!medStats[item.medId]) {
-            medStats[item.medId] = { name: item.medName, unit: item.unit, req: 0, actual: 0, shortfall: 0 };
-          }
-          medStats[item.medId].req += req;
-          medStats[item.medId].actual += act;
-          medStats[item.medId].shortfall += short;
-
+          const req = item.req || 0; const act = item.actual || 0; const short = item.shortfall || Math.max(0, req - act);
+          totalReq += req; totalActual += act; totalShortfall += short; orderQty += req;
+          if (!medStats[item.medId]) { medStats[item.medId] = { name: item.medName, unit: item.unit, req: 0, actual: 0, shortfall: 0 }; }
+          medStats[item.medId].req += req; medStats[item.medId].actual += act; medStats[item.medId].shortfall += short;
           staffStats[sKey].medCounts[item.medName] = (staffStats[sKey].medCounts[item.medName] || 0) + req;
         });
 
         staffStats[sKey].totalQty += orderQty;
-
-        if (minuteOfDay >= 450 && minuteOfDay < 720) {
-          slotStats.morningOrders++;
-          slotStats.morningQty += orderQty;
-        } else if (minuteOfDay >= 720 && minuteOfDay < 1020) {
-          slotStats.afternoonOrders++;
-          slotStats.afternoonQty += orderQty;
-        } else {
-          slotStats.nightOrders++;
-          slotStats.nightQty += orderQty;
-        }
+        if (minuteOfDay >= 450 && minuteOfDay < 720) { slotStats.morningOrders++; slotStats.morningQty += orderQty; } 
+        else if (minuteOfDay >= 720 && minuteOfDay < 1020) { slotStats.afternoonOrders++; slotStats.afternoonQty += orderQty; } 
+        else { slotStats.nightOrders++; slotStats.nightQty += orderQty; }
       });
 
       const shortfallRate = totalReq > 0 ? ((totalShortfall / totalReq) * 100).toFixed(1) : 0;
@@ -2927,20 +2046,11 @@
       const sortedMeds = Object.values(medStats).sort((a, b) => b.shortfall - a.shortfall);
       const top10Meds = sortedMeds.filter(m => m.shortfall > 0).slice(0, 10);
       const topListEl = document.getElementById("biTopShortfallList");
-      if (top10Meds.length === 0) {
-        topListEl.innerHTML = `<div style="color:#94a3b8; padding:8px 0; text-align:center;">此區間無任何短缺少發紀錄</div>`;
-      } else {
+      if (top10Meds.length === 0) { topListEl.innerHTML = `<div style="color:#94a3b8; padding:8px 0; text-align:center;">此區間無任何短缺少發紀錄</div>`; } 
+      else {
         topListEl.innerHTML = top10Meds.map((m, idx) => {
           const rate = m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(0) : 0;
-          return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding:3px 0; border-bottom:1px dashed #f1f5f9;">
-              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:8px; color:#334155;"><b>${idx + 1}.</b> ${m.name}</span>
-              <span style="white-space:nowrap;">
-                <b style="color:#dc2626; font-size:13px;">${m.shortfall}</b>
-                <span style="color:#94a3b8; font-size:10px; margin-left:2px;">(${rate}%)</span>
-              </span>
-            </div>
-          `;
+          return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; padding:3px 0; border-bottom:1px dashed #f1f5f9;"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:8px; color:#334155;"><b>${idx + 1}.</b> ${m.name}</span><span style="white-space:nowrap;"><b style="color:#dc2626; font-size:13px;">${m.shortfall}</b><span style="color:#94a3b8; font-size:10px; margin-left:2px;">(${rate}%)</span></span></div>`;
         }).join("");
       }
 
@@ -2950,126 +2060,63 @@
 
       const staffBody = document.getElementById("biStaffHabitsBody");
       const staffArray = Object.entries(staffStats).sort((a, b) => b[1].totalQty - a[1].totalQty);
-      if (staffArray.length === 0) {
-        staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">無歸檔紀錄</td></tr>`;
-      } else {
+      if (staffArray.length === 0) { staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">無歸檔紀錄</td></tr>`; } 
+      else {
         staffBody.innerHTML = staffArray.slice(0, 10).map(([code, data]) => {
           const topMed = Object.entries(data.medCounts).sort((a, b) => b[1] - a[1])[0];
           const topMedTxt = topMed ? `${topMed[0].split('/')[0]} (${topMed[1]}單位)` : '-';
-          return `
-            <tr style="border-bottom:1px solid #f1f5f9;">
-              <td style="padding:5px 6px; white-space:nowrap; color:#334155;">${data.name || code}</td>
-              <td style="padding:5px 6px; font-weight:bold; white-space:nowrap; color:var(--primary-green);">${data.totalQty} 單位</td>
-              <td style="padding:5px 6px; white-space:nowrap; color:#64748b;">${data.count} 批</td>
-              <td style="padding:5px 6px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px;">${topMedTxt}</td>
-            </tr>
-          `;
+          return `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:5px 6px; white-space:nowrap; color:#334155;">${data.name || code}</td><td style="padding:5px 6px; font-weight:bold; white-space:nowrap; color:var(--primary-green);">${data.totalQty} 單位</td><td style="padding:5px 6px; white-space:nowrap; color:#64748b;">${data.count} 批</td><td style="padding:5px 6px; color:#475569; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px;">${topMedTxt}</td></tr>`;
         }).join("");
       }
 
       const recordsBody = document.getElementById("biRecordsTableBody");
-      if (records.length === 0) {
-        recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8;">所選區間無任何歸檔紀錄</td></tr>`;
-      } else {
+      if (records.length === 0) { recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:#94a3b8;">所選區間無任何歸檔紀錄</td></tr>`; } 
+      else {
         recordsBody.innerHTML = records.slice(0, 50).map(rec => {
           const itemsTxt = (rec.items || []).map(i => {
             const hasShort = i.shortfall > 0;
             return `<span style="${hasShort ? 'color:#dc2626; font-weight:bold;' : ''}">${i.medName}: 實出${i.actual} (點${i.req})</span>`;
           }).join("、 ");
-
-          return `
-            <tr style="border-bottom:1px solid #e2e8f0;">
-              <td style="padding:6px; text-align:center; color:#64748b; vertical-align:middle; width:80px;">
-                <div style="font-weight:bold; color:#334155; font-size:12px;">${rec.completeDate || rec.createDate || ''}</div>
-                <div style="font-size:11px;">${rec.completeTime || rec.createTime || ''}</div>
-              </td>
-              <td style="padding:6px; text-align:center; vertical-align:middle;">${getBasketBadge(rec.displayLabel || rec.station)}</td>
-              <td style="padding:6px; text-align:center; vertical-align:middle; line-height:1.2;">
-                <div style="color:#334155; font-weight:bold;">${rec.staffName || ''}</div>
-                <div style="font-size:10px; color:#94a3b8;">(${rec.staffCode})</div>
-              </td>
-              <td style="padding:6px; text-align:left; font-size:11.5px; color:#475569;">${itemsTxt}</td>
-            </tr>
-          `;
+          return `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px; text-align:center; color:#64748b; vertical-align:middle; width:80px;"><div style="font-weight:bold; color:#334155; font-size:12px;">${rec.completeDate || rec.createDate || ''}</div><div style="font-size:11px;">${rec.completeTime || rec.createTime || ''}</div></td><td style="padding:6px; text-align:center; vertical-align:middle;">${getBasketBadge(rec.displayLabel || rec.station)}</td><td style="padding:6px; text-align:center; vertical-align:middle; line-height:1.2;"><div style="color:#334155; font-weight:bold;">${rec.staffName || ''}</div><div style="font-size:10px; color:#94a3b8;">(${rec.staffCode})</div></td><td style="padding:6px; text-align:left; font-size:11.5px; color:#475569;">${itemsTxt}</td></tr>`;
         }).join("");
       }
     }
 
-    // ==========================================
-    // Theme 4: 雙工作表 Excel 匯出
-    // ==========================================
     function exportHistoryExcel() {
       const startVal = document.getElementById("biStartDate").value;
       const endVal = document.getElementById("biEndDate").value;
       
       const records = getFilteredHistoryRecords();
-      if (records.length === 0) {
-        alert("目前選取的日期區間內沒有任何歷史紀錄可匯出！");
-        return;
-      }
+      if (records.length === 0) { alert("目前選取的日期區間內沒有任何歷史紀錄可匯出！"); return; }
 
-      const historyData = [];
-      const medStats = {};
+      const historyData = []; const medStats = {};
 
       records.forEach(rec => {
         let processTimeMin = "";
-        if (rec.createTimestamp && rec.completeTimestamp) {
-          processTimeMin = ((rec.completeTimestamp - rec.createTimestamp) / 60000).toFixed(1);
-        }
+        if (rec.createTimestamp && rec.completeTimestamp) { processTimeMin = ((rec.completeTimestamp - rec.createTimestamp) / 60000).toFixed(1); }
 
         (rec.items || []).forEach(item => {
           historyData.push({
-            "歸檔ID": rec.id || "",
-            "送單日期": rec.createDate || rec.completeDate || "",
-            "送單時間": rec.createTime || "",
-            "完成(歸檔)日期": rec.completeDate || "",
-            "完成(歸檔)時間": rec.completeTime || "",
-            "處理耗時(分)": processTimeMin,
-            "色籃台號": rec.displayLabel || rec.station,
-            "人員姓名": rec.staffName || "",
-            "人員工號": rec.staffCode || "",
-            "藥品名稱": item.medName || "",
-            "單位": item.unit || "",
-            "需求數量": item.req || 0,
-            "實出數量": item.actual || 0,
-            "少發數量": item.shortfall || 0,
-            "是否短缺": (item.shortfall || 0) > 0 ? "是" : "否"
+            "歸檔ID": rec.id || "", "送單日期": rec.createDate || rec.completeDate || "", "送單時間": rec.createTime || "",
+            "完成(歸檔)日期": rec.completeDate || "", "完成(歸檔)時間": rec.completeTime || "", "處理耗時(分)": processTimeMin,
+            "色籃台號": rec.displayLabel || rec.station, "人員姓名": rec.staffName || "", "人員工號": rec.staffCode || "",
+            "藥品名稱": item.medName || "", "單位": item.unit || "", "需求數量": item.req || 0, "實出數量": item.actual || 0,
+            "少發數量": item.shortfall || 0, "是否短缺": (item.shortfall || 0) > 0 ? "是" : "否"
           });
 
-          if (!medStats[item.medName]) {
-             medStats[item.medName] = { req: 0, actual: 0, shortfall: 0 };
-          }
-          medStats[item.medName].req += (item.req || 0);
-          medStats[item.medName].actual += (item.actual || 0);
-          medStats[item.medName].shortfall += (item.shortfall || 0);
+          if (!medStats[item.medName]) { medStats[item.medName] = { req: 0, actual: 0, shortfall: 0 }; }
+          medStats[item.medName].req += (item.req || 0); medStats[item.medName].actual += (item.actual || 0); medStats[item.medName].shortfall += (item.shortfall || 0);
         });
       });
 
       const shortfallExportData = Object.entries(medStats)
-        .map(([name, data]) => ({ name, ...data }))
-        .filter(m => m.shortfall > 0)
-        .sort((a, b) => b.shortfall - a.shortfall)
-        .slice(0, 10)
-        .map((m, index) => ({
-          "排名": index + 1,
-          "藥品名稱": m.name,
-          "總需求數": m.req,
-          "少發數量": m.shortfall,
-          "短缺率": m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(1) + "%" : "0%"
-        }));
+        .map(([name, data]) => ({ name, ...data })).filter(m => m.shortfall > 0).sort((a, b) => b.shortfall - a.shortfall).slice(0, 10)
+        .map((m, index) => ({ "排名": index + 1, "藥品名稱": m.name, "總需求數": m.req, "少發數量": m.shortfall, "短缺率": m.req > 0 ? ((m.shortfall / m.req) * 100).toFixed(1) + "%" : "0%" }));
 
       const wb = XLSX.utils.book_new();
-      
-      const wsHistory = XLSX.utils.json_to_sheet(historyData);
-      XLSX.utils.book_append_sheet(wb, wsHistory, "歷史紀錄明細");
-
-      if (shortfallExportData.length > 0) {
-        const wsShortfall = XLSX.utils.json_to_sheet(shortfallExportData);
-        XLSX.utils.book_append_sheet(wb, wsShortfall, "Top10缺藥排行");
-      } else {
-        const wsNoShortfall = XLSX.utils.json_to_sheet([{"訊息": "此日期區間無任何短缺紀錄"}]);
-        XLSX.utils.book_append_sheet(wb, wsNoShortfall, "Top10缺藥排行");
-      }
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(historyData), "歷史紀錄明細");
+      if (shortfallExportData.length > 0) { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(shortfallExportData), "Top10缺藥排行"); } 
+      else { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{"訊息": "此日期區間無任何短缺紀錄"}]), "Top10缺藥排行"); }
 
       const fileName = `藥局點藥歷史數據_${startVal || '全部'}_至_${endVal || '全部'}.xlsx`;
       XLSX.writeFile(wb, fileName);
