@@ -389,7 +389,7 @@
 
     function getSafeStorage(key, defaultValue) {
       try { const stored = localStorage.getItem(key); return stored ? JSON.parse(stored) : defaultValue; } 
-      catch(e) { console.warn(`[防護機制啟動] ${key} 的本地資料格式異常，已強制銷毀並還原預設值以保護系統運作。`, e); localStorage.removeItem(key); return defaultValue; }
+      catch(e) { console.warn(`[防護機制啟動] ${key} 的本地資料格式異常，已強制銷毀並還原預設值。`, e); localStorage.removeItem(key); return defaultValue; }
     }
 
     const BUILTIN_FIREBASE_CONFIG = { apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", authDomain: "pharmacy-order-20f00.firebaseapp.com", databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com", projectId: "pharmacy-order-20f00", storageBucket: "pharmacy-order-20f00.firebasestorage.app" };
@@ -537,26 +537,31 @@
 
     let asstPressTimer = null; let isAsstLongPress = false;
 
+    // 🛡️ 退回階段 1：穩定可靠的整包清單存取法
     async function handleAsstCellClick(orderId, medId) {
       if (!isFirebaseConnected) { alert("⛔ 系統離線中！為避免資料異常，已暫停調整數量。"); return; }
       if (isAsstLongPress) { isAsstLongPress = false; return; }
-      const order = activeOrdersList.find(o => o.id === orderId); if (!order) return;
+      const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList));
+      const order = updatedOrders.find(o => o.id === orderId); if (!order) return;
       const reqQty = order.items?.[medId] || 0; const currentFulfilled = (order.fulfilled && order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
       let nextFulfilled = currentFulfilled - 1; if (nextFulfilled < 0) nextFulfilled = reqQty;
       if (!order.fulfilled) order.fulfilled = {}; order.fulfilled[medId] = nextFulfilled;
-      renderAssistantMatrix();
-      try { await firebase.database().ref(`active_orders_v13/${orderId}/fulfilled/${medId}`).set(nextFulfilled); } catch (err) {}
+      activeOrdersList = updatedOrders;
+      try { await firebase.database().ref("active_orders_v13").set(activeOrdersList); } catch (err) {}
+      channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList }); renderAssistantMatrix();
     }
 
     function startAsstCellLongPress(orderId, medId) {
       if (!isFirebaseConnected) return; isAsstLongPress = false;
       asstPressTimer = setTimeout(async () => {
-        isAsstLongPress = true; const order = activeOrdersList.find(o => o.id === orderId); if (!order) return;
+        isAsstLongPress = true; const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList)); const order = updatedOrders.find(o => o.id === orderId); if (!order) return;
         const reqQty = order.items?.[medId] || 0; const cur = (order.fulfilled && order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
         const nextVal = (cur === 0) ? reqQty : 0;
         if (navigator.vibrate) navigator.vibrate(60);
-        if (!order.fulfilled) order.fulfilled = {}; order.fulfilled[medId] = nextVal; renderAssistantMatrix();
-        try { await firebase.database().ref(`active_orders_v13/${orderId}/fulfilled/${medId}`).set(nextVal); } catch (err) {}
+        if (!order.fulfilled) order.fulfilled = {}; order.fulfilled[medId] = nextVal;
+        activeOrdersList = updatedOrders;
+        try { await firebase.database().ref("active_orders_v13").set(activeOrdersList); } catch (err) {}
+        channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList }); renderAssistantMatrix();
       }, 1000);
     }
     function cancelAsstCellLongPress() { if (asstPressTimer) clearTimeout(asstPressTimer); }
@@ -565,14 +570,15 @@
     function startAsstTotalLongPress(medId) {
       if (!isFirebaseConnected) return;
       asstTotalPressTimer = setTimeout(async () => {
-        let totalActual = 0; activeOrdersList.forEach(o => { const req = o.items?.[medId] || 0; totalActual += (o.fulfilled && o.fulfilled[medId] !== undefined) ? o.fulfilled[medId] : req; });
+        let totalActual = 0; const updatedOrders = JSON.parse(JSON.stringify(activeOrdersList));
+        updatedOrders.forEach(o => { const req = o.items?.[medId] || 0; totalActual += (o.fulfilled && o.fulfilled[medId] !== undefined) ? o.fulfilled[medId] : req; });
         const setToZero = (totalActual > 0); if (navigator.vibrate) navigator.vibrate(70);
-        const updates = {};
-        activeOrdersList.forEach(o => {
-          if (o.items && o.items[medId]) { const nextVal = setToZero ? 0 : o.items[medId]; if (!o.fulfilled) o.fulfilled = {}; o.fulfilled[medId] = nextVal; updates[`active_orders_v13/${o.id}/fulfilled/${medId}`] = nextVal; }
+        updatedOrders.forEach(o => {
+          if (o.items && o.items[medId]) { const nextVal = setToZero ? 0 : o.items[medId]; if (!o.fulfilled) o.fulfilled = {}; o.fulfilled[medId] = nextVal; }
         });
-        renderAssistantMatrix();
-        try { await firebase.database().ref().update(updates); } catch (err) {}
+        activeOrdersList = updatedOrders;
+        try { await firebase.database().ref("active_orders_v13").set(activeOrdersList); } catch (err) {}
+        channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList }); renderAssistantMatrix();
       }, 1000);
     }
     function cancelAsstTotalLongPress() { if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer); }
@@ -690,7 +696,7 @@
 
     function toggleCheck(medId) { checkedItems[medId] = !checkedItems[medId]; renderAssistantMatrix(); }
 
-    // 🏆 BUG FIXED: 補回壓縮時遺失的 stKey 變數
+    // 🏆 復原回上一版最堅固的邏輯：全陣列替換法
     function clearDoneItems() {
       if (!isFirebaseConnected) { alert("⛔ 系統目前處於離線狀態！\n為避免資料異常流失，已阻斷歸檔操作。請恢復網路後再試。"); return; }
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
@@ -703,10 +709,9 @@
       const clonedOrdersList = JSON.parse(JSON.stringify(activeOrdersList));
       const clonedShortfalls = JSON.parse(JSON.stringify(latestShortfalls));
       const newHistoryRecords = []; const medBatchStats = {}; 
-      const ordersToUpdate = []; const ordersToDelete = [];
 
       clonedOrdersList.forEach(order => {
-        const stKey = order.station; // 🏆 這裡就是剛剛遺失的關鍵鑰匙！
+        const stKey = order.station; // 🐛 這裡就是修補的致命 Bug
         const archivedItems = [];
         
         doneIds.forEach(medId => {
@@ -739,10 +744,10 @@
             items: archivedItems
           });
         }
-        
-        if (Object.keys(order.items || {}).length === 0) { ordersToDelete.push(order.id); } 
-        else { ordersToUpdate.push(order); }
       });
+
+      // 🏆 篩除空訂單，這就是即將成為畫面上最新狀態的藥單列表
+      const finalOrdersList = clonedOrdersList.filter(o => Object.keys(o.items || {}).length > 0);
 
       let suggestOn = []; let suggestOff = [];
       for (const [mId, stats] of Object.entries(medBatchStats)) {
@@ -754,7 +759,7 @@
           }
       }
 
-      pendingArchiveData = { newHistoryRecords, ordersToUpdate, ordersToDelete, clonedShortfalls };
+      pendingArchiveData = { newHistoryRecords, finalOrdersList, clonedShortfalls };
       if (suggestOn.length > 0 || suggestOff.length > 0) { showShortageSuggestModal(suggestOn, suggestOff); } 
       else { executeArchive(null); }
     }
@@ -791,9 +796,10 @@
 
     async function skipShortageSuggestions() { document.getElementById("shortageSuggestModal").style.display = "none"; await executeArchive(null); }
 
+    // 🏆 復原為全陣列替換，保證畫面與舊有 Firebase 資料庫完美相容
     async function executeArchive(newMenuData) {
         if (!pendingArchiveData) return;
-        const { newHistoryRecords, ordersToUpdate, ordersToDelete, clonedShortfalls } = pendingArchiveData;
+        const { newHistoryRecords, finalOrdersList, clonedShortfalls } = pendingArchiveData;
         const cloudBadge = document.getElementById("cloudBadge");
         
         try {
@@ -803,13 +809,18 @@
                 const updates = {};
                 
                 newHistoryRecords.forEach(rec => { updates[`order_history_v13/${rec.id}`] = rec; });
-                ordersToDelete.forEach(id => { updates[`active_orders_v13/${id}`] = null; });
-                ordersToUpdate.forEach(o => { updates[`active_orders_v13/${o.id}`] = o; });
                 if (clonedShortfalls) { updates[`shortfalls_v13`] = clonedShortfalls; }
                 if (newMenuData) { updates[`menu_config_v13`] = newMenuData; }
 
-                await Promise.race([db.ref().update(updates), timeoutPromise(5000)]);
+                // 同時執行：歷史紀錄寫入(p1) 與 最新清單覆蓋(p2)
+                const p1 = db.ref().update(updates);
+                const p2 = db.ref("active_orders_v13").set(finalOrdersList.length > 0 ? finalOrdersList : null);
+
+                await Promise.race([Promise.all([p1, p2]), timeoutPromise(5000)]);
             }
+
+            // 🏆 補回遺失的畫面更新指令：將預備好的最新清單，正式套用到系統本地記憶體
+            activeOrdersList = finalOrdersList;
 
             if (newMenuData) {
                 generalMedData = newMenuData.general; specialMedData = newMenuData.special;
@@ -828,7 +839,9 @@
             
             checkedItems = {}; pendingArchiveData = null;
             cloudBadge.innerText = "☁️ 雲端同步中"; cloudBadge.className = "cloud-status online"; cloudBadge.style.backgroundColor = "#e8f5e9";
-            alert("已完成本批取藥！數據已安全歸檔。"); renderAll();
+            
+            channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList });
+            alert("已完成本批取藥！數據已安全歸檔。"); renderAll(); // 重新繪製畫面，讓藥品消失！
             
         } catch (err) {
             console.error("Archive Error:", err);
@@ -853,15 +866,19 @@
         items: { ...draftOrders }, fulfilled: {}
       };
 
+      const updatedOrders = [...activeOrdersList, newOrder];
+
       try {
           if (firebase.apps.length) {
               document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中..."; document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-              const saveOp = firebase.database().ref(`active_orders_v13/${newOrder.id}`).set(newOrder);
+              // 🏆 復原為全陣列替換法
+              const saveOp = firebase.database().ref("active_orders_v13").set(updatedOrders);
               await Promise.race([saveOp, timeoutPromise(5000)]);
           }
-          activeOrdersList.push(newOrder); draftOrders = {}; editingMedId = null;
+          activeOrdersList = updatedOrders; draftOrders = {}; editingMedId = null;
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
-          closeSubmitModal(); alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`); renderAll();
+          closeSubmitModal(); alert(`【${displayLabel}】已由 ${validPharmacist.name} (${staffCode}) 成功送出！`); 
+          channel.postMessage({ type: "UPDATE_ACTIVE_ORDERS", payload: activeOrdersList }); renderAll();
       } catch (err) {
           console.error("Submit Error:", err);
           document.getElementById("cloudBadge").innerText = "❌ 連線失敗"; document.getElementById("cloudBadge").className = "cloud-status"; document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
