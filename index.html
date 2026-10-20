@@ -49,16 +49,8 @@
       text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; box-sizing: border-box;
     }
     
-    /* 🐶 專屬素描風格看門狗 */
-    .watchdog-avatar {
-      width: 90px; height: 90px; margin: 0 auto 16px; border-radius: 50%;
-      background-image: url('./funny.png'); /* 指定讀取同資料夾的 funny.png */
-      background-size: cover; background-position: center 30%;
-      border: 3px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      filter: grayscale(100%) contrast(115%) brightness(105%) sepia(15%);
-    }
-
-    .login-box h2 { color: var(--primary-green); margin-top: 0; margin-bottom: 20px; font-weight: 900; font-size: 22px; letter-spacing: 1px;}
+    .login-box h2 { color: var(--primary-green); margin-top: 0; margin-bottom: 8px; font-weight: 900; font-size: 24px;}
+    .login-box p { font-size: 15px; color: #64748b; margin-bottom: 20px; line-height: 1.5; font-weight: bold;}
     .login-input {
       width: 100%; font-size: 20px; text-align: center; letter-spacing: 4px; padding: 12px;
       border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px; outline: none; transition: border-color 0.2s; box-sizing: border-box;
@@ -170,18 +162,16 @@
   <!-- 🔒 第一道門：全畫面安全鎖 -->
   <div id="globalLoginOverlay">
     <div class="login-box">
-      <!-- 狗狗大頭貼 -->
-      <div class="watchdog-avatar"></div>
       
-      <!-- 帶有圖示的大標題 (已移除門鎖字眼) -->
-      <h2>💊 藥局點藥系統 📋</h2>
+      <!-- 極簡登入標題 -->
+      <h2>藥局點藥系統</h2>
+      <p>門禁管制 🔒 門鎖</p>
       
-      <!-- 輸入框提示文字更新 -->
       <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入密碼" onkeydown="if(event.key==='Enter') verifyGlobalCode()">
       
-      <!-- 連線按鈕更新 -->
+      <!-- 連線按鈕 -->
       <button class="btn-act btn-submit" style="width:100%; font-size:16px; padding:10px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="verifyGlobalCode()">
-        <span style="font-size:18px;">🔗</span> 連線
+        連線
       </button>
     </div>
   </div>
