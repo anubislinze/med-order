@@ -1015,13 +1015,94 @@
     }
 
     function refreshBiDashboard() {
-      const startStr = document.getElementById("biStartDate").value; const endStr = document.getElementById("biEndDate").value;
-      const records = archivedHistoryList.filter(rec => { const d = rec.completeDate || rec.createDate || ""; if (startStr && d < startStr) return false; if (endStr && d > endStr) return false; return true; });
+      const startStr = document.getElementById("biStartDate").value; 
+      const endStr = document.getElementById("biEndDate").value;
+      
+      // 1. 過濾時間區間內的紀錄
+      const records = archivedHistoryList.filter(rec => { 
+        const d = rec.completeDate || rec.createDate || ""; 
+        if (startStr && d < startStr) return false; 
+        if (endStr && d > endStr) return false; 
+        return true; 
+      });
       document.getElementById("biFilteredCount").innerText = records.length;
 
+      // 2. 更新下方歷史紀錄列表
       const recordsBody = document.getElementById("biRecordsTableBody");
-      if (records.length === 0) { recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px;">無紀錄</td></tr>`; } 
-      else { recordsBody.innerHTML = records.slice(0, 50).map(rec => { const itemsTxt = (rec.items || []).map(i => `<span style="${i.shortfall > 0 ? 'color:#dc2626; font-weight:bold;' : ''}">${i.medName}: 出${i.actual}(需${i.req})</span>`).join("、 "); return `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px;">${rec.completeDate||''}<br>${rec.completeTime||''}</td><td style="padding:6px;">${rec.displayLabel||rec.station}</td><td style="padding:6px;">${rec.staffName||''}<br>(${rec.staffCode})</td><td style="padding:6px; font-size:11px;">${itemsTxt}</td></tr>`; }).join(""); }
+      if (records.length === 0) { 
+        recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px;">無紀錄</td></tr>`; 
+      } else { 
+        recordsBody.innerHTML = records.slice(0, 50).map(rec => { 
+          const itemsTxt = (rec.items || []).map(i => `<span style="${i.shortfall > 0 ? 'color:#dc2626; font-weight:bold;' : ''}">${i.medName}: 出${i.actual}(需${i.req})</span>`).join("、 "); 
+          return `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px;">${rec.completeDate||''}<br>${rec.completeTime||''}</td><td style="padding:6px;">${rec.displayLabel||rec.station}</td><td style="padding:6px;">${rec.staffName||''}<br>(${rec.staffCode})</td><td style="padding:6px; font-size:11px;">${itemsTxt}</td></tr>`; 
+        }).join(""); 
+      }
+
+      // ==========================================
+      // 3. 裝上大腦：計算上方三大區塊的統計數據
+      // ==========================================
+      let totalReq = 0; let totalShortfall = 0; let itemStats = {}; 
+      let slotMorning = 0; let slotAfternoon = 0; let slotNight = 0;
+      let staffStats = {};
+
+      records.forEach(rec => {
+        // [A] 時段統計 (早:0730-1200, 午:1200-1700, 晚:1700-0730)
+        const h = rec.completeHour !== undefined ? rec.completeHour : parseInt((rec.completeTime || "00").split(":")[0]);
+        const m = rec.completeMinute !== undefined ? rec.completeMinute : parseInt((rec.completeTime || "00:00").split(":")[1]);
+        const timeVal = h + m / 60;
+        if (timeVal >= 7.5 && timeVal < 12) slotMorning++;
+        else if (timeVal >= 12 && timeVal < 17) slotAfternoon++;
+        else slotNight++;
+
+        // [B] 人員統計初始化
+        const sCode = rec.staffCode || "0000";
+        if (!staffStats[sCode]) staffStats[sCode] = { name: rec.staffName || "未具名", qty: 0, batches: 0, items: {} };
+        staffStats[sCode].batches++;
+
+        // [C] 藥品與短缺統計
+        (rec.items || []).forEach(item => {
+          const req = item.req || 0;
+          const sf = item.shortfall || 0;
+          const mName = item.medName || "未知藥品";
+
+          totalReq += req; totalShortfall += sf;
+          if (!itemStats[mName]) itemStats[mName] = { req: 0, shortfall: 0 };
+          itemStats[mName].req += req; itemStats[mName].shortfall += sf;
+
+          staffStats[sCode].qty += req;
+          if (!staffStats[sCode].items[mName]) staffStats[sCode].items[mName] = 0;
+          staffStats[sCode].items[mName] += req;
+        });
+      });
+
+      // --- 渲染 UI：藥品短缺率 ---
+      document.getElementById("biStatTotalReq").innerText = totalReq;
+      document.getElementById("biStatTotalShortfall").innerText = totalShortfall;
+      const sfRate = totalReq > 0 ? ((totalShortfall / totalReq) * 100).toFixed(1) : 0;
+      const rateEl = document.getElementById("biStatShortfallRate");
+      rateEl.innerText = `短缺率: ${sfRate}%`;
+      if (sfRate > 5) { rateEl.style.background = "#fef2f2"; rateEl.style.color = "#dc2626"; rateEl.style.borderColor = "#fca5a5"; }
+      else { rateEl.style.background = "#fef3c7"; rateEl.style.color = "#b45309"; rateEl.style.borderColor = "#fde68a"; }
+
+      const sfArray = Object.entries(itemStats).filter(([_, stats]) => stats.shortfall > 0).sort((a, b) => b[1].shortfall - a[1].shortfall).slice(0, 10);
+      const topSfEl = document.getElementById("biTopShortfallList");
+      if (sfArray.length === 0) topSfEl.innerHTML = "無短缺紀錄";
+      else topSfEl.innerHTML = sfArray.map(([name, stats]) => `<div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px dashed #e2e8f0; padding-bottom:2px;"><span>${name.split(' / ')[0]}</span><span style="color:#dc2626; font-weight:bold;">${stats.shortfall} <span style="font-size:9px; color:#94a3b8;">(${((stats.shortfall/stats.req)*100).toFixed(0)}%)</span></span></div>`).join("");
+
+      // --- 渲染 UI：點藥時段 ---
+      document.getElementById("biSlotMorning").innerText = slotMorning;
+      document.getElementById("biSlotAfternoon").innerText = slotAfternoon;
+      document.getElementById("biSlotNight").innerText = slotNight;
+
+      // --- 渲染 UI：藥師同仁習慣 ---
+      const staffArray = Object.values(staffStats).sort((a, b) => b.batches - a.batches);
+      const staffBody = document.getElementById("biStaffHabitsBody");
+      if (staffArray.length === 0) staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">暫無資料</td></tr>`;
+      else staffBody.innerHTML = staffArray.map(st => {
+         const topItem = Object.entries(st.items).sort((a, b) => b[1] - a[1])[0];
+         const topItemName = topItem ? topItem[0].split(' / ')[0] : "-";
+         return `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px 6px;">${st.name}</td><td style="padding:6px 6px; text-align:center; font-weight:bold;">${st.qty}</td><td style="padding:6px 6px; text-align:center; color:#1d4ed8;">${st.batches} 批</td><td style="padding:6px 6px; font-size:10px; color:#64748b;">${topItemName}</td></tr>`;
+      }).join("");
     }
 
     function exportHistoryExcel() {
