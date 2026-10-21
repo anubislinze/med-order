@@ -163,15 +163,15 @@
   <div id="globalLoginOverlay">
     <div class="login-box">
       
-      <!-- 極簡登入標題 -->
+      <!-- 帶有圖示的極簡大標題 -->
       <h2>💊 藥局點藥系統 📋</h2>
       <p>門禁管制 🔒</p>
       
       <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入密碼" onkeydown="if(event.key==='Enter') verifyGlobalCode()">
       
-      <!-- 連線按鈕 -->
+      <!-- 帶有連線圖示的按鈕 -->
       <button class="btn-act btn-submit" style="width:100%; font-size:16px; padding:10px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="verifyGlobalCode()">
-        連線
+        <span style="font-size:18px;">🔗</span> 連線
       </button>
     </div>
   </div>
@@ -445,7 +445,7 @@
             else { badge.innerText = "❌ 離線 (禁止操作)"; badge.className = "cloud-status"; badge.style.backgroundColor = "#fecaca"; badge.style.color = "#991b1b"; }
         });
 
-        // 讀取/初始化 名單 (Phase 2 個資抽離，空的時候寫入出廠預設)
+        // 讀取/初始化 名單
         db.ref("staff_config_p2").on("value", (snap) => {
           const val = snap.val();
           if (val) { staffConfig = val; localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); } 
@@ -455,7 +455,7 @@
           } 
         });
 
-        // 讀取/初始化 菜單 (空的時候寫入出廠預設)
+        // 讀取/初始化 菜單
         db.ref("menu_config_p2").on("value", (snap) => {
           const val = snap.val();
           if (val) { generalMedData = val.general || []; specialMedData = val.special || []; } 
@@ -467,7 +467,7 @@
           renderAll();
         });
 
-        // 讀取 訂單 (Phase 2 字典轉陣列)
+        // 讀取 訂單
         db.ref("active_orders_p2").on("value", (snapshot) => { 
           const val = snapshot.val(); 
           activeOrdersList = val ? Object.values(val) : []; 
@@ -717,7 +717,7 @@
 
     function toggleCheck(medId) { checkedItems[medId] = !checkedItems[medId]; renderAssistantMatrix(); }
 
-    // --- Phase 2: 獨立抽屜歸檔 (原子化更新) ---
+    // --- Phase 2: 獨立抽屜歸檔 (原子化更新) 修正衝突版 ---
     function clearDoneItems() {
       if (!isFirebaseConnected) { alert("⛔ 系統離線中！"); return; }
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
@@ -727,7 +727,9 @@
       const currentHour = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', hour: 'numeric', hour12: false }));
       const currentMinute = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', minute: 'numeric' }));
 
-      const updates = {}; const medBatchStats = {}; const clonedShortfalls = JSON.parse(JSON.stringify(latestShortfalls));
+      const updates = {}; const medBatchStats = {}; 
+      // 預防錯誤：確保如果有空紀錄也不會產生報錯
+      const clonedShortfalls = JSON.parse(JSON.stringify(latestShortfalls || {}));
 
       activeOrdersList.forEach(order => {
         const archivedItems = [];
@@ -749,27 +751,45 @@
 
             archivedItems.push({ medId: medId, medName: med.name, unit: med.unit || '', req: req, actual: actual, shortfall: shortfall });
             
-            // 精準打擊：把完成的藥品從抽屜裡拿掉
+            // 精準打擊：把完成的藥品從抽屜裡拿掉 (預設加入排程)
             updates[`active_orders_p2/${order.id}/items/${medId}`] = null;
             updates[`active_orders_p2/${order.id}/fulfilled/${medId}`] = null;
           }
         });
 
         const remainingItemsCount = Object.keys(order.items || {}).filter(k => !doneIds.includes(k)).length;
-        if (remainingItemsCount === 0) { updates[`active_orders_p2/${order.id}`] = null; }
+        if (remainingItemsCount === 0 && archivedItems.length > 0) { 
+          // ⚠️ 修正核心：如果抽屜空了，只要下達刪除母節點的指令，並「取消」子節點的刪除指令，避免 Firebase 衝突當機
+          updates[`active_orders_p2/${order.id}`] = null; 
+          doneIds.forEach(medId => {
+            delete updates[`active_orders_p2/${order.id}/items/${medId}`];
+            delete updates[`active_orders_p2/${order.id}/fulfilled/${medId}`];
+          });
+        }
 
         if (archivedItems.length > 0) {
           const recId = "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
           updates[`order_history_p2/${recId}`] = {
-            id: recId, orderId: order.id, station: order.station, displayLabel: order.displayLabel, staffCode: order.staffCode, staffName: order.staffName || "",
-            createDate: order.createDate || dateStr, createTime: order.time, createTimestamp: order.createTimestamp || Date.now(),
-            completeDate: dateStr, completeTime: timeStr, completeHour: currentHour, completeMinute: currentMinute, completeTimestamp: Date.now(), timestamp: Date.now(),
+            id: recId, orderId: order.id || "unknown", station: order.station || "未分類", 
+            displayLabel: order.displayLabel || order.station || "未分類", staffCode: order.staffCode || "0000", 
+            staffName: order.staffName || "未具名", createDate: order.createDate || dateStr, 
+            createTime: order.time || timeStr, createTimestamp: order.createTimestamp || Date.now(),
+            completeDate: dateStr, completeTime: timeStr, completeHour: currentHour, 
+            completeMinute: currentMinute, completeTimestamp: Date.now(), timestamp: Date.now(),
             items: archivedItems
           };
         }
       });
 
-      updates[`shortfalls_p2`] = clonedShortfalls;
+      // ⚠️ 修正核心 2：避免傳遞空物件給資料庫導致報錯
+      if (Object.keys(clonedShortfalls).length > 0) {
+        updates[`shortfalls_p2`] = clonedShortfalls;
+      }
+
+      // 若完全無更新動作，直接返回
+      if (Object.keys(updates).length === 0) {
+         checkedItems = {}; renderAssistantMatrix(); return;
+      }
 
       let suggestOn = []; let suggestOff = [];
       for (const [mId, stats] of Object.entries(medBatchStats)) {
@@ -786,7 +806,7 @@
       else { executeArchive(null); }
     }
 
-    function showShortageSuggestModal(onList, offList) {
+    async function showShortageSuggestModal(onList, offList) {
         let html = "";
         if (onList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px;"><div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b;"><input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)"> ⚠️ 建議【開啟】欠藥標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${onList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-on" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#dc2626; font-weight:bold;">短缺 ${m.rate}%</span></label>`).join('')}</div></div>`; }
         if (offList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px;"><div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534;"><input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)"> ✅ 建議【取消】欠藥標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${offList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-off" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#166534; font-weight:bold;">恢復 ${100 - m.rate}%</span></label>`).join('')}</div></div>`; }
@@ -826,11 +846,11 @@
 
             checkedItems = {}; pendingArchiveData = null;
             cloudBadge.innerText = "☁️ 雲端同步中"; cloudBadge.className = "cloud-status online"; cloudBadge.style.backgroundColor = "#e8f5e9";
-            alert("已完成本批取藥歸檔！");
+            // alert("已完成本批取藥歸檔！"); // 關閉成功提示彈窗，讓操作更順暢
         } catch (err) {
-            console.error("Archive Error:", err);
+            console.error("Archive Error Detailed:", err);
             cloudBadge.innerText = "❌ 連線失敗"; cloudBadge.className = "cloud-status"; cloudBadge.style.backgroundColor = "#fecaca";
-            alert("歸檔失敗！請檢查網路連線。");
+            alert("歸檔發生異常！(通常是資料庫更新衝突，請重新整理網頁後再試)");
         }
     }
 
@@ -857,7 +877,8 @@
           
           draftOrders = {}; editingMedId = null;
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
-          closeSubmitModal(); alert(`【${displayLabel}】已成功送出！`); 
+          closeSubmitModal(); 
+          // alert(`【${displayLabel}】已成功送出！`); // 關閉送單成功彈窗
       } catch (err) { alert("送單失敗！請檢查網路連線。"); }
     }
 
