@@ -89,7 +89,7 @@
     .med-status-icons { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
     .status-badge { font-size: 10px; padding: 1px 3px; border-radius: 3px; font-weight: bold; display: inline-flex; align-items: center; line-height: 1.2; }
     .badge-pkg { background: #fff8e1; color: #b78103; border: 1px solid #ffe082; }
-    .badge-shortage { background: #ede7f6; color: #512da8; border: 1px solid #d1c4e9; }
+    .badge-shortage { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; } /* 改為低庫存的藍色系 */
     .badge-ban { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .med-unit-badge { font-size: 11px; color: #666; padding: 1px 4px; background: #f5f5f5; border-radius: 3px; margin-right: 4px; border: 1px solid #ddd; }
 
@@ -151,7 +151,9 @@
     .move-btn { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 5px; font-size: 11px; cursor: pointer; }
     .tag-toggle-btn { padding: 2px 4px; border-radius: 3px; font-size: 10px; cursor: pointer; border: 1px solid #ccc; background: #fff; }
     .tag-toggle-btn.active-pkg { background: #fff8e1; border-color: #ffe082; color: #b78103; font-weight: bold; }
-    .tag-toggle-btn.active-shortage { background: #ede7f6; border-color: #d1c4e9; color: #512da8; font-weight: bold; }
+    
+    /* 低庫存按鈕高亮狀態 */
+    .tag-toggle-btn.active-shortage { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; font-weight: bold; }
     .tag-toggle-btn.active-disabled { background: #ffebee; border-color: #ef9a9a; color: #c62828; font-weight: bold; }
 
     @media (max-width: 850px) { .grid-3col { grid-template-columns: 1fr; } }
@@ -162,7 +164,6 @@
   <!-- 🔒 第一道門：全畫面安全鎖 -->
   <div id="globalLoginOverlay">
     <div class="login-box">
-      
       <!-- 帶有圖示的極簡大標題 -->
       <h2>💊 藥局點藥系統 📋</h2>
       <p>門禁管制 🔒</p>
@@ -243,9 +244,9 @@
   <div class="modal-overlay" id="shortageSuggestModal">
     <div class="modal-box" style="max-width:400px; padding:20px;">
       <div class="modal-header" style="margin-bottom:16px;">
-        <span style="font-size:18px; color:#0f172a;">💡 智慧欠藥狀態建議</span><button style="border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;" onclick="skipShortageSuggestions()">✕</button>
+        <span style="font-size:18px; color:#0f172a;">💡 智慧低庫存狀態建議</span><button style="border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;" onclick="skipShortageSuggestions()">✕</button>
       </div>
-      <p style="font-size:12px; color:#64748b; margin-bottom:12px; line-height:1.5;">系統偵測到剛才取藥批次中有異常短缺率，是否要同步一鍵更新後台的【欠藥】標籤以提醒後續點餐同仁？</p>
+      <p style="font-size:12px; color:#64748b; margin-bottom:12px; line-height:1.5;">系統偵測到剛才取藥批次中有異常短缺率，是否要同步一鍵更新後台的【低庫存】標籤以提醒後續點餐同仁？</p>
       <div id="shortageSuggestContent" class="bi-custom-scrollbar" style="max-height:60vh; overflow-y:auto; margin-bottom:16px; padding-right:4px;"></div>
       <div style="display:flex; justify-content:space-between; gap:8px;">
         <button class="btn-act btn-clear" style="flex:1;" onclick="skipShortageSuggestions()">暫不更新 (略過)</button>
@@ -297,7 +298,7 @@
 
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:14px;">
         <div style="background:#fff; border:1.5px solid #fde68a; border-radius:8px; padding:12px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-          <div style="font-weight:bold; color:#b45309; font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;"><span>⏳ 藥品短缺率分析 (Shortfall)</span><span id="biStatShortfallRate" style="background:#fef3c7; padding:2px 8px; border-radius:12px; font-size:12px; border:1px solid #fde68a;">短缺率: 0%</span></div>
+          <div style="font-weight:bold; color:#b45309; font-size:14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;"><span>📉 藥品短缺率分析 (Shortfall)</span><span id="biStatShortfallRate" style="background:#fef3c7; padding:2px 8px; border-radius:12px; font-size:12px; border:1px solid #fde68a;">短缺率: 0%</span></div>
           <div style="display:flex; gap:8px; margin-bottom:10px;">
             <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:right;"><div style="font-size:11px; color:#64748b; text-align:left; margin-bottom:2px;">區間點單需求數</div><span id="biStatTotalReq" style="font-size:20px; font-weight:900; color:#1e293b;">0</span> <span style="font-size:12px; color:#64748b;">單位</span></div>
             <div style="flex:1; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:8px; text-align:right;"><div style="font-size:11px; color:#991b1b; text-align:left; margin-bottom:2px;">實出少發數</div><span id="biStatTotalShortfall" style="font-size:20px; font-weight:900; color:#dc2626;">0</span> <span style="font-size:12px; color:#dc2626;">單位</span></div>
@@ -564,7 +565,7 @@
 
     let asstPressTimer = null; let isAsstLongPress = false;
 
-    // --- Phase 2: 抽屜式精準更新 (解決互相覆蓋) ---
+    // --- Phase 2: 抽屜式精準更新 ---
     function handleAsstCellClick(orderId, medId) {
       if (!isFirebaseConnected) { alert("⛔ 系統離線中！"); return; }
       if (isAsstLongPress) { isAsstLongPress = false; return; }
@@ -649,7 +650,7 @@
 
             let badgesHtml = "";
             if (med.pkgChange) badgesHtml += `<span class="status-badge badge-pkg">📦換包裝</span>`;
-            if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">⏳欠藥</span>`;
+            if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">📉低庫存</span>`; // 🆕 更新為低庫存與圖示
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
             let badgeContent = isEditingThis ? `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">` : `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
@@ -728,7 +729,6 @@
       const currentMinute = parseInt(now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Taipei', minute: 'numeric' }));
 
       const updates = {}; const medBatchStats = {}; 
-      // 預防錯誤：確保如果有空紀錄也不會產生報錯
       const clonedShortfalls = JSON.parse(JSON.stringify(latestShortfalls || {}));
 
       activeOrdersList.forEach(order => {
@@ -751,7 +751,6 @@
 
             archivedItems.push({ medId: medId, medName: med.name, unit: med.unit || '', req: req, actual: actual, shortfall: shortfall });
             
-            // 精準打擊：把完成的藥品從抽屜裡拿掉 (預設加入排程)
             updates[`active_orders_p2/${order.id}/items/${medId}`] = null;
             updates[`active_orders_p2/${order.id}/fulfilled/${medId}`] = null;
           }
@@ -759,7 +758,6 @@
 
         const remainingItemsCount = Object.keys(order.items || {}).filter(k => !doneIds.includes(k)).length;
         if (remainingItemsCount === 0 && archivedItems.length > 0) { 
-          // ⚠️ 修正核心：如果抽屜空了，只要下達刪除母節點的指令，並「取消」子節點的刪除指令，避免 Firebase 衝突當機
           updates[`active_orders_p2/${order.id}`] = null; 
           doneIds.forEach(medId => {
             delete updates[`active_orders_p2/${order.id}/items/${medId}`];
@@ -781,12 +779,10 @@
         }
       });
 
-      // ⚠️ 修正核心 2：避免傳遞空物件給資料庫導致報錯
       if (Object.keys(clonedShortfalls).length > 0) {
         updates[`shortfalls_p2`] = clonedShortfalls;
       }
 
-      // 若完全無更新動作，直接返回
       if (Object.keys(updates).length === 0) {
          checkedItems = {}; renderAssistantMatrix(); return;
       }
@@ -808,8 +804,8 @@
 
     async function showShortageSuggestModal(onList, offList) {
         let html = "";
-        if (onList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px;"><div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b;"><input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)"> ⚠️ 建議【開啟】欠藥標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${onList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-on" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#dc2626; font-weight:bold;">短缺 ${m.rate}%</span></label>`).join('')}</div></div>`; }
-        if (offList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px;"><div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534;"><input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)"> ✅ 建議【取消】欠藥標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${offList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-off" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#166534; font-weight:bold;">恢復 ${100 - m.rate}%</span></label>`).join('')}</div></div>`; }
+        if (onList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px;"><div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b;"><input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)"> ⚠️ 建議【開啟】低庫存標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${onList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-on" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#dc2626; font-weight:bold;">短缺 ${m.rate}%</span></label>`).join('')}</div></div>`; }
+        if (offList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px;"><div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534;"><input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)"> ✅ 建議【取消】低庫存標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${offList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-off" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#166534; font-weight:bold;">恢復 ${100 - m.rate}%</span></label>`).join('')}</div></div>`; }
         document.getElementById("shortageSuggestContent").innerHTML = html; document.getElementById("shortageSuggestModal").style.display = "flex";
     }
 
@@ -846,7 +842,6 @@
 
             checkedItems = {}; pendingArchiveData = null;
             cloudBadge.innerText = "☁️ 雲端同步中"; cloudBadge.className = "cloud-status online"; cloudBadge.style.backgroundColor = "#e8f5e9";
-            // alert("已完成本批取藥歸檔！"); // 關閉成功提示彈窗，讓操作更順暢
         } catch (err) {
             console.error("Archive Error Detailed:", err);
             cloudBadge.innerText = "❌ 連線失敗"; cloudBadge.className = "cloud-status"; cloudBadge.style.backgroundColor = "#fecaca";
@@ -878,7 +873,6 @@
           draftOrders = {}; editingMedId = null;
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
           closeSubmitModal(); 
-          // alert(`【${displayLabel}】已成功送出！`); // 關閉送單成功彈窗
       } catch (err) { alert("送單失敗！請檢查網路連線。"); }
     }
 
@@ -934,7 +928,7 @@
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div"); row.className = "editor-med-row"; row.draggable = true; row.dataset.gidx = gIdx; row.dataset.midx = mIdx;
-          row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">欠藥</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
+          row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
           row.ondragstart = (e) => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx })); }; row.ondragend = () => row.classList.remove("dragging"); row.ondragover = (e) => e.preventDefault();
           row.ondrop = (e) => { e.preventDefault(); const source = JSON.parse(e.dataTransfer.getData("text/plain")); reorderMed(source.gIdx, source.mIdx, gIdx, mIdx); };
           const handleEl = row.querySelector(".drag-handle"); handleEl.ontouchstart = (e) => { touchDragSrc = { gIdx, mIdx, el: row }; row.classList.add("touch-active"); if (navigator.vibrate) navigator.vibrate(30); };
@@ -952,9 +946,37 @@
     function deleteGroup(gIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].group}」整個櫃位及其所有藥品嗎？`)) { t.splice(gIdx, 1); renderVisualEditor(); } }
     function updateMedField(gIdx, mIdx, field, val) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][field] = val; }
     function toggleMedFlag(gIdx, mIdx, flag) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][flag] = !t[gIdx].items[mIdx][flag]; renderVisualEditor(); }
-    function moveMed(gIdx, mIdx, dir) { const t = editorTab === 'general' ? generalMedData : specialMedData; const items = t[gIdx].items; const tIdx = mIdx + dir; if (tIdx < 0 || tIdx >= items.length) return; const [i] = items.splice(mIdx, 1); items.splice(tIdx, 0, i); renderVisualEditor(); }
-    function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; const [movedItem] = t[srcGIdx].items.splice(srcMIdx, 1); t[destGIdx].items.splice(destMIdx, 0, movedItem); renderVisualEditor(); }
-    function addNewMed(gIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; const name = prompt("請輸入藥品名稱 (例：Med / 中文名)："); if (!name) return; t[gIdx].items.push({ id: "custom_" + Date.now(), name: name.trim(), unit: "", max: 5, pkgChange: false, shortage: false, disabled: false }); renderVisualEditor(); }
+    function moveMed(gIdx, mIdx, dir) { 
+      const t = editorTab === 'general' ? generalMedData : specialMedData; 
+      const items = t[gIdx].items; 
+      if (!items) return;
+      const tIdx = mIdx + dir; 
+      if (tIdx < 0 || tIdx >= items.length) return; 
+      const [i] = items.splice(mIdx, 1); 
+      items.splice(tIdx, 0, i); 
+      renderVisualEditor(); 
+    }
+    
+    // 🆕 修正：加入 `!t[destGIdx].items` 判斷，保護 Firebase 空陣列報錯
+    function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) { 
+      const t = editorTab === 'general' ? generalMedData : specialMedData; 
+      if (!t[srcGIdx].items) return;
+      const [movedItem] = t[srcGIdx].items.splice(srcMIdx, 1); 
+      if (!t[destGIdx].items) t[destGIdx].items = []; // 👈 防當機保護
+      t[destGIdx].items.splice(destMIdx, 0, movedItem); 
+      renderVisualEditor(); 
+    }
+    
+    // 🆕 修正：加入 `!t[gIdx].items` 判斷，保護新增空櫃位後的第一筆藥品
+    function addNewMed(gIdx) { 
+      const t = editorTab === 'general' ? generalMedData : specialMedData; 
+      const name = prompt("請輸入藥品名稱 (例：Med / 中文名)："); 
+      if (!name) return; 
+      if (!t[gIdx].items) t[gIdx].items = []; // 👈 防當機保護
+      t[gIdx].items.push({ id: "custom_" + Date.now(), name: name.trim(), unit: "", max: 5, pkgChange: false, shortage: false, disabled: false }); 
+      renderVisualEditor(); 
+    }
+    
     function deleteMed(gIdx, mIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].items[mIdx].name}」嗎？`)) { t[gIdx].items.splice(mIdx, 1); renderVisualEditor(); } }
 
     function saveVisualConfigs() {
@@ -1011,14 +1033,16 @@
     function setBiQuickRange(type) {
       const now = new Date(); const endStr = getTwDate(now); let start = new Date();
       if (type === '7days') { start.setDate(now.getDate() - 6); } 
+      else if (type === '30days') { start.setDate(now.getDate() - 29); }
+      else if (type === 'all') { start.setFullYear(2020); }
       document.getElementById("biStartDate").value = getTwDate(start); document.getElementById("biEndDate").value = endStr; refreshBiDashboard();
     }
 
+    // 🆕 完整修復的儀表板資料運算大腦
     function refreshBiDashboard() {
       const startStr = document.getElementById("biStartDate").value; 
       const endStr = document.getElementById("biEndDate").value;
       
-      // 1. 過濾時間區間內的紀錄
       const records = archivedHistoryList.filter(rec => { 
         const d = rec.completeDate || rec.createDate || ""; 
         if (startStr && d < startStr) return false; 
@@ -1027,7 +1051,6 @@
       });
       document.getElementById("biFilteredCount").innerText = records.length;
 
-      // 2. 更新下方歷史紀錄列表
       const recordsBody = document.getElementById("biRecordsTableBody");
       if (records.length === 0) { 
         recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px;">無紀錄</td></tr>`; 
@@ -1038,15 +1061,11 @@
         }).join(""); 
       }
 
-      // ==========================================
-      // 3. 裝上大腦：計算上方三大區塊的統計數據
-      // ==========================================
       let totalReq = 0; let totalShortfall = 0; let itemStats = {}; 
       let slotMorning = 0; let slotAfternoon = 0; let slotNight = 0;
       let staffStats = {};
 
       records.forEach(rec => {
-        // [A] 時段統計 (早:0730-1200, 午:1200-1700, 晚:1700-0730)
         const h = rec.completeHour !== undefined ? rec.completeHour : parseInt((rec.completeTime || "00").split(":")[0]);
         const m = rec.completeMinute !== undefined ? rec.completeMinute : parseInt((rec.completeTime || "00:00").split(":")[1]);
         const timeVal = h + m / 60;
@@ -1054,12 +1073,10 @@
         else if (timeVal >= 12 && timeVal < 17) slotAfternoon++;
         else slotNight++;
 
-        // [B] 人員統計初始化
         const sCode = rec.staffCode || "0000";
         if (!staffStats[sCode]) staffStats[sCode] = { name: rec.staffName || "未具名", qty: 0, batches: 0, items: {} };
         staffStats[sCode].batches++;
 
-        // [C] 藥品與短缺統計
         (rec.items || []).forEach(item => {
           const req = item.req || 0;
           const sf = item.shortfall || 0;
@@ -1075,7 +1092,6 @@
         });
       });
 
-      // --- 渲染 UI：藥品短缺率 ---
       document.getElementById("biStatTotalReq").innerText = totalReq;
       document.getElementById("biStatTotalShortfall").innerText = totalShortfall;
       const sfRate = totalReq > 0 ? ((totalShortfall / totalReq) * 100).toFixed(1) : 0;
@@ -1089,12 +1105,10 @@
       if (sfArray.length === 0) topSfEl.innerHTML = "無短缺紀錄";
       else topSfEl.innerHTML = sfArray.map(([name, stats]) => `<div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px dashed #e2e8f0; padding-bottom:2px;"><span>${name.split(' / ')[0]}</span><span style="color:#dc2626; font-weight:bold;">${stats.shortfall} <span style="font-size:9px; color:#94a3b8;">(${((stats.shortfall/stats.req)*100).toFixed(0)}%)</span></span></div>`).join("");
 
-      // --- 渲染 UI：點藥時段 ---
       document.getElementById("biSlotMorning").innerText = slotMorning;
       document.getElementById("biSlotAfternoon").innerText = slotAfternoon;
       document.getElementById("biSlotNight").innerText = slotNight;
 
-      // --- 渲染 UI：藥師同仁習慣 ---
       const staffArray = Object.values(staffStats).sort((a, b) => b.batches - a.batches);
       const staffBody = document.getElementById("biStaffHabitsBody");
       if (staffArray.length === 0) staffBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:8px;">暫無資料</td></tr>`;
