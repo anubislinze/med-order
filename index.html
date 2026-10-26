@@ -433,7 +433,7 @@
     let editingMedId = null; let appMode = "pharmacist"; let editorTab = "general";
     let isAssistantAuthenticated = false; let isFirebaseConnected = false; let pendingArchiveData = null;
 
-    // --- Firebase Phase 2 初始化 ---
+    // --- Firebase Phase 2 初始化與強制陣列轉換 ---
     function initSync() {
       try {
         if (!firebase.apps.length) firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
@@ -446,20 +446,29 @@
             else { badge.innerText = "❌ 離線 (禁止操作)"; badge.className = "cloud-status"; badge.style.backgroundColor = "#fecaca"; badge.style.color = "#991b1b"; }
         });
 
-        // 讀取/初始化 名單
+        // 讀取/初始化 名單 (防範 Firebase 將陣列轉為物件的錯誤)
         db.ref("staff_config_p2").on("value", (snap) => {
           const val = snap.val();
-          if (val) { staffConfig = val; localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); } 
+          if (val) { 
+            staffConfig = {
+              pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [],
+              assistants: val.assistants ? Object.values(val.assistants) : []
+            };
+            localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); 
+          } 
           else { 
             db.ref("staff_config_p2").set(DEFAULT_STAFF_CONFIG); 
             staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
           } 
         });
 
-        // 讀取/初始化 菜單
+        // 讀取/初始化 菜單 (防範 Firebase 將陣列轉為物件的錯誤)
         db.ref("menu_config_p2").on("value", (snap) => {
           const val = snap.val();
-          if (val) { generalMedData = val.general || []; specialMedData = val.special || []; } 
+          if (val) { 
+            generalMedData = (val.general || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
+            specialMedData = (val.special || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
+          } 
           else { 
             db.ref("menu_config_p2").set({general: DEFAULT_GENERAL_MEDS, special: DEFAULT_SPECIAL_MEDS}); 
             generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); 
@@ -650,7 +659,7 @@
 
             let badgesHtml = "";
             if (med.pkgChange) badgesHtml += `<span class="status-badge badge-pkg">📦換包裝</span>`;
-            if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">📉低庫存</span>`; // 🆕 更新為低庫存與圖示
+            if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">📉低庫存</span>`; // 🆕 低庫存圖示
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
             let badgeContent = isEditingThis ? `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">` : `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
@@ -718,7 +727,6 @@
 
     function toggleCheck(medId) { checkedItems[medId] = !checkedItems[medId]; renderAssistantMatrix(); }
 
-    // --- Phase 2: 獨立抽屜歸檔 (原子化更新) 修正衝突版 ---
     function clearDoneItems() {
       if (!isFirebaseConnected) { alert("⛔ 系統離線中！"); return; }
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
@@ -926,11 +934,37 @@
         container.appendChild(groupBox);
 
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
+        
+        // 🆕 建立空櫃位無形的「著陸墊」
+        medListEl.style.minHeight = "40px";
+        medListEl.style.border = "2px dashed transparent";
+        medListEl.style.borderRadius = "4px";
+        medListEl.style.transition = "border-color 0.2s";
+
+        medListEl.ondragover = (e) => { e.preventDefault(); medListEl.style.borderColor = "#94a3b8"; };
+        medListEl.ondragleave = (e) => { medListEl.style.borderColor = "transparent"; };
+        medListEl.ondrop = (e) => {
+          e.preventDefault(); medListEl.style.borderColor = "transparent";
+          const srcData = e.dataTransfer.getData("text/plain"); if (!srcData) return;
+          const source = JSON.parse(srcData);
+          const t = editorTab === 'general' ? generalMedData : specialMedData;
+          const targetLen = t[gIdx].items ? t[gIdx].items.length : 0;
+          reorderMed(source.gIdx, source.mIdx, gIdx, targetLen);
+        };
+
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div"); row.className = "editor-med-row"; row.draggable = true; row.dataset.gidx = gIdx; row.dataset.midx = mIdx;
           row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
           row.ondragstart = (e) => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx })); }; row.ondragend = () => row.classList.remove("dragging"); row.ondragover = (e) => e.preventDefault();
-          row.ondrop = (e) => { e.preventDefault(); const source = JSON.parse(e.dataTransfer.getData("text/plain")); reorderMed(source.gIdx, source.mIdx, gIdx, mIdx); };
+          
+          row.ondrop = (e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); // 🆕 防止觸發外層空櫃位的拖曳事件
+            const srcData = e.dataTransfer.getData("text/plain"); if (!srcData) return;
+            const source = JSON.parse(srcData); 
+            reorderMed(source.gIdx, source.mIdx, gIdx, mIdx); 
+          };
+          
           const handleEl = row.querySelector(".drag-handle"); handleEl.ontouchstart = (e) => { touchDragSrc = { gIdx, mIdx, el: row }; row.classList.add("touch-active"); if (navigator.vibrate) navigator.vibrate(30); };
           handleEl.ontouchmove = (e) => { if (!touchDragSrc) return; e.preventDefault(); const touch = e.touches[0]; const targetEl = document.elementFromPoint(touch.clientX, touch.clientY); const targetRow = targetEl ? targetEl.closest(".editor-med-row") : null; if (targetRow && targetRow !== touchDragSrc.el) { const destGIdx = parseInt(targetRow.dataset.gidx); const destMIdx = parseInt(targetRow.dataset.midx); reorderMed(touchDragSrc.gIdx, touchDragSrc.mIdx, destGIdx, destMIdx); touchDragSrc.gIdx = destGIdx; touchDragSrc.mIdx = destMIdx; } };
           handleEl.ontouchend = () => { if (touchDragSrc) { touchDragSrc.el.classList.remove("touch-active"); touchDragSrc = null; } };
@@ -948,8 +982,8 @@
     function toggleMedFlag(gIdx, mIdx, flag) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][flag] = !t[gIdx].items[mIdx][flag]; renderVisualEditor(); }
     function moveMed(gIdx, mIdx, dir) { 
       const t = editorTab === 'general' ? generalMedData : specialMedData; 
+      if (!t[gIdx].items) return;
       const items = t[gIdx].items; 
-      if (!items) return;
       const tIdx = mIdx + dir; 
       if (tIdx < 0 || tIdx >= items.length) return; 
       const [i] = items.splice(mIdx, 1); 
@@ -957,22 +991,22 @@
       renderVisualEditor(); 
     }
     
-    // 🆕 修正：加入 `!t[destGIdx].items` 判斷，保護 Firebase 空陣列報錯
+    // 🆕 修正：加入防空當機保護
     function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) { 
       const t = editorTab === 'general' ? generalMedData : specialMedData; 
       if (!t[srcGIdx].items) return;
       const [movedItem] = t[srcGIdx].items.splice(srcMIdx, 1); 
-      if (!t[destGIdx].items) t[destGIdx].items = []; // 👈 防當機保護
+      if (!t[destGIdx].items) t[destGIdx].items = []; 
       t[destGIdx].items.splice(destMIdx, 0, movedItem); 
       renderVisualEditor(); 
     }
     
-    // 🆕 修正：加入 `!t[gIdx].items` 判斷，保護新增空櫃位後的第一筆藥品
+    // 🆕 修正：加入防空當機保護
     function addNewMed(gIdx) { 
       const t = editorTab === 'general' ? generalMedData : specialMedData; 
       const name = prompt("請輸入藥品名稱 (例：Med / 中文名)："); 
       if (!name) return; 
-      if (!t[gIdx].items) t[gIdx].items = []; // 👈 防當機保護
+      if (!t[gIdx].items) t[gIdx].items = []; 
       t[gIdx].items.push({ id: "custom_" + Date.now(), name: name.trim(), unit: "", max: 5, pkgChange: false, shortage: false, disabled: false }); 
       renderVisualEditor(); 
     }
@@ -1038,7 +1072,7 @@
       document.getElementById("biStartDate").value = getTwDate(start); document.getElementById("biEndDate").value = endStr; refreshBiDashboard();
     }
 
-    // 🆕 完整修復的儀表板資料運算大腦
+    // 完整修復的儀表板資料運算大腦
     function refreshBiDashboard() {
       const startStr = document.getElementById("biStartDate").value; 
       const endStr = document.getElementById("biEndDate").value;
