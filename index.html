@@ -89,7 +89,7 @@
     .med-status-icons { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
     .status-badge { font-size: 10px; padding: 1px 3px; border-radius: 3px; font-weight: bold; display: inline-flex; align-items: center; line-height: 1.2; }
     .badge-pkg { background: #fff8e1; color: #b78103; border: 1px solid #ffe082; }
-    .badge-shortage { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; } /* 改為低庫存的藍色系 */
+    .badge-shortage { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; } /* 低庫存的藍色系 */
     .badge-ban { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .med-unit-badge { font-size: 11px; color: #666; padding: 1px 4px; background: #f5f5f5; border-radius: 3px; margin-right: 4px; border: 1px solid #ddd; }
 
@@ -104,9 +104,13 @@
     .matrix-table th, .matrix-table td { border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 7px 5px; text-align: center; background-color: #fff; }
     .matrix-table th { position: sticky; top: 0; z-index: 20; background: #f1f5f9; font-weight: 900; color: #333; border-bottom: 2px solid var(--border-color); }
     .matrix-table th.th-station { background: #f8fafc; }
-    .sticky-col-check { position: sticky; left: 0; z-index: 10; background-color: #fff; width: 44px; min-width: 44px; }
-    th.sticky-col-check { z-index: 30; background-color: #f1f5f9; }
-    .sticky-col-shelf { position: sticky; left: 44px; z-index: 10; background-color: #fff; width: 75px; min-width: 75px; border-right: 2px solid #cbd5e1 !important; }
+    
+    /* 🆕 標題列全選區塊的樣式設定 */
+    .sticky-col-check { position: sticky; left: 0; z-index: 10; background-color: #fff; width: 50px; min-width: 50px; }
+    th.sticky-col-check { z-index: 30; background-color: #f1f5f9; cursor: pointer; user-select: none; transition: background-color 0.2s; }
+    th.sticky-col-check:active { background-color: #e2e8f0; } /* 點擊時的回饋 */
+    
+    .sticky-col-shelf { position: sticky; left: 50px; z-index: 10; background-color: #fff; width: 75px; min-width: 75px; border-right: 2px solid #cbd5e1 !important; }
     th.sticky-col-shelf { z-index: 30; background-color: #f1f5f9; border-right: 2px solid #cbd5e1 !important; }
     .col-name { text-align: left !important; font-weight: bold; min-width: 140px; }
     .matrix-row.done td { background: #f1f5f9 !important; color: #94a3b8; text-decoration: line-through; }
@@ -120,8 +124,13 @@
     .station-qty-cell.partial { background: var(--partial-bg); color: var(--partial-color); border: 1.5px solid #f59e0b; }
     .station-qty-cell.zero { background: var(--zero-bg); color: var(--zero-color); border: 1.5px solid #ef4444; }
     .sub-qty-hint { font-size: 9px; color: #888; line-height: 1; font-weight: normal; }
+    
     .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #888; background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; }
     .matrix-row.done .check-btn { background: var(--primary-green); border-color: var(--primary-green); color: #fff; }
+    /* 🆕 標題列小圓點圖示的樣式 */
+    .header-check-icon { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #888; margin-left: 2px; vertical-align: middle; background: #fff; transition: all 0.2s; }
+    .header-check-icon.checked { background: var(--primary-green); border-color: var(--primary-green); position: relative; }
+    .header-check-icon.checked::after { content: ''; position: absolute; left: 3px; top: 1px; width: 4px; height: 7px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 
     .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 2px solid var(--border-color); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 100; }
     .bottom-summary { font-size: 13px; font-weight: bold; color: #333; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -151,8 +160,6 @@
     .move-btn { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 5px; font-size: 11px; cursor: pointer; }
     .tag-toggle-btn { padding: 2px 4px; border-radius: 3px; font-size: 10px; cursor: pointer; border: 1px solid #ccc; background: #fff; }
     .tag-toggle-btn.active-pkg { background: #fff8e1; border-color: #ffe082; color: #b78103; font-weight: bold; }
-    
-    /* 低庫存按鈕高亮狀態 */
     .tag-toggle-btn.active-shortage { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; font-weight: bold; }
     .tag-toggle-btn.active-disabled { background: #ffebee; border-color: #ef9a9a; color: #c62828; font-weight: bold; }
 
@@ -215,7 +222,8 @@
       <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
         <div>
           <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理取藥動線矩陣（嚴格依架位動線排序）</h3>
-          <span style="font-size:11px; color:#64748b;">💡 微調實出數：各台點擊循環遞減 ｜ 各台長按 1 秒單獨歸零 ｜ 總量長按 1 秒整列全歸零</span>
+          <!-- 🆕 操作提示更新 -->
+          <span style="font-size:11px; color:#64748b;">💡 操作提示：完成標題長按 1 秒全選/取消 ｜ 微調實出數：各台點擊循環遞減 ｜ 各台長按 1 秒單獨歸零 ｜ 總量長按 1 秒整列全歸零</span>
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 員工送單紀錄</button>
@@ -613,6 +621,48 @@
     }
     function cancelAsstTotalLongPress() { if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer); }
 
+    // 🆕 標題列一鍵全選功能
+    let headerCheckPressTimer = null;
+    function startHeaderCheckLongPress() {
+        if (!isFirebaseConnected) return;
+        headerCheckPressTimer = setTimeout(() => {
+            if (navigator.vibrate) navigator.vibrate(80);
+            
+            // 判斷目前是要全選還是取消全選
+            const currentRenderedMedIds = [];
+            const canonicalGroupsOrder = [
+                ...generalMedData.filter(g => g.col === 1), ...generalMedData.filter(g => g.col === 2), ...generalMedData.filter(g => g.col === 3),
+                ...specialMedData.filter(g => g.col === 1), ...specialMedData.filter(g => g.col === 2), ...specialMedData.filter(g => g.col === 3)
+            ];
+            
+            canonicalGroupsOrder.forEach(group => {
+                (group.items || []).forEach(med => {
+                    let totalReqQty = 0;
+                    activeOrdersList.forEach(o => { totalReqQty += o.items?.[med.id] || 0; });
+                    if (totalReqQty > 0) currentRenderedMedIds.push(med.id);
+                });
+            });
+
+            if (currentRenderedMedIds.length === 0) return;
+
+            const allChecked = currentRenderedMedIds.every(id => checkedItems[id]);
+            
+            if (allChecked) {
+                if (confirm("是否要【取消】畫面上所有藥品的完成狀態？")) {
+                    currentRenderedMedIds.forEach(id => checkedItems[id] = false);
+                    renderAssistantMatrix();
+                }
+            } else {
+                if (confirm("是否要將畫面上所有藥品設為【已完成】？")) {
+                    currentRenderedMedIds.forEach(id => checkedItems[id] = true);
+                    renderAssistantMatrix();
+                }
+            }
+        }, 1000); // 長按 1 秒觸發
+    }
+    function cancelHeaderCheckLongPress() { if (headerCheckPressTimer) clearTimeout(headerCheckPressTimer); }
+
+
     function promptAssistantAccess() {
       if (isAssistantAuthenticated) { switchMode('assistant'); } 
       else { document.getElementById("authCodeInput").value = ""; document.getElementById("authModal").style.display = "flex"; setTimeout(() => document.getElementById("authCodeInput").focus(), 100); }
@@ -659,7 +709,7 @@
 
             let badgesHtml = "";
             if (med.pkgChange) badgesHtml += `<span class="status-badge badge-pkg">📦換包裝</span>`;
-            if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">📉低庫存</span>`; // 🆕 低庫存圖示
+            if (med.shortage) badgesHtml += `<span class="status-badge badge-shortage">📉低庫存</span>`;
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
             let badgeContent = isEditingThis ? `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">` : `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
@@ -685,15 +735,31 @@
         if (pA !== pB) return pA - pB; return (a.orderObj.orderSeq || 0) - (b.orderObj.orderSeq || 0);
       });
 
-      let headHtml = `<tr><th class="sticky-col-check">完成</th><th class="sticky-col-shelf">架位</th><th class="col-name">藥品名稱</th><th style="width: 45px; min-width: 45px;">單位</th><th style="width: 70px; min-width: 70px;">實出/總需</th>`;
-      stationColumns.forEach(col => { headHtml += `<th class="th-station" style="min-width: 75px; padding:4px;">${getBasketBadge(col.label)}</th>`; });
-      headHtml += `</tr>`; thead.innerHTML = headHtml;
-
-      tbody.innerHTML = ""; let hasAnyOrder = false;
+      let headHtml = `<tr>`;
+      
+      // 🆕 計算全選狀態以更新標題圖示
+      let currentRenderedMedIds = [];
       const canonicalGroupsOrder = [
         ...generalMedData.filter(g => g.col === 1), ...generalMedData.filter(g => g.col === 2), ...generalMedData.filter(g => g.col === 3),
         ...specialMedData.filter(g => g.col === 1), ...specialMedData.filter(g => g.col === 2), ...specialMedData.filter(g => g.col === 3)
       ];
+      canonicalGroupsOrder.forEach(group => {
+        (group.items || []).forEach(med => {
+          let totalReqQty = 0;
+          activeOrdersList.forEach(o => { totalReqQty += o.items?.[med.id] || 0; });
+          if (totalReqQty > 0) currentRenderedMedIds.push(med.id);
+        });
+      });
+      const allChecked = currentRenderedMedIds.length > 0 && currentRenderedMedIds.every(id => checkedItems[id]);
+      
+      // 🆕 將全選事件綁定到「完成」標題儲存格上
+      headHtml += `<th class="sticky-col-check" onmousedown="startHeaderCheckLongPress()" onmouseup="cancelHeaderCheckLongPress()" onmouseleave="cancelHeaderCheckLongPress()" ontouchstart="startHeaderCheckLongPress()" ontouchend="cancelHeaderCheckLongPress()" title="長按1秒可全選/取消全選">完成<span class="header-check-icon ${allChecked ? 'checked' : ''}"></span></th>`;
+      headHtml += `<th class="sticky-col-shelf">架位</th><th class="col-name">藥品名稱</th><th style="width: 45px; min-width: 45px;">單位</th><th style="width: 70px; min-width: 70px;">實出/總需</th>`;
+      
+      stationColumns.forEach(col => { headHtml += `<th class="th-station" style="min-width: 75px; padding:4px;">${getBasketBadge(col.label)}</th>`; });
+      headHtml += `</tr>`; thead.innerHTML = headHtml;
+
+      tbody.innerHTML = ""; let hasAnyOrder = false;
 
       canonicalGroupsOrder.forEach(group => {
         (group.items || []).forEach(med => {
@@ -935,7 +1001,6 @@
 
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
         
-        // 🆕 建立空櫃位無形的「著陸墊」
         medListEl.style.minHeight = "40px";
         medListEl.style.border = "2px dashed transparent";
         medListEl.style.borderRadius = "4px";
@@ -959,7 +1024,7 @@
           
           row.ondrop = (e) => { 
             e.preventDefault(); 
-            e.stopPropagation(); // 🆕 防止觸發外層空櫃位的拖曳事件
+            e.stopPropagation();
             const srcData = e.dataTransfer.getData("text/plain"); if (!srcData) return;
             const source = JSON.parse(srcData); 
             reorderMed(source.gIdx, source.mIdx, gIdx, mIdx); 
@@ -991,7 +1056,6 @@
       renderVisualEditor(); 
     }
     
-    // 🆕 修正：加入防空當機保護
     function reorderMed(srcGIdx, srcMIdx, destGIdx, destMIdx) { 
       const t = editorTab === 'general' ? generalMedData : specialMedData; 
       if (!t[srcGIdx].items) return;
@@ -1001,7 +1065,6 @@
       renderVisualEditor(); 
     }
     
-    // 🆕 修正：加入防空當機保護
     function addNewMed(gIdx) { 
       const t = editorTab === 'general' ? generalMedData : specialMedData; 
       const name = prompt("請輸入藥品名稱 (例：Med / 中文名)："); 
