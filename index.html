@@ -57,6 +57,12 @@
     }
     .login-input:focus { border-color: var(--primary-green); }
 
+    /* 🆕 沙盒測試模式警告橫幅 */
+    #sandboxBanner {
+      display: none; background: #f59e0b; color: #fff; text-align: center; font-size: 12px; font-weight: bold; 
+      padding: 4px; letter-spacing: 1px; z-index: 101; position: relative;
+    }
+
     .nav-bar { position: sticky; top: 0; z-index: 100; background: var(--paper-bg); border-bottom: 2px solid var(--border-color); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .nav-left { display: flex; align-items: center; gap: 6px; }
     .app-title { font-size: 16px; font-weight: 900; color: var(--primary-green); }
@@ -89,7 +95,7 @@
     .med-status-icons { display: flex; align-items: center; gap: 2px; margin-right: 4px; }
     .status-badge { font-size: 10px; padding: 1px 3px; border-radius: 3px; font-weight: bold; display: inline-flex; align-items: center; line-height: 1.2; }
     .badge-pkg { background: #fff8e1; color: #b78103; border: 1px solid #ffe082; }
-    .badge-shortage { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; } /* 低庫存的藍色系 */
+    .badge-shortage { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; } 
     .badge-ban { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     .med-unit-badge { font-size: 11px; color: #666; padding: 1px 4px; background: #f5f5f5; border-radius: 3px; margin-right: 4px; border: 1px solid #ddd; }
 
@@ -105,10 +111,9 @@
     .matrix-table th { position: sticky; top: 0; z-index: 20; background: #f1f5f9; font-weight: 900; color: #333; border-bottom: 2px solid var(--border-color); }
     .matrix-table th.th-station { background: #f8fafc; }
     
-    /* 🆕 標題列全選區塊的樣式設定 */
     .sticky-col-check { position: sticky; left: 0; z-index: 10; background-color: #fff; width: 50px; min-width: 50px; }
     th.sticky-col-check { z-index: 30; background-color: #f1f5f9; cursor: pointer; user-select: none; transition: background-color 0.2s; }
-    th.sticky-col-check:active { background-color: #e2e8f0; } /* 點擊時的回饋 */
+    th.sticky-col-check:active { background-color: #e2e8f0; } 
     
     .sticky-col-shelf { position: sticky; left: 50px; z-index: 10; background-color: #fff; width: 75px; min-width: 75px; border-right: 2px solid #cbd5e1 !important; }
     th.sticky-col-shelf { z-index: 30; background-color: #f1f5f9; border-right: 2px solid #cbd5e1 !important; }
@@ -127,7 +132,6 @@
     
     .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #888; background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; }
     .matrix-row.done .check-btn { background: var(--primary-green); border-color: var(--primary-green); color: #fff; }
-    /* 🆕 標題列小圓點圖示的樣式 */
     .header-check-icon { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #888; margin-left: 2px; vertical-align: middle; background: #fff; transition: all 0.2s; }
     .header-check-icon.checked { background: var(--primary-green); border-color: var(--primary-green); position: relative; }
     .header-check-icon.checked::after { content: ''; position: absolute; left: 3px; top: 1px; width: 4px; height: 7px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
@@ -168,6 +172,9 @@
 </head>
 <body>
 
+  <!-- 沙盒模式警告橫幅 -->
+  <div id="sandboxBanner">🚧 目前為【沙盒測試模式】(不列入正式報表統計) 🚧</div>
+
   <!-- 🔒 第一道門：全畫面安全鎖 -->
   <div id="globalLoginOverlay">
     <div class="login-box">
@@ -176,6 +183,7 @@
       <p>門禁管制 🔒</p>
       
       <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入密碼" onkeydown="if(event.key==='Enter') verifyGlobalCode()">
+      <div style="font-size:11px; color:#888; margin-bottom:12px;">※測試人員請輸入測試專用密碼</div>
       
       <!-- 帶有連線圖示的按鈕 -->
       <button class="btn-act btn-submit" style="width:100%; font-size:16px; padding:10px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="verifyGlobalCode()">
@@ -222,8 +230,7 @@
       <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
         <div>
           <h3 style="margin: 0; color: #333; font-size: 16px;">📦 助理取藥動線矩陣（嚴格依架位動線排序）</h3>
-          <!-- 🆕 操作提示更新 -->
-          <span style="font-size:11px; color:#64748b;">💡 操作提示：完成標題長按 1 秒全選/取消 ｜ 微調實出數：各台點擊循環遞減 ｜ 各台長按 1 秒單獨歸零 ｜ 總量長按 1 秒整列全歸零</span>
+          <span style="font-size:11px; color:#64748b;">💡 操作提示：【完成】標題長按 1 秒可全選/取消 ｜ 微調：各台點擊遞減 ｜ 各台長按 1 秒單獨歸零 ｜ 總量長按 1 秒整列歸零</span>
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 員工送單紀錄</button>
@@ -395,14 +402,24 @@
 
   <script>
     // --- 密碼鎖設定 ---
-    const GLOBAL_PASS = "53690"; // 第一道門：網頁啟動密碼
+    const GLOBAL_PASS = "53690"; 
+    const TEST_PASS = "99999"; // 🆕 第一道門：沙盒測試密碼
     const ADMIN_PASS = "0000";   // 第二道門：主管後台密碼
+
+    let isTestMode = false;
+    let nodeActiveOrders = "active_orders_p2";
+    let nodeOrderHistory = "order_history_p2";
+    let nodeShortfalls = "shortfalls_p2";
 
     // --- 檢查第一道門 ---
     function checkGlobalAuth() {
-      if (sessionStorage.getItem("pharmacy_global_auth") === "true" || localStorage.getItem("pharmacy_global_auth") === "true") {
+      const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
+      const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
+      
+      if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
-        initSync(); // 驗證通過才連線 Firebase
+        if (storedMode === "true") { enableTestModeEnvironment(); }
+        initSync(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -410,12 +427,32 @@
 
     function verifyGlobalCode() {
       const val = document.getElementById("globalCodeInput").value.trim();
-      if (val === GLOBAL_PASS) {
-        localStorage.setItem("pharmacy_global_auth", "true"); // 存入本機保險箱
+      if (val === GLOBAL_PASS || val === TEST_PASS) {
+        localStorage.setItem("pharmacy_global_auth", "true"); 
+        
+        if (val === TEST_PASS) {
+            localStorage.setItem("pharmacy_test_mode", "true");
+            enableTestModeEnvironment();
+        } else {
+            localStorage.removeItem("pharmacy_test_mode");
+        }
+        
         document.getElementById("globalLoginOverlay").style.display = "none";
         initSync();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
+
+    function enableTestModeEnvironment() {
+        isTestMode = true;
+        // 切換為測試用的平行宇宙節點
+        nodeActiveOrders = "active_orders_test";
+        nodeOrderHistory = "order_history_test";
+        nodeShortfalls = "shortfalls_test";
+        
+        // 顯示測試模式橘色橫幅
+        document.getElementById("sandboxBanner").style.display = "block";
+    }
+
     window.onload = checkGlobalAuth;
 
     // --- 第二道門：主管專用鎖 ---
@@ -485,14 +522,14 @@
           renderAll();
         });
 
-        // 讀取 訂單
-        db.ref("active_orders_p2").on("value", (snapshot) => { 
+        // 讀取 訂單 (根據是否為測試模式讀取不同節點)
+        db.ref(nodeActiveOrders).on("value", (snapshot) => { 
           const val = snapshot.val(); 
           activeOrdersList = val ? Object.values(val) : []; 
           renderAll(); 
         });
 
-        db.ref("shortfalls_p2").on("value", (snap) => { latestShortfalls = snap.val() || {}; checkAndRenderShortfallBanner(); });
+        db.ref(nodeShortfalls).on("value", (snap) => { latestShortfalls = snap.val() || {}; checkAndRenderShortfallBanner(); });
 
       } catch (err) { console.error("Firebase 連線失敗:", err); }
 
@@ -544,7 +581,7 @@
 
     function dismissShortfallBanner() {
       delete latestShortfalls[currentStation]; 
-      if (isFirebaseConnected) firebase.database().ref("shortfalls_p2").set(latestShortfalls);
+      if (isFirebaseConnected) firebase.database().ref(nodeShortfalls).set(latestShortfalls);
       document.getElementById("shortfallBanner").style.display = "none";
     }
 
@@ -589,7 +626,7 @@
       const order = activeOrdersList.find(o => o.id === orderId); if (!order) return;
       const reqQty = order.items?.[medId] || 0; const cur = (order.fulfilled && order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
       let nextFulfilled = cur - 1; if (nextFulfilled < 0) nextFulfilled = reqQty;
-      firebase.database().ref(`active_orders_p2/${orderId}/fulfilled/${medId}`).set(nextFulfilled);
+      firebase.database().ref(`${nodeActiveOrders}/${orderId}/fulfilled/${medId}`).set(nextFulfilled);
     }
 
     function startAsstCellLongPress(orderId, medId) {
@@ -599,7 +636,7 @@
         const reqQty = order.items?.[medId] || 0; const cur = (order.fulfilled && order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
         const nextVal = (cur === 0) ? reqQty : 0;
         if (navigator.vibrate) navigator.vibrate(60);
-        firebase.database().ref(`active_orders_p2/${orderId}/fulfilled/${medId}`).set(nextVal);
+        firebase.database().ref(`${nodeActiveOrders}/${orderId}/fulfilled/${medId}`).set(nextVal);
       }, 1000);
     }
     function cancelAsstCellLongPress() { if (asstPressTimer) clearTimeout(asstPressTimer); }
@@ -616,7 +653,7 @@
         activeOrdersList.forEach(o => {
           if (o.items && o.items[medId]) { updates[`${o.id}/fulfilled/${medId}`] = setToZero ? 0 : o.items[medId]; }
         });
-        firebase.database().ref("active_orders_p2").update(updates);
+        firebase.database().ref(nodeActiveOrders).update(updates);
       }, 1000);
     }
     function cancelAsstTotalLongPress() { if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer); }
@@ -825,23 +862,23 @@
 
             archivedItems.push({ medId: medId, medName: med.name, unit: med.unit || '', req: req, actual: actual, shortfall: shortfall });
             
-            updates[`active_orders_p2/${order.id}/items/${medId}`] = null;
-            updates[`active_orders_p2/${order.id}/fulfilled/${medId}`] = null;
+            updates[`${nodeActiveOrders}/${order.id}/items/${medId}`] = null;
+            updates[`${nodeActiveOrders}/${order.id}/fulfilled/${medId}`] = null;
           }
         });
 
         const remainingItemsCount = Object.keys(order.items || {}).filter(k => !doneIds.includes(k)).length;
         if (remainingItemsCount === 0 && archivedItems.length > 0) { 
-          updates[`active_orders_p2/${order.id}`] = null; 
+          updates[`${nodeActiveOrders}/${order.id}`] = null; 
           doneIds.forEach(medId => {
-            delete updates[`active_orders_p2/${order.id}/items/${medId}`];
-            delete updates[`active_orders_p2/${order.id}/fulfilled/${medId}`];
+            delete updates[`${nodeActiveOrders}/${order.id}/items/${medId}`];
+            delete updates[`${nodeActiveOrders}/${order.id}/fulfilled/${medId}`];
           });
         }
 
         if (archivedItems.length > 0) {
           const recId = "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
-          updates[`order_history_p2/${recId}`] = {
+          updates[`${nodeOrderHistory}/${recId}`] = {
             id: recId, orderId: order.id || "unknown", station: order.station || "未分類", 
             displayLabel: order.displayLabel || order.station || "未分類", staffCode: order.staffCode || "0000", 
             staffName: order.staffName || "未具名", createDate: order.createDate || dateStr, 
@@ -854,7 +891,7 @@
       });
 
       if (Object.keys(clonedShortfalls).length > 0) {
-        updates[`shortfalls_p2`] = clonedShortfalls;
+        updates[nodeShortfalls] = clonedShortfalls;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -942,7 +979,7 @@
 
       try {
           document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中..."; document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-          await firebase.database().ref(`active_orders_p2/${newOrder.id}`).set(newOrder);
+          await firebase.database().ref(`${nodeActiveOrders}/${newOrder.id}`).set(newOrder);
           
           draftOrders = {}; editingMedId = null;
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
@@ -1119,7 +1156,7 @@
 
     function loadHistoryFromCloud() {
       if (firebase.apps.length) {
-        firebase.database().ref("order_history_p2").limitToLast(1000).once("value", (snapshot) => {
+        firebase.database().ref(nodeOrderHistory).limitToLast(1000).once("value", (snapshot) => {
           const val = snapshot.val();
           if (val) { archivedHistoryList = Object.values(val).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); } else { archivedHistoryList = []; }
           refreshBiDashboard();
@@ -1135,7 +1172,6 @@
       document.getElementById("biStartDate").value = getTwDate(start); document.getElementById("biEndDate").value = endStr; refreshBiDashboard();
     }
 
-    // 完整修復的儀表板資料運算大腦
     function refreshBiDashboard() {
       const startStr = document.getElementById("biStartDate").value; 
       const endStr = document.getElementById("biEndDate").value;
