@@ -17,9 +17,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (必須依照此順序載入) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <!-- Auth 模組 -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
@@ -59,7 +58,6 @@
     }
     .login-input:focus { border-color: var(--primary-green); }
 
-    /* 沙盒測試模式警告橫幅 */
     #sandboxBanner {
       display: none; background: #f59e0b; color: #fff; text-align: center; font-size: 12px; font-weight: bold; 
       padding: 4px; letter-spacing: 1px; z-index: 101; position: relative;
@@ -174,20 +172,16 @@
 </head>
 <body>
 
-  <!-- 沙盒模式警告橫幅 -->
   <div id="sandboxBanner">🚧 目前為【沙盒測試模式】(不列入正式報表統計) 🚧</div>
 
-  <!-- 🔒 第一道門：全畫面安全鎖 -->
   <div id="globalLoginOverlay">
     <div class="login-box">
-      <!-- 帶有圖示的極簡大標題 -->
       <h2>💊 藥局點藥系統 📋</h2>
       <p>門禁管制 🔒</p>
       
       <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入密碼" onkeydown="if(event.key==='Enter') verifyGlobalCode()">
       <div style="font-size:11px; color:#888; margin-bottom:12px;">※測試人員請輸入測試專用密碼</div>
       
-      <!-- 帶有連線圖示的按鈕 -->
       <button class="btn-act btn-submit" style="width:100%; font-size:16px; padding:10px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="verifyGlobalCode()">
         <span style="font-size:18px;">🔗</span> 連線
       </button>
@@ -413,27 +407,32 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
+    // --- Firebase 初始化 ---
     if (!firebase.apps.length) {
       firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
     }
 
     // --- 檢查第一道門 ---
     function checkGlobalAuth() {
+      console.log("【檢查登入狀態】開始...");
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
       const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
       
       if (storedAuth === "true") {
+        console.log("【檢查登入狀態】已紀錄登入，準備連線...");
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
         
-        // ⚠️ 確保先拿到憑證，才去連接資料庫
+        // 進入認證流程
         performSecureLogin(); 
       } else {
+        console.log("【檢查登入狀態】未登入，顯示輸入框。");
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
     }
 
     function verifyGlobalCode() {
+      console.log("【使用者點擊連線】驗證密碼中...");
       const val = document.getElementById("globalCodeInput").value.trim();
       if (val === GLOBAL_PASS || val === TEST_PASS) {
         localStorage.setItem("pharmacy_global_auth", "true"); 
@@ -446,24 +445,39 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
+        
+        // 進入認證流程
         performSecureLogin();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
 
-    // 🆕 強化錯誤捕捉機制的憑證登入函數
+    // --- 安全憑證領取 (加入 10 秒防呆炸彈) ---
     function performSecureLogin() {
+        console.log("【安全性連線】開始向 Firebase 要求匿名憑證...");
+        document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
+        document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+        
+        // 設定 10 秒計時炸彈，如果超時沒有回應就跳警告
+        const timeoutBomb = setTimeout(() => {
+            console.error("【安全性連線】超時 10 秒無回應！");
+            document.getElementById("cloudBadge").innerText = "❌ 憑證超時";
+            document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
+            alert("⛔ 系統驗證超時 (卡住了)！\n\n這通常是因為：\n1. 您的網路封鎖了 Firebase 驗證伺服器。\n2. 授權網域設定尚未生效。\n\n請按 F12 打開開發者工具看 Console 有無紅字錯誤。");
+        }, 10000);
+
         firebase.auth().signInAnonymously()
           .then(() => {
-              // 成功拿到憑證，呼叫資料庫連線
-              initSync(); 
+              console.log("【安全性連線】成功取得通行證！");
+              clearTimeout(timeoutBomb); // 拆除炸彈
+              initSync(); // 開始監聽資料庫
           })
           .catch((error) => {
-              console.error("Auth Error:", error);
+              console.error("【安全性連線】被拒絕:", error);
+              clearTimeout(timeoutBomb); // 拆除炸彈
               document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
               document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
               
-              // 彈出包含精確錯誤碼的警告視窗
-              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n【詳細訊息】:\n${error.message}\n\n請截圖此畫面並回報給系統工程師。`);
+              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n【詳細訊息】:\n${error.message}\n\n如果錯誤碼是 operation-not-allowed，請回後台把匿名登入打開。\n如果卡住沒反應，請檢查 Authorized domains。`);
           });
     }
 
@@ -478,6 +492,7 @@
     window.onload = checkGlobalAuth;
 
     function initSync() {
+      console.log("【資料庫連線】準備讀取資料表:", nodeActiveOrders);
       try {
         const db = firebase.database();
         
