@@ -19,7 +19,7 @@
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <!-- 🆕 加入 Auth 模組，負責安全憑證發放 -->
+  <!-- Auth 模組 -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
@@ -413,7 +413,6 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
-    // 🆕 確保 Firebase 提早初始化
     if (!firebase.apps.length) {
       firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
     }
@@ -426,7 +425,9 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
-        performSecureLogin(); // 🆕 呼叫安全登入
+        
+        // ⚠️ 確保先拿到憑證，才去連接資料庫
+        performSecureLogin(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -445,21 +446,24 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
-        performSecureLogin(); // 🆕 呼叫安全登入
+        performSecureLogin();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
 
-    // 🆕 負責向 Firebase 換取安全憑證的函數
+    // 🆕 強化錯誤捕捉機制的憑證登入函數
     function performSecureLogin() {
         firebase.auth().signInAnonymously()
           .then(() => {
-              initSync(); // 憑證拿到後，才開始監聽資料庫
+              // 成功拿到憑證，呼叫資料庫連線
+              initSync(); 
           })
           .catch((error) => {
               console.error("Auth Error:", error);
               document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
               document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
-              alert("安全憑證取得失敗，請確認 Firebase Authentication 是否已啟用「匿名登入」！\n" + error.message);
+              
+              // 彈出包含精確錯誤碼的警告視窗
+              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n【詳細訊息】:\n${error.message}\n\n請截圖此畫面並回報給系統工程師。`);
           });
     }
 
@@ -1116,7 +1120,6 @@
       alert("設定已儲存並同步至雲端！"); closeConfigModal();
     }
 
-    // --- Phase 2: 還原出廠預設 (直接覆蓋雲端與本地) ---
     function resetToDefaultConfig() {
       if (confirm("確定要將藥品、櫃位與人員還原為『原廠預設值』並同步至所有載具嗎？\n(注意：這將覆蓋現有所有自行新增的設定！)")) {
         generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); 
@@ -1132,7 +1135,6 @@
       }
     }
 
-    // --- 匯出功能 ---
     function openExportModal() {
       const fullConfig = { general: generalMedData, special: specialMedData, staff: staffConfig, exportedAt: new Date().toLocaleString() };
       const ta = document.getElementById("exportTextarea"); ta.value = JSON.stringify(fullConfig, null, 2);
@@ -1146,7 +1148,6 @@
       }).catch(() => { alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！"); }); 
     }
 
-    // --- 儀表板與匯出 ---
     let archivedHistoryList = [];
     function openBiDashboardModal() { document.getElementById("biDashboardModal").style.display = "flex"; setBiQuickRange('7days'); loadHistoryFromCloud(); }
     function closeBiDashboardModal() { document.getElementById("biDashboardModal").style.display = "none"; }
