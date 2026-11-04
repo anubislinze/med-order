@@ -57,7 +57,7 @@
     }
     .login-input:focus { border-color: var(--primary-green); }
 
-    /* 🆕 沙盒測試模式警告橫幅 */
+    /* 沙盒測試模式警告橫幅 */
     #sandboxBanner {
       display: none; background: #f59e0b; color: #fff; text-align: center; font-size: 12px; font-weight: bold; 
       padding: 4px; letter-spacing: 1px; z-index: 101; position: relative;
@@ -444,12 +444,9 @@
 
     function enableTestModeEnvironment() {
         isTestMode = true;
-        // 切換為測試用的平行宇宙節點
         nodeActiveOrders = "active_orders_test";
         nodeOrderHistory = "order_history_test";
         nodeShortfalls = "shortfalls_test";
-        
-        // 顯示測試模式橘色橫幅
         document.getElementById("sandboxBanner").style.display = "block";
     }
 
@@ -491,42 +488,30 @@
             else { badge.innerText = "❌ 離線 (禁止操作)"; badge.className = "cloud-status"; badge.style.backgroundColor = "#fecaca"; badge.style.color = "#991b1b"; }
         });
 
-        // 讀取/初始化 名單 (防範 Firebase 將陣列轉為物件的錯誤)
         db.ref("staff_config_p2").on("value", (snap) => {
           const val = snap.val();
           if (val) { 
-            staffConfig = {
-              pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [],
-              assistants: val.assistants ? Object.values(val.assistants) : []
-            };
+            staffConfig = { pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [], assistants: val.assistants ? Object.values(val.assistants) : [] };
             localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); 
-          } 
-          else { 
-            db.ref("staff_config_p2").set(DEFAULT_STAFF_CONFIG); 
-            staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
+          } else { 
+            db.ref("staff_config_p2").set(DEFAULT_STAFF_CONFIG); staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
           } 
         });
 
-        // 讀取/初始化 菜單 (防範 Firebase 將陣列轉為物件的錯誤)
         db.ref("menu_config_p2").on("value", (snap) => {
           const val = snap.val();
           if (val) { 
             generalMedData = (val.general || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
             specialMedData = (val.special || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
-          } 
-          else { 
+          } else { 
             db.ref("menu_config_p2").set({general: DEFAULT_GENERAL_MEDS, special: DEFAULT_SPECIAL_MEDS}); 
-            generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); 
-            specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS)); 
+            generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS)); 
           }
           renderAll();
         });
 
-        // 讀取 訂單 (根據是否為測試模式讀取不同節點)
         db.ref(nodeActiveOrders).on("value", (snapshot) => { 
-          const val = snapshot.val(); 
-          activeOrdersList = val ? Object.values(val) : []; 
-          renderAll(); 
+          const val = snapshot.val(); activeOrdersList = val ? Object.values(val) : []; renderAll(); 
         });
 
         db.ref(nodeShortfalls).on("value", (snap) => { latestShortfalls = snap.val() || {}; checkAndRenderShortfallBanner(); });
@@ -619,7 +604,6 @@
 
     let asstPressTimer = null; let isAsstLongPress = false;
 
-    // --- Phase 2: 抽屜式精準更新 ---
     function handleAsstCellClick(orderId, medId) {
       if (!isFirebaseConnected) { alert("⛔ 系統離線中！"); return; }
       if (isAsstLongPress) { isAsstLongPress = false; return; }
@@ -658,14 +642,12 @@
     }
     function cancelAsstTotalLongPress() { if (asstTotalPressTimer) clearTimeout(asstTotalPressTimer); }
 
-    // 🆕 標題列一鍵全選功能
     let headerCheckPressTimer = null;
     function startHeaderCheckLongPress() {
         if (!isFirebaseConnected) return;
         headerCheckPressTimer = setTimeout(() => {
             if (navigator.vibrate) navigator.vibrate(80);
             
-            // 判斷目前是要全選還是取消全選
             const currentRenderedMedIds = [];
             const canonicalGroupsOrder = [
                 ...generalMedData.filter(g => g.col === 1), ...generalMedData.filter(g => g.col === 2), ...generalMedData.filter(g => g.col === 3),
@@ -686,19 +668,16 @@
             
             if (allChecked) {
                 if (confirm("是否要【取消】畫面上所有藥品的完成狀態？")) {
-                    currentRenderedMedIds.forEach(id => checkedItems[id] = false);
-                    renderAssistantMatrix();
+                    currentRenderedMedIds.forEach(id => checkedItems[id] = false); renderAssistantMatrix();
                 }
             } else {
                 if (confirm("是否要將畫面上所有藥品設為【已完成】？")) {
-                    currentRenderedMedIds.forEach(id => checkedItems[id] = true);
-                    renderAssistantMatrix();
+                    currentRenderedMedIds.forEach(id => checkedItems[id] = true); renderAssistantMatrix();
                 }
             }
-        }, 1000); // 長按 1 秒觸發
+        }, 1000); 
     }
     function cancelHeaderCheckLongPress() { if (headerCheckPressTimer) clearTimeout(headerCheckPressTimer); }
-
 
     function promptAssistantAccess() {
       if (isAssistantAuthenticated) { switchMode('assistant'); } 
@@ -732,9 +711,16 @@
         const groups = currentMenu.filter(g => (g.col || 1) === colIdx);
         groups.forEach(group => {
           const block = document.createElement("div"); block.className = "med-block";
-          let headerClass = "block-header"; if (group.isWarn) headerClass += " warn"; if (group.isInsulin) headerClass += " insulin"; if (group.isNight) headerClass += " night";
+          
+          // 🆕 支援自訂標籤的渲染
+          let headerClass = "block-header"; 
+          let badgeHtml = "";
+          if (group.isWarn) { headerClass += " warn"; badgeHtml = "⚠️ 高警訊"; }
+          else if (group.isInsulin) { headerClass += " insulin"; badgeHtml = "💉 胰島素"; }
+          else if (group.isNight) { headerClass += " night"; badgeHtml = "🌙 專用/夜間"; }
+
           const header = document.createElement("div"); header.className = headerClass;
-          header.innerHTML = `<span>${group.group}</span><span>${group.isWarn ? '⚠️ 高警訊' : (group.isInsulin ? '💉 胰島素' : (group.isNight ? '🌙 夜刻' : ''))}</span>`;
+          header.innerHTML = `<span>${group.group}</span><span>${badgeHtml}</span>`;
           block.appendChild(header);
 
           (group.items || []).forEach(med => {
@@ -774,7 +760,6 @@
 
       let headHtml = `<tr>`;
       
-      // 🆕 計算全選狀態以更新標題圖示
       let currentRenderedMedIds = [];
       const canonicalGroupsOrder = [
         ...generalMedData.filter(g => g.col === 1), ...generalMedData.filter(g => g.col === 2), ...generalMedData.filter(g => g.col === 3),
@@ -789,7 +774,6 @@
       });
       const allChecked = currentRenderedMedIds.length > 0 && currentRenderedMedIds.every(id => checkedItems[id]);
       
-      // 🆕 將全選事件綁定到「完成」標題儲存格上
       headHtml += `<th class="sticky-col-check" onmousedown="startHeaderCheckLongPress()" onmouseup="cancelHeaderCheckLongPress()" onmouseleave="cancelHeaderCheckLongPress()" ontouchstart="startHeaderCheckLongPress()" ontouchend="cancelHeaderCheckLongPress()" title="長按1秒可全選/取消全選">完成<span class="header-check-icon ${allChecked ? 'checked' : ''}"></span></th>`;
       headHtml += `<th class="sticky-col-shelf">架位</th><th class="col-name">藥品名稱</th><th style="width: 45px; min-width: 45px;">單位</th><th style="width: 70px; min-width: 70px;">實出/總需</th>`;
       
@@ -1027,13 +1011,23 @@
     function deleteStaff(type, idx) { if (confirm(`刪除「${staffConfig[type][idx].name}」？`)) { staffConfig[type].splice(idx, 1); renderStaffEditor(); } }
 
     let touchDragSrc = null;
+    
+    // 🆕 更新視覺編輯器，加入群組標籤選擇器
     function renderVisualEditor() {
       const container = document.getElementById("visualEditorContainer"); container.innerHTML = "";
       const targetMenu = editorTab === 'general' ? generalMedData : specialMedData;
 
       targetMenu.forEach((group, gIdx) => {
         const groupBox = document.createElement("div"); groupBox.className = "editor-group-box";
-        groupBox.innerHTML = `<div class="editor-group-header"><span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span><input type="text" class="editor-group-input" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)" placeholder="櫃位名稱 (例如 GZX)"><div style="display:flex; gap:4px;"><select style="font-size:11px;" onchange="updateGroupCol(${gIdx}, parseInt(this.value))"><option value="1" ${group.col === 1 ? 'selected' : ''}>第1欄</option><option value="2" ${group.col === 2 ? 'selected' : ''}>第2欄</option><option value="3" ${group.col === 3 ? 'selected' : ''}>第3欄</option></select><button class="move-btn" onclick="moveGroup(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveGroup(${gIdx}, 1)" ${gIdx === targetMenu.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteGroup(${gIdx})">✕</button></div></div><div class="med-list-container" id="medListContainer_${gIdx}"></div><div style="margin-top:6px; display:flex; justify-content:flex-end;"><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e0f2fe; color:#0369a1;" onclick="addNewMed(${gIdx})">➕ 新增藥品品項</button></div>`;
+        
+        let selectHtml = `<select style="font-size:11.5px; padding:2px; border:1px solid #cbd5e1; border-radius:3px; color:#475569;" onchange="updateGroupTag(${gIdx}, this.value)">
+          <option value="none" ${!group.isWarn && !group.isInsulin && !group.isNight ? 'selected' : ''}>標籤: 無</option>
+          <option value="warn" ${group.isWarn ? 'selected' : ''}>⚠️ 高警訊</option>
+          <option value="insulin" ${group.isInsulin ? 'selected' : ''}>💉 胰島素</option>
+          <option value="night" ${group.isNight ? 'selected' : ''}>🌙 夜間/特定</option>
+        </select>`;
+
+        groupBox.innerHTML = `<div class="editor-group-header"><span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span><input type="text" class="editor-group-input" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)" placeholder="櫃位名稱 (例如 GZX)">${selectHtml}<div style="display:flex; gap:4px;"><select style="font-size:11px;" onchange="updateGroupCol(${gIdx}, parseInt(this.value))"><option value="1" ${group.col === 1 ? 'selected' : ''}>第1欄</option><option value="2" ${group.col === 2 ? 'selected' : ''}>第2欄</option><option value="3" ${group.col === 3 ? 'selected' : ''}>第3欄</option></select><button class="move-btn" onclick="moveGroup(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveGroup(${gIdx}, 1)" ${gIdx === targetMenu.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteGroup(${gIdx})">✕</button></div></div><div class="med-list-container" id="medListContainer_${gIdx}"></div><div style="margin-top:6px; display:flex; justify-content:flex-end;"><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e0f2fe; color:#0369a1;" onclick="addNewMed(${gIdx})">➕ 新增藥品品項</button></div>`;
         container.appendChild(groupBox);
 
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
@@ -1077,6 +1071,16 @@
 
     function updateGroupName(gIdx, val) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].group = val.trim(); }
     function updateGroupCol(gIdx, col) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].col = col; }
+    
+    // 🆕 負責更新櫃位主題標籤的函數
+    function updateGroupTag(gIdx, val) {
+      const t = editorTab === 'general' ? generalMedData : specialMedData;
+      t[gIdx].isWarn = false; t[gIdx].isInsulin = false; t[gIdx].isNight = false;
+      if (val === 'warn') t[gIdx].isWarn = true;
+      if (val === 'insulin') t[gIdx].isInsulin = true;
+      if (val === 'night') t[gIdx].isNight = true;
+    }
+
     function moveGroup(gIdx, dir) { const t = editorTab === 'general' ? generalMedData : specialMedData; const tIdx = gIdx + dir; if (tIdx < 0 || tIdx >= t.length) return; const [i] = t.splice(gIdx, 1); t.splice(tIdx, 0, i); renderVisualEditor(); }
     function addNewGroup() { const name = prompt("請輸入新櫃位名稱 (例如 GZX 或 專用特區)："); if (!name) return; const t = editorTab === 'general' ? generalMedData : specialMedData; t.push({ col: 1, group: name.trim(), isWarn: false, items: [] }); renderVisualEditor(); }
     function deleteGroup(gIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].group}」整個櫃位及其所有藥品嗎？`)) { t.splice(gIdx, 1); renderVisualEditor(); } }
