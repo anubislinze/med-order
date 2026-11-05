@@ -4,10 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <!-- 網頁標籤標題 -->
   <title>藥局點藥系統 (Phase 2)</title>
   
-  <!-- 社群預覽標籤 (LINE / Facebook) -->
   <meta name="description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。">
   <meta property="og:title" content="藥局點藥系統">
   <meta property="og:description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。內部專用，請輸入啟動密碼連線。">
@@ -17,12 +15,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK (必須依照此順序載入) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
-  <!-- SheetJS SDK (Excel 匯出使用) -->
+  <!-- SheetJS SDK -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
@@ -40,7 +38,6 @@
     .bi-custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .bi-custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
-    /* --- 第一道門：全畫面登入鎖 --- */
     #globalLoginOverlay {
       position: fixed; inset: 0; background: #2e7d32; z-index: 99999; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
@@ -407,32 +404,23 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
-    // --- Firebase 初始化 ---
-    if (!firebase.apps.length) {
-      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
-    }
+    // 🚀 關鍵修復：強制 Firebase 核心在所有事情發生前優先初始化
+    firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
 
-    // --- 檢查第一道門 ---
     function checkGlobalAuth() {
-      console.log("【檢查登入狀態】開始...");
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
       const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
       
       if (storedAuth === "true") {
-        console.log("【檢查登入狀態】已紀錄登入，準備連線...");
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
-        
-        // 進入認證流程
         performSecureLogin(); 
       } else {
-        console.log("【檢查登入狀態】未登入，顯示輸入框。");
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
     }
 
     function verifyGlobalCode() {
-      console.log("【使用者點擊連線】驗證密碼中...");
       const val = document.getElementById("globalCodeInput").value.trim();
       if (val === GLOBAL_PASS || val === TEST_PASS) {
         localStorage.setItem("pharmacy_global_auth", "true"); 
@@ -445,21 +433,16 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
-        
-        // 進入認證流程
         performSecureLogin();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
 
-    // --- 安全憑證領取 (加入 10 秒防呆炸彈) ---
+    // 🚀 關鍵修復：加入 10 秒計時炸彈與詳細錯誤捕捉
     function performSecureLogin() {
-        console.log("【安全性連線】開始向 Firebase 要求匿名憑證...");
         document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
         document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
         
-        // 設定 10 秒計時炸彈，如果超時沒有回應就跳警告
         const timeoutBomb = setTimeout(() => {
-            console.error("【安全性連線】超時 10 秒無回應！");
             document.getElementById("cloudBadge").innerText = "❌ 憑證超時";
             document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
             alert("⛔ 系統驗證超時 (卡住了)！\n\n這通常是因為：\n1. 您的網路封鎖了 Firebase 驗證伺服器。\n2. 授權網域設定尚未生效。\n\n請按 F12 打開開發者工具看 Console 有無紅字錯誤。");
@@ -467,13 +450,11 @@
 
         firebase.auth().signInAnonymously()
           .then(() => {
-              console.log("【安全性連線】成功取得通行證！");
-              clearTimeout(timeoutBomb); // 拆除炸彈
-              initSync(); // 開始監聽資料庫
+              clearTimeout(timeoutBomb); 
+              initSync(); // 成功後才連線資料庫
           })
           .catch((error) => {
-              console.error("【安全性連線】被拒絕:", error);
-              clearTimeout(timeoutBomb); // 拆除炸彈
+              clearTimeout(timeoutBomb); 
               document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
               document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
               
@@ -492,7 +473,6 @@
     window.onload = checkGlobalAuth;
 
     function initSync() {
-      console.log("【資料庫連線】準備讀取資料表:", nodeActiveOrders);
       try {
         const db = firebase.database();
         
