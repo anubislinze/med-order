@@ -203,6 +203,7 @@
       <button class="mode-tab" id="tabAssistant" onclick="promptAssistantAccess()">📦 助理取藥</button>
     </div>
 
+    <!-- 🔒 第二道門：主管專用鎖 -->
     <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="attemptOpenAdminPanel()" title="主管設定與數據 (需密碼)">⚙️</button>
   </div>
 
@@ -391,18 +392,13 @@
   </div>
 
   <script>
-    // 🚀 關鍵修復：這裡把設定檔（地圖）放在最上面，系統就不會當機了！
+    // 🚀 所有全域變數宣告必須在最前面
     const BUILTIN_FIREBASE_CONFIG = { 
       apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
       authDomain: "pharmacy-order-20f00.firebaseapp.com", 
       databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com", 
       projectId: "pharmacy-order-20f00" 
     };
-
-    // 確定拿到設定檔後，才喚醒 Firebase
-    if (!firebase.apps.length) {
-      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
-    }
 
     const GLOBAL_PASS = "53690"; 
     const TEST_PASS = "99999"; 
@@ -413,6 +409,27 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
+    // 🚀 將所有原本散落在下面的變數拉到這裡
+    let generalMedData = []; 
+    let specialMedData = []; 
+    let staffConfig = { pharmacists: [], assistants: [] };
+    let latestShortfalls = {}; 
+    let currentStation = localStorage.getItem("pharmacy_station") || "黃籃";
+    let draftOrders = {}; 
+    let activeOrdersList = []; 
+    let checkedItems = {};
+    let editingMedId = null; 
+    let appMode = "pharmacist"; 
+    let editorTab = "general";
+    let isAssistantAuthenticated = false; 
+    let isFirebaseConnected = false; 
+    let pendingArchiveData = null;
+
+    // 確定拿到設定檔與變數後，喚醒 Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
+    }
+
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
       const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
@@ -421,7 +438,7 @@
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
         
-        // ⚠️ 已經拿掉憑證模組，直接喚醒連線
+        // ⚠️ 直接連線，不透過 auth 憑證
         initSync(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
@@ -442,7 +459,6 @@
         
         document.getElementById("globalLoginOverlay").style.display = "none";
         
-        // ⚠️ 已經拿掉憑證模組，直接喚醒連線
         initSync();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
