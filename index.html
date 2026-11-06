@@ -394,7 +394,6 @@
   </div>
 
   <script>
-    // --- 密碼鎖設定 ---
     const GLOBAL_PASS = "53690"; 
     const TEST_PASS = "99999"; 
     const ADMIN_PASS = "0000";   
@@ -404,8 +403,18 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
-    // 🚀 關鍵修復：強制 Firebase 核心在所有事情發生前優先初始化
-    firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
+    // 🚀 先宣告設定參數 (不能放後面，不然 Firebase 會找不到)
+    const BUILTIN_FIREBASE_CONFIG = { 
+      apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
+      authDomain: "pharmacy-order-20f00.firebaseapp.com", 
+      databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com", 
+      projectId: "pharmacy-order-20f00" 
+    };
+
+    // 🚀 確保設定檔存在後，再喚醒 Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
+    }
 
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
@@ -414,6 +423,7 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
+        
         performSecureLogin(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
@@ -433,11 +443,11 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
+        
         performSecureLogin();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
 
-    // 🚀 關鍵修復：加入 10 秒計時炸彈與詳細錯誤捕捉
     function performSecureLogin() {
         document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
         document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
@@ -451,7 +461,7 @@
         firebase.auth().signInAnonymously()
           .then(() => {
               clearTimeout(timeoutBomb); 
-              initSync(); // 成功後才連線資料庫
+              initSync(); 
           })
           .catch((error) => {
               clearTimeout(timeoutBomb); 
