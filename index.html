@@ -17,7 +17,6 @@
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
   <!-- SheetJS SDK -->
@@ -204,7 +203,6 @@
       <button class="mode-tab" id="tabAssistant" onclick="promptAssistantAccess()">📦 助理取藥</button>
     </div>
 
-    <!-- 🔒 第二道門：主管專用鎖 -->
     <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="attemptOpenAdminPanel()" title="主管設定與數據 (需密碼)">⚙️</button>
   </div>
 
@@ -248,7 +246,6 @@
     </div>
   </div>
 
-  <!-- Modal 區塊 -->
   <div class="modal-overlay" id="shortageSuggestModal">
     <div class="modal-box" style="max-width:400px; padding:20px;">
       <div class="modal-header" style="margin-bottom:16px;">
@@ -394,6 +391,19 @@
   </div>
 
   <script>
+    // 🚀 關鍵修復：這裡把設定檔（地圖）放在最上面，系統就不會當機了！
+    const BUILTIN_FIREBASE_CONFIG = { 
+      apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
+      authDomain: "pharmacy-order-20f00.firebaseapp.com", 
+      databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com", 
+      projectId: "pharmacy-order-20f00" 
+    };
+
+    // 確定拿到設定檔後，才喚醒 Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
+    }
+
     const GLOBAL_PASS = "53690"; 
     const TEST_PASS = "99999"; 
     const ADMIN_PASS = "0000";   
@@ -403,19 +413,6 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
-    // 🚀 先宣告設定參數 (不能放後面，不然 Firebase 會找不到)
-    const BUILTIN_FIREBASE_CONFIG = { 
-      apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
-      authDomain: "pharmacy-order-20f00.firebaseapp.com", 
-      databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com", 
-      projectId: "pharmacy-order-20f00" 
-    };
-
-    // 🚀 確保設定檔存在後，再喚醒 Firebase
-    if (!firebase.apps.length) {
-      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
-    }
-
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
       const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
@@ -424,7 +421,8 @@
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
         
-        performSecureLogin(); 
+        // ⚠️ 已經拿掉憑證模組，直接喚醒連線
+        initSync(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -444,32 +442,9 @@
         
         document.getElementById("globalLoginOverlay").style.display = "none";
         
-        performSecureLogin();
+        // ⚠️ 已經拿掉憑證模組，直接喚醒連線
+        initSync();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
-    }
-
-    function performSecureLogin() {
-        document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
-        document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-        
-        const timeoutBomb = setTimeout(() => {
-            document.getElementById("cloudBadge").innerText = "❌ 憑證超時";
-            document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
-            alert("⛔ 系統驗證超時 (卡住了)！\n\n這通常是因為：\n1. 您的網路封鎖了 Firebase 驗證伺服器。\n2. 授權網域設定尚未生效。\n\n請按 F12 打開開發者工具看 Console 有無紅字錯誤。");
-        }, 10000);
-
-        firebase.auth().signInAnonymously()
-          .then(() => {
-              clearTimeout(timeoutBomb); 
-              initSync(); 
-          })
-          .catch((error) => {
-              clearTimeout(timeoutBomb); 
-              document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
-              document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
-              
-              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n【詳細訊息】:\n${error.message}\n\n如果錯誤碼是 operation-not-allowed，請回後台把匿名登入打開。\n如果卡住沒反應，請檢查 Authorized domains。`);
-          });
     }
 
     function enableTestModeEnvironment() {
