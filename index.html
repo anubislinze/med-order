@@ -15,8 +15,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (包含 Auth 驗證模組) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
   <!-- SheetJS SDK -->
@@ -247,6 +248,7 @@
     </div>
   </div>
 
+  <!-- Modal 區塊 -->
   <div class="modal-overlay" id="shortageSuggestModal">
     <div class="modal-box" style="max-width:400px; padding:20px;">
       <div class="modal-header" style="margin-bottom:16px;">
@@ -392,7 +394,9 @@
   </div>
 
   <script>
-    // 🚀 所有全域變數宣告必須在最前面
+    // ==========================================
+    // 🚀 1. 設定檔與全域變數宣告 (絕對第一順位)
+    // ==========================================
     const BUILTIN_FIREBASE_CONFIG = { 
       apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
       authDomain: "pharmacy-order-20f00.firebaseapp.com", 
@@ -409,7 +413,6 @@
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
 
-    // 🚀 將所有原本散落在下面的變數拉到這裡
     let generalMedData = []; 
     let specialMedData = []; 
     let staffConfig = { pharmacists: [], assistants: [] };
@@ -425,11 +428,16 @@
     let isFirebaseConnected = false; 
     let pendingArchiveData = null;
 
-    // 確定拿到設定檔與變數後，喚醒 Firebase
+    // ==========================================
+    // 🚀 2. 喚醒 Firebase (變數都準備好後才叫醒它)
+    // ==========================================
     if (!firebase.apps.length) {
       firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
     }
 
+    // ==========================================
+    // 🚀 3. 系統功能與驗證邏輯
+    // ==========================================
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
       const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
@@ -437,9 +445,7 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
-        
-        // ⚠️ 直接連線，不透過 auth 憑證
-        initSync(); 
+        performSecureLogin(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -458,9 +464,34 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
-        
-        initSync();
+        performSecureLogin();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
+    }
+
+    function performSecureLogin() {
+        document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
+        document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+        
+        // 如果 Firebase Auth 沒有在 10 秒內回應，自動跳出提醒
+        const timeoutBomb = setTimeout(() => {
+            document.getElementById("cloudBadge").innerText = "❌ 憑證超時";
+            document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
+            alert("⛔ 系統驗證超時 (卡住了)！\n\n這通常是因為：\n1. 您的網路封鎖了 Firebase 驗證伺服器。\n2. 授權網域設定尚未生效。\n\n請按 F12 打開開發者工具看 Console 有無紅字錯誤。");
+        }, 10000);
+
+        // 🚀 真正的 Firebase 雙重身分驗證，再次啟動！
+        firebase.auth().signInAnonymously()
+          .then(() => {
+              clearTimeout(timeoutBomb); // 拿到憑證，拆除炸彈
+              console.log("【安全驗證】隱形憑證取得成功，開始連線資料庫...");
+              initSync(); 
+          })
+          .catch((error) => {
+              clearTimeout(timeoutBomb); 
+              document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
+              document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
+              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n【詳細訊息】:\n${error.message}`);
+          });
     }
 
     function enableTestModeEnvironment() {
@@ -1142,6 +1173,20 @@
       navigator.clipboard.writeText(ta.value).then(() => { 
         alert("已成功複製目前完整設定代碼！\n直接貼給 AI 即可為您比對所有異動並升級出廠設定。"); closeExportModal(); 
       }).catch(() => { alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！"); }); 
+    }
+
+    // 處理時間格式的輔助函式
+    function getTwTime(d, withSeconds=false) {
+      let hh = d.getHours().toString().padStart(2, '0');
+      let mm = d.getMinutes().toString().padStart(2, '0');
+      let ss = d.getSeconds().toString().padStart(2, '0');
+      return withSeconds ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`;
+    }
+    function getTwDate(d) {
+      let yy = d.getFullYear();
+      let mm = (d.getMonth() + 1).toString().padStart(2, '0');
+      let dd = d.getDate().toString().padStart(2, '0');
+      return `${yy}-${mm}-${dd}`;
     }
 
     let archivedHistoryList = [];
