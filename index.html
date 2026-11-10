@@ -15,8 +15,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK (已拔除會被醫院擋住的 Auth 模組，確保順暢載入) -->
+  <!-- Firebase SDK (包含 Auth 驗證模組，對接後台 auth != null 防護) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
   <!-- SheetJS SDK -->
@@ -393,7 +394,7 @@
 
   <script>
     // ==========================================
-    // 🚀 1. 設定檔與全域變數宣告 (絕對第一順位，絕不當機)
+    // 🚀 1. 設定檔與全域變數宣告
     // ==========================================
     const BUILTIN_FIREBASE_CONFIG = { 
       apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
@@ -405,6 +406,15 @@
     const GLOBAL_PASS = "53690"; 
     const TEST_PASS = "99999"; 
     const ADMIN_PASS = "0000";   
+
+    // 預設防呆資料 (避免資料庫為空時當機)
+    const DEFAULT_STAFF_CONFIG = { pharmacists: [], assistants: [] };
+    const DEFAULT_GENERAL_MEDS = [
+      { col: 1, group: "GZA", isWarn: false, items: [] },
+      { col: 2, group: "GZE", isWarn: false, items: [] },
+      { col: 3, group: "GZK", isWarn: false, items: [] }
+    ];
+    const DEFAULT_SPECIAL_MEDS = [];
 
     let isTestMode = false;
     let nodeActiveOrders = "active_orders_p2";
@@ -434,7 +444,7 @@
     }
 
     // ==========================================
-    // 🚀 3. 系統功能與連線邏輯 (無 Auth 版本)
+    // 🚀 3. 安全憑證登入邏輯 (重要：這會對接 Rules)
     // ==========================================
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
@@ -443,8 +453,7 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
-        // 拿掉被擋的 Auth，直接連線
-        initSync(); 
+        performSecureLogin(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -463,8 +472,25 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
-        initSync();
+        performSecureLogin();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
+    }
+
+    // 真正向 Firebase 申請通行證的地方
+    function performSecureLogin() {
+        document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
+        document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+        
+        firebase.auth().signInAnonymously()
+          .then(() => {
+              console.log("【安全驗證】隱形憑證取得成功，開始連線資料庫...");
+              initSync(); 
+          })
+          .catch((error) => {
+              document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
+              document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
+              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n這通常代表 Firebase Authentication 沒開啟，或醫院網路阻擋。`);
+          });
     }
 
     function enableTestModeEnvironment() {
@@ -477,10 +503,10 @@
 
     window.onload = checkGlobalAuth;
 
+    // ==========================================
+    // 🚀 4. 資料庫連線與同步 (有了憑證才會執行)
+    // ==========================================
     function initSync() {
-      document.getElementById("cloudBadge").innerText = "🔑 連線中...";
-      document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-
       try {
         const db = firebase.database();
         
@@ -497,6 +523,7 @@
             staffConfig = { pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [], assistants: val.assistants ? Object.values(val.assistants) : [] };
             localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); 
           } else { 
+            // 防呆：如果資料庫是空的，塞入預設值
             db.ref("staff_config_p2").set(DEFAULT_STAFF_CONFIG); staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
           } 
         });
@@ -507,6 +534,7 @@
             generalMedData = (val.general || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
             specialMedData = (val.special || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
           } else { 
+            // 防呆：如果資料庫是空的，塞入預設值
             db.ref("menu_config_p2").set({general: DEFAULT_GENERAL_MEDS, special: DEFAULT_SPECIAL_MEDS}); 
             generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS)); 
           }
@@ -520,15 +548,15 @@
         db.ref(nodeShortfalls).on("value", (snap) => { latestShortfalls = snap.val() || {}; checkAndRenderShortfallBanner(); });
 
       } catch (err) { 
-        console.error("Firebase 連線失敗:", err); 
-        document.getElementById("cloudBadge").innerText = "❌ 連線錯誤";
+          console.error("Firebase 連線失敗:", err); 
+          document.getElementById("cloudBadge").innerText = "❌ 連線錯誤";
       }
 
       updateSelectCapsule(currentStation); updateStationHeader();
     }
 
     // ==========================================
-    // 🚀 4. 把漏掉的主管按鈕功能補回來！
+    // 🚀 5. 主管按鈕功能
     // ==========================================
     function attemptOpenAdminPanel() {
       const code = prompt("請輸入主管密碼 (預設為 0000)：");
@@ -539,6 +567,7 @@
       }
     }
 
+    // 以下皆維持 Phase 2.1 UI 核心功能不變
     function updateSelectCapsule(val) {
       const sel = document.getElementById("stationSelect"); let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
       if(val.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
