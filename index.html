@@ -15,9 +15,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK (包含 Auth 驗證模組) -->
+  <!-- Firebase SDK (已拔除會被醫院擋住的 Auth 模組，確保順暢載入) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
   <!-- SheetJS SDK -->
@@ -248,7 +247,6 @@
     </div>
   </div>
 
-  <!-- Modal 區塊 -->
   <div class="modal-overlay" id="shortageSuggestModal">
     <div class="modal-box" style="max-width:400px; padding:20px;">
       <div class="modal-header" style="margin-bottom:16px;">
@@ -395,7 +393,7 @@
 
   <script>
     // ==========================================
-    // 🚀 1. 設定檔與全域變數宣告 (絕對第一順位)
+    // 🚀 1. 設定檔與全域變數宣告 (絕對第一順位，絕不當機)
     // ==========================================
     const BUILTIN_FIREBASE_CONFIG = { 
       apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg", 
@@ -429,14 +427,14 @@
     let pendingArchiveData = null;
 
     // ==========================================
-    // 🚀 2. 喚醒 Firebase (變數都準備好後才叫醒它)
+    // 🚀 2. 喚醒 Firebase
     // ==========================================
     if (!firebase.apps.length) {
       firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
     }
 
     // ==========================================
-    // 🚀 3. 系統功能與驗證邏輯
+    // 🚀 3. 系統功能與連線邏輯 (無 Auth 版本)
     // ==========================================
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
@@ -445,7 +443,8 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
-        performSecureLogin(); 
+        // 拿掉被擋的 Auth，直接連線
+        initSync(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -464,34 +463,8 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
-        performSecureLogin();
+        initSync();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
-    }
-
-    function performSecureLogin() {
-        document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
-        document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-        
-        // 如果 Firebase Auth 沒有在 10 秒內回應，自動跳出提醒
-        const timeoutBomb = setTimeout(() => {
-            document.getElementById("cloudBadge").innerText = "❌ 憑證超時";
-            document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
-            alert("⛔ 系統驗證超時 (卡住了)！\n\n這通常是因為：\n1. 您的網路封鎖了 Firebase 驗證伺服器。\n2. 授權網域設定尚未生效。\n\n請按 F12 打開開發者工具看 Console 有無紅字錯誤。");
-        }, 10000);
-
-        // 🚀 真正的 Firebase 雙重身分驗證，再次啟動！
-        firebase.auth().signInAnonymously()
-          .then(() => {
-              clearTimeout(timeoutBomb); // 拿到憑證，拆除炸彈
-              console.log("【安全驗證】隱形憑證取得成功，開始連線資料庫...");
-              initSync(); 
-          })
-          .catch((error) => {
-              clearTimeout(timeoutBomb); 
-              document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
-              document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
-              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n【詳細訊息】:\n${error.message}`);
-          });
     }
 
     function enableTestModeEnvironment() {
@@ -505,6 +478,9 @@
     window.onload = checkGlobalAuth;
 
     function initSync() {
+      document.getElementById("cloudBadge").innerText = "🔑 連線中...";
+      document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+
       try {
         const db = firebase.database();
         
@@ -543,9 +519,24 @@
 
         db.ref(nodeShortfalls).on("value", (snap) => { latestShortfalls = snap.val() || {}; checkAndRenderShortfallBanner(); });
 
-      } catch (err) { console.error("Firebase 連線失敗:", err); }
+      } catch (err) { 
+        console.error("Firebase 連線失敗:", err); 
+        document.getElementById("cloudBadge").innerText = "❌ 連線錯誤";
+      }
 
       updateSelectCapsule(currentStation); updateStationHeader();
+    }
+
+    // ==========================================
+    // 🚀 4. 把漏掉的主管按鈕功能補回來！
+    // ==========================================
+    function attemptOpenAdminPanel() {
+      const code = prompt("請輸入主管密碼 (預設為 0000)：");
+      if (code === ADMIN_PASS) {
+        openConfigModal();
+      } else if (code !== null) {
+        alert("密碼錯誤，拒絕存取！");
+      }
     }
 
     function updateSelectCapsule(val) {
@@ -1175,7 +1166,7 @@
       }).catch(() => { alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！"); }); 
     }
 
-    // 處理時間格式的輔助函式
+    // 時間處理函式
     function getTwTime(d, withSeconds=false) {
       let hh = d.getHours().toString().padStart(2, '0');
       let mm = d.getMinutes().toString().padStart(2, '0');
