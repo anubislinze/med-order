@@ -420,8 +420,8 @@
     let nodeActiveOrders = "active_orders_p2";
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
-    let nodeStaffConfig = "staff_config_p2"; // 新增
-    let nodeMenuConfig = "menu_config_p2";   // 新增
+    let nodeStaffConfig = "staff_config_p2"; 
+    let nodeMenuConfig = "menu_config_p2";   
 
     let generalMedData = []; 
     let specialMedData = []; 
@@ -446,7 +446,7 @@
     }
 
     // ==========================================
-    // 🚀 3. 前端密碼登入邏輯 (Phase 2.1 不使用 Auth)
+    // 🚀 3. 前端密碼登入邏輯 (退回純前端版)
     // ==========================================
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
@@ -455,6 +455,7 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
+        // 【退回】直接呼叫 initSync()
         initSync(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
@@ -474,6 +475,7 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
+        // 【退回】直接呼叫 initSync()
         initSync();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
     }
@@ -483,7 +485,7 @@
         nodeActiveOrders = "active_orders_test";
         nodeOrderHistory = "order_history_test";
         nodeShortfalls = "shortfalls_test";
-        // 【修補】將人員和菜單設定檔也切換到測試節點，徹底隔離！
+        // 【修補】隔離測試節點
         nodeStaffConfig = "staff_config_test"; 
         nodeMenuConfig = "menu_config_test";   
         document.getElementById("sandboxBanner").style.display = "block";
@@ -557,7 +559,7 @@
       }
     }
 
-    // 防 XSS 工具函數：把危險字元轉成安全文字
+    // 【修補】防 XSS 工具函數
     function escapeHtml(unsafe) {
       if(!unsafe) return "";
       return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -601,7 +603,6 @@
       const banner = document.getElementById("shortfallBanner"); const content = document.getElementById("shortfallBannerContent");
       const list = latestShortfalls[currentStation] || [];
       if (list.length > 0 && appMode === "pharmacist") {
-        // 套用 escapeHtml 防止 XSS
         content.innerHTML = list.map(item => `<div>• <b>${escapeHtml(item.medName)}</b>：實出 <b style="color:#d97706;">${item.actual}</b> (少 ${item.req - item.actual}) <span style="font-size:11px; color:#888;">[${item.time}]</span></div>`).join("");
         banner.style.display = "block";
       } else { banner.style.display = "none"; }
@@ -903,7 +904,7 @@
         }
 
         if (archivedItems.length > 0) {
-          // 【修補】統一改用 Firebase 的 push ID (雖然這裡是歷史紀錄，也換掉 Date.now)
+          // 【修補】防撞單：使用 push().key 產生唯一的 ID
           const recId = firebase.database().ref().child(nodeOrderHistory).push().key;
           updates[`${nodeOrderHistory}/${recId}`] = {
             id: recId, orderId: order.id || "unknown", station: order.station || "未分類", 
@@ -974,7 +975,8 @@
         try {
             cloudBadge.innerText = "⏳ 寫入雲端中..."; cloudBadge.style.backgroundColor = "#fef08a";
             const db = firebase.database();
-            if (newMenuData) pendingArchiveData[nodeMenuConfig] = newMenuData; // 【修補】動態節點寫入
+            // 【修補】動態寫入測試或正式節點
+            if (newMenuData) pendingArchiveData[nodeMenuConfig] = newMenuData; 
             
             await db.ref().update(pendingArchiveData);
 
