@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <title>藥局點藥系統 (Phase 2)</title>
+  <title>藥局點藥系統 (Phase 2.1 漏洞修補版)</title>
   
   <meta name="description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。">
   <meta property="og:title" content="藥局點藥系統">
@@ -15,9 +15,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK (包含 Auth 驗證模組，對接後台 auth != null 防護) -->
+  <!-- Firebase SDK (不含 Auth，確保醫院網路秒連線) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
   <!-- SheetJS SDK -->
@@ -407,7 +406,6 @@
     const TEST_PASS = "99999"; 
     const ADMIN_PASS = "0000";   
 
-    // 預設防呆資料 (避免資料庫為空時當機)
     const DEFAULT_STAFF_CONFIG = { pharmacists: [], assistants: [] };
     const DEFAULT_GENERAL_MEDS = [
       { col: 1, group: "GZA", isWarn: false, items: [] },
@@ -417,9 +415,13 @@
     const DEFAULT_SPECIAL_MEDS = [];
 
     let isTestMode = false;
+    
+    // 【修補】動態變數：正式環境與測試環境的節點切換
     let nodeActiveOrders = "active_orders_p2";
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
+    let nodeStaffConfig = "staff_config_p2"; // 新增
+    let nodeMenuConfig = "menu_config_p2";   // 新增
 
     let generalMedData = []; 
     let specialMedData = []; 
@@ -444,7 +446,7 @@
     }
 
     // ==========================================
-    // 🚀 3. 安全憑證登入邏輯 (重要：這會對接 Rules)
+    // 🚀 3. 前端密碼登入邏輯 (Phase 2.1 不使用 Auth)
     // ==========================================
     function checkGlobalAuth() {
       const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
@@ -453,7 +455,7 @@
       if (storedAuth === "true") {
         document.getElementById("globalLoginOverlay").style.display = "none";
         if (storedMode === "true") { enableTestModeEnvironment(); }
-        performSecureLogin(); 
+        initSync(); 
       } else {
         document.getElementById("globalLoginOverlay").style.display = "flex";
       }
@@ -472,25 +474,8 @@
         }
         
         document.getElementById("globalLoginOverlay").style.display = "none";
-        performSecureLogin();
+        initSync();
       } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
-    }
-
-    // 真正向 Firebase 申請通行證的地方
-    function performSecureLogin() {
-        document.getElementById("cloudBadge").innerText = "🔑 憑證驗證中...";
-        document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
-        
-        firebase.auth().signInAnonymously()
-          .then(() => {
-              console.log("【安全驗證】隱形憑證取得成功，開始連線資料庫...");
-              initSync(); 
-          })
-          .catch((error) => {
-              document.getElementById("cloudBadge").innerText = "❌ 憑證遭拒";
-              document.getElementById("cloudBadge").style.backgroundColor = "#fecaca";
-              alert(`⛔ 系統無法取得雲端安全憑證，連線被阻擋！\n\n【錯誤代碼】:\n${error.code}\n\n這通常代表 Firebase Authentication 沒開啟，或醫院網路阻擋。`);
-          });
     }
 
     function enableTestModeEnvironment() {
@@ -498,15 +483,21 @@
         nodeActiveOrders = "active_orders_test";
         nodeOrderHistory = "order_history_test";
         nodeShortfalls = "shortfalls_test";
+        // 【修補】將人員和菜單設定檔也切換到測試節點，徹底隔離！
+        nodeStaffConfig = "staff_config_test"; 
+        nodeMenuConfig = "menu_config_test";   
         document.getElementById("sandboxBanner").style.display = "block";
     }
 
     window.onload = checkGlobalAuth;
 
     // ==========================================
-    // 🚀 4. 資料庫連線與同步 (有了憑證才會執行)
+    // 🚀 4. 資料庫連線與同步
     // ==========================================
     function initSync() {
+      document.getElementById("cloudBadge").innerText = "🔑 連線中...";
+      document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
+
       try {
         const db = firebase.database();
         
@@ -517,25 +508,24 @@
             else { badge.innerText = "❌ 離線 (禁止操作)"; badge.className = "cloud-status"; badge.style.backgroundColor = "#fecaca"; badge.style.color = "#991b1b"; }
         });
 
-        db.ref("staff_config_p2").on("value", (snap) => {
+        // 讀取動態節點 (正式或測試)
+        db.ref(nodeStaffConfig).on("value", (snap) => {
           const val = snap.val();
           if (val) { 
             staffConfig = { pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [], assistants: val.assistants ? Object.values(val.assistants) : [] };
             localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); 
           } else { 
-            // 防呆：如果資料庫是空的，塞入預設值
-            db.ref("staff_config_p2").set(DEFAULT_STAFF_CONFIG); staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
+            db.ref(nodeStaffConfig).set(DEFAULT_STAFF_CONFIG); staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
           } 
         });
 
-        db.ref("menu_config_p2").on("value", (snap) => {
+        db.ref(nodeMenuConfig).on("value", (snap) => {
           const val = snap.val();
           if (val) { 
             generalMedData = (val.general || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
             specialMedData = (val.special || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
           } else { 
-            // 防呆：如果資料庫是空的，塞入預設值
-            db.ref("menu_config_p2").set({general: DEFAULT_GENERAL_MEDS, special: DEFAULT_SPECIAL_MEDS}); 
+            db.ref(nodeMenuConfig).set({general: DEFAULT_GENERAL_MEDS, special: DEFAULT_SPECIAL_MEDS}); 
             generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS)); 
           }
           renderAll();
@@ -567,7 +557,12 @@
       }
     }
 
-    // 以下皆維持 Phase 2.1 UI 核心功能不變
+    // 防 XSS 工具函數：把危險字元轉成安全文字
+    function escapeHtml(unsafe) {
+      if(!unsafe) return "";
+      return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
     function updateSelectCapsule(val) {
       const sel = document.getElementById("stationSelect"); let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
       if(val.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
@@ -592,7 +587,7 @@
       else if(station.includes("紅")) { bg = "#fee2e2"; col = "#991b1b"; border = "#fca5a5"; }
       else if(station.includes("青")) { bg = "#dcfce7"; col = "#15803d"; border = "#00c300"; } 
       else if(station.includes("專用")) { bg = "#f3e8ff"; col = "#6b21a8"; border = "#d8b4fe"; }
-      return `<span style="background:${bg}; color:${col}; border:1.5px solid ${border}; padding:3px 10px; border-radius:12px; font-size:12.5px; font-weight:900; white-space:nowrap; display:inline-block;">${station}</span>`;
+      return `<span style="background:${bg}; color:${col}; border:1.5px solid ${border}; padding:3px 10px; border-radius:12px; font-size:12.5px; font-weight:900; white-space:nowrap; display:inline-block;">${escapeHtml(station)}</span>`;
     }
 
     function updateStationHeader() {
@@ -606,7 +601,8 @@
       const banner = document.getElementById("shortfallBanner"); const content = document.getElementById("shortfallBannerContent");
       const list = latestShortfalls[currentStation] || [];
       if (list.length > 0 && appMode === "pharmacist") {
-        content.innerHTML = list.map(item => `<div>• <b>${item.medName}</b>：實出 <b style="color:#d97706;">${item.actual}</b> (少 ${item.req - item.actual}) <span style="font-size:11px; color:#888;">[${item.time}]</span></div>`).join("");
+        // 套用 escapeHtml 防止 XSS
+        content.innerHTML = list.map(item => `<div>• <b>${escapeHtml(item.medName)}</b>：實出 <b style="color:#d97706;">${item.actual}</b> (少 ${item.req - item.actual}) <span style="font-size:11px; color:#888;">[${item.time}]</span></div>`).join("");
         banner.style.display = "block";
       } else { banner.style.display = "none"; }
     }
@@ -766,7 +762,7 @@
           else if (group.isNight) { headerClass += " night"; badgeHtml = "🌙 專用/夜間"; }
 
           const header = document.createElement("div"); header.className = headerClass;
-          header.innerHTML = `<span>${group.group}</span><span>${badgeHtml}</span>`;
+          header.innerHTML = `<span>${escapeHtml(group.group)}</span><span>${badgeHtml}</span>`;
           block.appendChild(header);
 
           (group.items || []).forEach(med => {
@@ -782,7 +778,7 @@
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
             let badgeContent = isEditingThis ? `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">` : `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
-            itemDiv.innerHTML = `<div class="med-name">${med.name}</div><div class="med-status-icons">${badgesHtml}</div>${med.unit ? `<div class="med-unit-badge">${med.unit}</div>` : ''}<div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})">${badgeContent}</div>`;
+            itemDiv.innerHTML = `<div class="med-name">${escapeHtml(med.name)}</div><div class="med-status-icons">${badgesHtml}</div>${med.unit ? `<div class="med-unit-badge">${escapeHtml(med.unit)}</div>` : ''}<div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})">${badgeContent}</div>`;
             block.appendChild(itemDiv);
           });
           colDiv.appendChild(block);
@@ -793,7 +789,7 @@
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       const summaryEl = document.getElementById("stationSummaryText");
       if (activeList.length === 0) { summaryEl.innerText = "未點選藥品"; } 
-      else { summaryEl.innerText = `草稿 (${activeList.length}項)：${activeList.map(([id, qty]) => `${findMedAcrossAll(id)?.name||id}×${qty}`).join("、")}`; }
+      else { summaryEl.innerText = `草稿 (${activeList.length}項)：${activeList.map(([id, qty]) => `${escapeHtml(findMedAcrossAll(id)?.name||id)}×${qty}`).join("、")}`; }
     }
 
     function renderAssistantMatrix() {
@@ -842,7 +838,7 @@
           if (totalReqQty > 0) {
             hasAnyOrder = true; const isDone = !!checkedItems[med.id];
             const tr = document.createElement("tr"); tr.className = `matrix-row ${isDone ? 'done' : ''}`;
-            let rowHtml = `<td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td><td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${group.group.split(' ')[0]}</td><td class="col-name">${med.name}</td><td>${med.unit || '-'}</td><td><div class="matrix-total-cell" onmousedown="startAsstTotalLongPress('${med.id}')" onmouseup="cancelAsstTotalLongPress()" onmouseleave="cancelAsstTotalLongPress()" ontouchstart="startAsstTotalLongPress('${med.id}')" ontouchend="cancelAsstTotalLongPress()"><span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}</div></td>`;
+            let rowHtml = `<td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td><td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${escapeHtml(group.group.split(' ')[0])}</td><td class="col-name">${escapeHtml(med.name)}</td><td>${escapeHtml(med.unit) || '-'}</td><td><div class="matrix-total-cell" onmousedown="startAsstTotalLongPress('${med.id}')" onmouseup="cancelAsstTotalLongPress()" onmouseleave="cancelAsstTotalLongPress()" ontouchstart="startAsstTotalLongPress('${med.id}')" ontouchend="cancelAsstTotalLongPress()"><span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}</div></td>`;
 
             colData.forEach(c => {
               if (c.req > 0) {
@@ -907,7 +903,8 @@
         }
 
         if (archivedItems.length > 0) {
-          const recId = "hist_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
+          // 【修補】統一改用 Firebase 的 push ID (雖然這裡是歷史紀錄，也換掉 Date.now)
+          const recId = firebase.database().ref().child(nodeOrderHistory).push().key;
           updates[`${nodeOrderHistory}/${recId}`] = {
             id: recId, orderId: order.id || "unknown", station: order.station || "未分類", 
             displayLabel: order.displayLabel || order.station || "未分類", staffCode: order.staffCode || "0000", 
@@ -945,8 +942,8 @@
 
     async function showShortageSuggestModal(onList, offList) {
         let html = "";
-        if (onList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px;"><div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b;"><input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)"> ⚠️ 建議【開啟】低庫存標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${onList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-on" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#dc2626; font-weight:bold;">短缺 ${m.rate}%</span></label>`).join('')}</div></div>`; }
-        if (offList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px;"><div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534;"><input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)"> ✅ 建議【取消】低庫存標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${offList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-off" value="${m.id}" checked><span style="flex:1; color:#334155;">${m.name}</span><span style="color:#166534; font-weight:bold;">恢復 ${100 - m.rate}%</span></label>`).join('')}</div></div>`; }
+        if (onList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #fecaca; border-radius:8px;"><div style="background:#fef2f2; padding:10px 12px; font-weight:bold; color:#991b1b;"><input type="checkbox" id="chkAllOn" checked onchange="toggleAllSuggest('on', this.checked)"> ⚠️ 建議【開啟】低庫存標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${onList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-on" value="${m.id}" checked><span style="flex:1; color:#334155;">${escapeHtml(m.name)}</span><span style="color:#dc2626; font-weight:bold;">短缺 ${m.rate}%</span></label>`).join('')}</div></div>`; }
+        if (offList.length > 0) { html += `<div style="margin-bottom:12px; border:1.5px solid #bbf7d0; border-radius:8px;"><div style="background:#f0fdf4; padding:10px 12px; font-weight:bold; color:#166534;"><input type="checkbox" id="chkAllOff" checked onchange="toggleAllSuggest('off', this.checked)"> ✅ 建議【取消】低庫存標籤</div><div style="padding:10px 12px; background:#fff; display:flex; flex-direction:column; gap:10px;">${offList.map(m => `<label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="chk-suggest-off" value="${m.id}" checked><span style="flex:1; color:#334155;">${escapeHtml(m.name)}</span><span style="color:#166534; font-weight:bold;">恢復 ${100 - m.rate}%</span></label>`).join('')}</div></div>`; }
         document.getElementById("shortageSuggestContent").innerHTML = html; document.getElementById("shortageSuggestModal").style.display = "flex";
     }
 
@@ -977,7 +974,7 @@
         try {
             cloudBadge.innerText = "⏳ 寫入雲端中..."; cloudBadge.style.backgroundColor = "#fef08a";
             const db = firebase.database();
-            if (newMenuData) pendingArchiveData[`menu_config_p2`] = newMenuData;
+            if (newMenuData) pendingArchiveData[nodeMenuConfig] = newMenuData; // 【修補】動態節點寫入
             
             await db.ref().update(pendingArchiveData);
 
@@ -1001,8 +998,11 @@
       const seq = existingCount + 1; const displayLabel = `${targetStation}${seq > 1 ? seq : ''}`;
       const now = new Date();
       
+      // 【修補】防撞單：使用 push().key 產生唯一的 ID
+      const newOrderId = firebase.database().ref().child(nodeActiveOrders).push().key;
+
       const newOrder = {
-        id: "ord_" + Date.now(), station: targetStation, orderSeq: seq, displayLabel: displayLabel, staffCode: staffCode, staffName: validPharmacist.name,
+        id: newOrderId, station: targetStation, orderSeq: seq, displayLabel: displayLabel, staffCode: staffCode, staffName: validPharmacist.name,
         time: getTwTime(now, true), createDate: getTwDate(now), createTimestamp: now.getTime(),
         items: { ...draftOrders }
       };
@@ -1020,7 +1020,7 @@
     function openSubmitModal() {
       const activeList = Object.entries(draftOrders).filter(([_, qty]) => qty > 0);
       if (activeList.length === 0) { alert("請先點選藥品再送單！"); return; }
-      document.getElementById("submitSummaryPreview").innerHTML = activeList.map(([id, qty]) => `<div>• ${findMedAcrossAll(id)?.name||id} × <b>${qty}</b></div>`).join("");
+      document.getElementById("submitSummaryPreview").innerHTML = activeList.map(([id, qty]) => `<div>• ${escapeHtml(findMedAcrossAll(id)?.name||id)} × <b>${qty}</b></div>`).join("");
       document.getElementById("staffCodeInput").value = ""; document.getElementById("submitModal").style.display = "flex";
       setTimeout(() => document.getElementById("staffCodeInput").focus(), 100);
     }
@@ -1031,7 +1031,7 @@
       const content = document.getElementById("historyListContent");
       if (activeOrdersList.length === 0) { content.innerHTML = "<p style='color:#888; text-align:center;'>目前無待處理紀錄</p>"; } 
       else {
-        content.innerHTML = activeOrdersList.map(order => `<div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa;"><div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;"><span style="color:var(--primary-green);">【${order.displayLabel}】 ${order.staffName || ''}</span><span style="color:#888; font-size:12px;">⏰ ${order.time}</span></div><div style="font-size:12px; color:#444;">${Object.entries(order.items || {}).map(([id, qty]) => { const med = findMedAcrossAll(id) || {name:id}; const actual = (order.fulfilled?.[id] !== undefined) ? order.fulfilled[id] : qty; const isShort = actual < qty; return `<span style="${isShort ? 'color:#d97706; font-weight:bold;' : ''}">${med.name}×${actual}${actual !== qty ? `(原:${qty})` : ''}</span>`; }).join("、 ")}</div></div>`).join("");
+        content.innerHTML = activeOrdersList.map(order => `<div style="border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fafafa;"><div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px;"><span style="color:var(--primary-green);">【${escapeHtml(order.displayLabel)}】 ${escapeHtml(order.staffName || '')}</span><span style="color:#888; font-size:12px;">⏰ ${order.time}</span></div><div style="font-size:12px; color:#444;">${Object.entries(order.items || {}).map(([id, qty]) => { const med = findMedAcrossAll(id) || {name:id}; const actual = (order.fulfilled?.[id] !== undefined) ? order.fulfilled[id] : qty; const isShort = actual < qty; return `<span style="${isShort ? 'color:#d97706; font-weight:bold;' : ''}">${escapeHtml(med.name)}×${actual}${actual !== qty ? `(原:${qty})` : ''}</span>`; }).join("、 ")}</div></div>`).join("");
       }
       document.getElementById("historyModal").style.display = "flex";
     }
@@ -1050,7 +1050,7 @@
 
     function renderStaffEditor() {
       const container = document.getElementById("visualEditorContainer");
-      container.innerHTML = `<div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐名單 (${staffConfig.pharmacists.length}人)</span><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增人員</button></div><table class="staff-table"><thead><tr><th>員工代碼</th><th>姓名/職稱</th><th>操作</th></tr></thead><tbody>${staffConfig.pharmacists.map((p, idx) => `<tr><td><input type="number" value="${p.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'code', this.value)"></td><td><input type="text" value="${p.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'name', this.value)"></td><td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('pharmacists', ${idx})">✕</button></td></tr>`).join("")}</tbody></table></div><div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><span style="font-weight:bold; color:#b45309;">🔒 授權進入助理名單 (${staffConfig.assistants.length}人)</span><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#fef3c7; color:#92400e;" onclick="addNewStaff('assistants')">➕ 新增助理</button></div><table class="staff-table"><thead><tr><th>授權代碼</th><th>姓名/備註</th><th>操作</th></tr></thead><tbody>${staffConfig.assistants.map((a, idx) => `<tr><td><input type="text" value="${a.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'code', this.value)"></td><td><input type="text" value="${a.name}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'name', this.value)"></td><td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('assistants', ${idx})" ${staffConfig.assistants.length <= 1 ? 'disabled' : ''}>✕</button></td></tr>`).join("")}</tbody></table></div>`;
+      container.innerHTML = `<div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px; margin-bottom:12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><span style="font-weight:bold; color:var(--primary-green);">💊 授權可點餐名單 (${staffConfig.pharmacists.length}人)</span><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e8f5e9; color:#2e7d32;" onclick="addNewStaff('pharmacists')">➕ 新增人員</button></div><table class="staff-table"><thead><tr><th>員工代碼</th><th>姓名/職稱</th><th>操作</th></tr></thead><tbody>${staffConfig.pharmacists.map((p, idx) => `<tr><td><input type="number" value="${p.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'code', this.value)"></td><td><input type="text" value="${escapeHtml(p.name)}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('pharmacists', ${idx}, 'name', this.value)"></td><td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('pharmacists', ${idx})">✕</button></td></tr>`).join("")}</tbody></table></div><div style="background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:10px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><span style="font-weight:bold; color:#b45309;">🔒 授權進入助理名單 (${staffConfig.assistants.length}人)</span><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#fef3c7; color:#92400e;" onclick="addNewStaff('assistants')">➕ 新增助理</button></div><table class="staff-table"><thead><tr><th>授權代碼</th><th>姓名/備註</th><th>操作</th></tr></thead><tbody>${staffConfig.assistants.map((a, idx) => `<tr><td><input type="text" value="${a.code}" style="width:90px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'code', this.value)"></td><td><input type="text" value="${escapeHtml(a.name)}" style="width:120px; text-align:center; padding:2px;" onchange="updateStaff('assistants', ${idx}, 'name', this.value)"></td><td><button class="move-btn" style="color:#d32f2f;" onclick="deleteStaff('assistants', ${idx})" ${staffConfig.assistants.length <= 1 ? 'disabled' : ''}>✕</button></td></tr>`).join("")}</tbody></table></div>`;
     }
     function addNewStaff(type) { const code = prompt("輸入代碼："); if (!code) return; const name = prompt("輸入姓名：") || "同仁"; staffConfig[type].push({ code: code.trim(), name: name.trim() }); renderStaffEditor(); }
     function updateStaff(type, idx, field, val) { staffConfig[type][idx][field] = val.trim(); }
@@ -1072,7 +1072,7 @@
           <option value="night" ${group.isNight ? 'selected' : ''}>🌙 夜間/特定</option>
         </select>`;
 
-        groupBox.innerHTML = `<div class="editor-group-header"><span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span><input type="text" class="editor-group-input" value="${group.group}" onchange="updateGroupName(${gIdx}, this.value)" placeholder="櫃位名稱 (例如 GZX)">${selectHtml}<div style="display:flex; gap:4px;"><select style="font-size:11px;" onchange="updateGroupCol(${gIdx}, parseInt(this.value))"><option value="1" ${group.col === 1 ? 'selected' : ''}>第1欄</option><option value="2" ${group.col === 2 ? 'selected' : ''}>第2欄</option><option value="3" ${group.col === 3 ? 'selected' : ''}>第3欄</option></select><button class="move-btn" onclick="moveGroup(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveGroup(${gIdx}, 1)" ${gIdx === targetMenu.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteGroup(${gIdx})">✕</button></div></div><div class="med-list-container" id="medListContainer_${gIdx}"></div><div style="margin-top:6px; display:flex; justify-content:flex-end;"><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e0f2fe; color:#0369a1;" onclick="addNewMed(${gIdx})">➕ 新增藥品品項</button></div>`;
+        groupBox.innerHTML = `<div class="editor-group-header"><span style="font-size:12px; font-weight:bold; color:#64748b;">櫃位 ${gIdx + 1}:</span><input type="text" class="editor-group-input" value="${escapeHtml(group.group)}" onchange="updateGroupName(${gIdx}, this.value)" placeholder="櫃位名稱 (例如 GZX)">${selectHtml}<div style="display:flex; gap:4px;"><select style="font-size:11px;" onchange="updateGroupCol(${gIdx}, parseInt(this.value))"><option value="1" ${group.col === 1 ? 'selected' : ''}>第1欄</option><option value="2" ${group.col === 2 ? 'selected' : ''}>第2欄</option><option value="3" ${group.col === 3 ? 'selected' : ''}>第3欄</option></select><button class="move-btn" onclick="moveGroup(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveGroup(${gIdx}, 1)" ${gIdx === targetMenu.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteGroup(${gIdx})">✕</button></div></div><div class="med-list-container" id="medListContainer_${gIdx}"></div><div style="margin-top:6px; display:flex; justify-content:flex-end;"><button class="btn-act btn-clear" style="font-size:11px; padding:3px 8px; background:#e0f2fe; color:#0369a1;" onclick="addNewMed(${gIdx})">➕ 新增藥品品項</button></div>`;
         container.appendChild(groupBox);
 
         const medListEl = groupBox.querySelector(`#medListContainer_${gIdx}`);
@@ -1095,7 +1095,7 @@
 
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div"); row.className = "editor-med-row"; row.draggable = true; row.dataset.gidx = gIdx; row.dataset.midx = mIdx;
-          row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${med.name}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${med.unit || ''}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
+          row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${escapeHtml(med.name)}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${escapeHtml(med.unit || '')}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
           row.ondragstart = (e) => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx })); }; row.ondragend = () => row.classList.remove("dragging"); row.ondragover = (e) => e.preventDefault();
           
           row.ondrop = (e) => { 
@@ -1162,8 +1162,8 @@
     function deleteMed(gIdx, mIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].items[mIdx].name}」嗎？`)) { t[gIdx].items.splice(mIdx, 1); renderVisualEditor(); } }
 
     function saveVisualConfigs() {
-      firebase.database().ref("menu_config_p2").set({ general: generalMedData, special: specialMedData });
-      firebase.database().ref("staff_config_p2").set(staffConfig);
+      firebase.database().ref(nodeMenuConfig).set({ general: generalMedData, special: specialMedData }); // 【修補】動態節點寫入
+      firebase.database().ref(nodeStaffConfig).set(staffConfig); // 【修補】動態節點寫入
       alert("設定已儲存並同步至雲端！"); closeConfigModal();
     }
 
@@ -1173,8 +1173,8 @@
         specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS)); 
         staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG));
         
-        firebase.database().ref("menu_config_p2").set({ general: generalMedData, special: specialMedData });
-        firebase.database().ref("staff_config_p2").set(staffConfig);
+        firebase.database().ref(nodeMenuConfig).set({ general: generalMedData, special: specialMedData });
+        firebase.database().ref(nodeStaffConfig).set(staffConfig);
         
         alert("已還原原廠預設設定並同步至雲端！"); 
         closeConfigModal(); 
@@ -1248,8 +1248,8 @@
         recordsBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px;">無紀錄</td></tr>`; 
       } else { 
         recordsBody.innerHTML = records.slice(0, 50).map(rec => { 
-          const itemsTxt = (rec.items || []).map(i => `<span style="${i.shortfall > 0 ? 'color:#dc2626; font-weight:bold;' : ''}">${i.medName}: 出${i.actual}(需${i.req})</span>`).join("、 "); 
-          return `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px;">${rec.completeDate||''}<br>${rec.completeTime||''}</td><td style="padding:6px;">${rec.displayLabel||rec.station}</td><td style="padding:6px;">${rec.staffName||''}<br>(${rec.staffCode})</td><td style="padding:6px; font-size:11px;">${itemsTxt}</td></tr>`; 
+          const itemsTxt = (rec.items || []).map(i => `<span style="${i.shortfall > 0 ? 'color:#dc2626; font-weight:bold;' : ''}">${escapeHtml(i.medName)}: 出${i.actual}(需${i.req})</span>`).join("、 "); 
+          return `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:6px;">${rec.completeDate||''}<br>${rec.completeTime||''}</td><td style="padding:6px;">${escapeHtml(rec.displayLabel||rec.station)}</td><td style="padding:6px;">${escapeHtml(rec.staffName||'')}<br>(${rec.staffCode})</td><td style="padding:6px; font-size:11px;">${itemsTxt}</td></tr>`; 
         }).join(""); 
       }
 
@@ -1295,7 +1295,7 @@
       const sfArray = Object.entries(itemStats).filter(([_, stats]) => stats.shortfall > 0).sort((a, b) => b[1].shortfall - a[1].shortfall).slice(0, 10);
       const topSfEl = document.getElementById("biTopShortfallList");
       if (sfArray.length === 0) topSfEl.innerHTML = "無短缺紀錄";
-      else topSfEl.innerHTML = sfArray.map(([name, stats]) => `<div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px dashed #e2e8f0; padding-bottom:2px;"><span>${name.split(' / ')[0]}</span><span style="color:#dc2626; font-weight:bold;">${stats.shortfall} <span style="font-size:9px; color:#94a3b8;">(${((stats.shortfall/stats.req)*100).toFixed(0)}%)</span></span></div>`).join("");
+      else topSfEl.innerHTML = sfArray.map(([name, stats]) => `<div style="display:flex; justify-content:space-between; margin-bottom:6px; border-bottom:1px dashed #e2e8f0; padding-bottom:2px;"><span>${escapeHtml(name.split(' / ')[0])}</span><span style="color:#dc2626; font-weight:bold;">${stats.shortfall} <span style="font-size:9px; color:#94a3b8;">(${((stats.shortfall/stats.req)*100).toFixed(0)}%)</span></span></div>`).join("");
 
       document.getElementById("biSlotMorning").innerText = slotMorning;
       document.getElementById("biSlotAfternoon").innerText = slotAfternoon;
@@ -1307,7 +1307,7 @@
       else staffBody.innerHTML = staffArray.map(st => {
          const topItem = Object.entries(st.items).sort((a, b) => b[1] - a[1])[0];
          const topItemName = topItem ? topItem[0].split(' / ')[0] : "-";
-         return `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px 6px;">${st.name}</td><td style="padding:6px 6px; text-align:center; font-weight:bold;">${st.qty}</td><td style="padding:6px 6px; text-align:center; color:#1d4ed8;">${st.batches} 批</td><td style="padding:6px 6px; font-size:10px; color:#64748b;">${topItemName}</td></tr>`;
+         return `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px 6px;">${escapeHtml(st.name)}</td><td style="padding:6px 6px; text-align:center; font-weight:bold;">${st.qty}</td><td style="padding:6px 6px; text-align:center; color:#1d4ed8;">${st.batches} 批</td><td style="padding:6px 6px; font-size:10px; color:#64748b;">${escapeHtml(topItemName)}</td></tr>`;
       }).join("");
     }
 
