@@ -4,19 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <title>藥局點藥系統 (Phase 2.1 漏洞修補版)</title>
+  <title>藥局點藥系統 (Phase 2.2 角色共用帳號版)</title>
   
   <meta name="description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。">
   <meta property="og:title" content="藥局點藥系統">
-  <meta property="og:description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。內部專用，請輸入啟動密碼連線。">
+  <meta property="og:description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。內部專用，請輸入身分密碼連線。">
   <meta property="og:type" content="website">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK (不含 Auth，確保醫院網路秒連線) -->
+  <!-- Firebase SDK (包含 Auth，用於角色登入) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   
   <!-- SheetJS SDK -->
@@ -37,42 +38,64 @@
     .bi-custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .bi-custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
+    /* ================= 新版登入畫面 UI ================= */
     #globalLoginOverlay {
-      position: fixed; inset: 0; background: #2e7d32; z-index: 99999; 
+      position: fixed; inset: 0; background: url('https://www.transparenttextures.com/patterns/cubes.png'), #2e7d32; z-index: 99999; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
     }
     .login-box {
-      background: #fff; border-radius: 12px; width: 100%; max-width: 340px; padding: 30px 24px 24px;
-      text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; box-sizing: border-box;
+      background: #fff; border-radius: 12px; width: 100%; max-width: 360px; padding: 30px 24px 24px;
+      text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; box-sizing: border-box;
     }
-    
     .login-box h2 { color: var(--primary-green); margin-top: 0; margin-bottom: 8px; font-weight: 900; font-size: 24px;}
-    .login-box p { font-size: 15px; color: #64748b; margin-bottom: 20px; line-height: 1.5; font-weight: bold;}
+    .login-box p { font-size: 14px; color: #64748b; margin-bottom: 16px; font-weight: bold;}
+    
     .login-input {
-      width: 100%; font-size: 20px; text-align: center; letter-spacing: 4px; padding: 12px;
-      border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 16px; outline: none; transition: border-color 0.2s; box-sizing: border-box;
+      width: 100%; font-size: 18px; text-align: center; letter-spacing: 2px; padding: 12px;
+      border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 12px; outline: none; transition: border-color 0.2s; box-sizing: border-box;
     }
     .login-input:focus { border-color: var(--primary-green); }
+
+    .role-selector { display: flex; gap: 8px; margin-bottom: 16px; }
+    .role-btn { 
+      flex: 1; padding: 10px 4px; border: 2px solid #e2e8f0; border-radius: 8px; 
+      background: #f8fafc; color: #64748b; font-weight: bold; cursor: pointer; 
+      font-size: 14px; transition: all 0.2s ease; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .role-btn .icon { font-size: 20px; }
+    .role-btn.active { 
+      border-color: var(--primary-green); background: #e8f5e9; color: var(--primary-green); 
+      box-shadow: 0 4px 10px rgba(46,125,50,0.15); transform: translateY(-2px);
+    }
+    #loginHint { font-size: 11.5px; color: #0369a1; background: #e0f2fe; padding: 6px; border-radius: 4px; margin-bottom: 16px; font-weight: bold; }
+    /* =================================================== */
 
     #sandboxBanner {
       display: none; background: #f59e0b; color: #fff; text-align: center; font-size: 12px; font-weight: bold; 
       padding: 4px; letter-spacing: 1px; z-index: 101; position: relative;
     }
 
-    .nav-bar { position: sticky; top: 0; z-index: 100; background: var(--paper-bg); border-bottom: 2px solid var(--border-color); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .nav-bar { position: sticky; top: 0; z-index: 100; background: var(--paper-bg); border-bottom: 2px solid var(--border-color); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); gap: 8px;}
     .nav-left { display: flex; align-items: center; gap: 6px; }
-    .app-title { font-size: 16px; font-weight: 900; color: var(--primary-green); }
+    .app-title { font-size: 16px; font-weight: 900; color: var(--primary-green); display: none; } /* 手機版隱藏避免太擠 */
     .station-select { font-size: 14px; font-weight: bold; padding: 4px 10px; border-radius: 12px; border: 1.5px solid var(--primary-green); background: #fff; color: #1b5e20; outline: none; transition: all 0.2s ease; }
     .mode-tabs { display: flex; gap: 4px; background: #e0e0e0; padding: 3px; border-radius: 8px; }
     .mode-tab { padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; background: transparent; color: #555; }
     .mode-tab.active { background: #fff; color: var(--primary-green); box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
     .btn-icon { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; }
+    .nav-right { display: flex; align-items: center; gap: 4px; }
     
     .container { max-width: 1200px; margin: 8px auto; padding: 0 8px; }
     .shortfall-banner { display: none; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: 13px; color: #92400e; animation: fadeIn 0.3s ease; }
     .shortfall-banner-header { font-weight: bold; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .sheet-title { text-align: center; font-size: 21px; font-weight: 900; margin: 6px 0 6px; color: var(--border-color); letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .sheet-title { text-align: center; font-size: 21px; font-weight: 900; margin: 6px 0 6px; color: var(--border-color); letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;}
     .sheet-subtitle-hint { text-align: center; font-size: 11.5px; color: #64748b; margin-bottom: 10px; font-weight: 500; }
+
+    /* 低庫存比例徽章 */
+    .health-badge { font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; display: inline-flex; align-items: center; border: 1.5px solid #ccc; background: #f5f5f5; color: #666; }
+    .health-good { background: #dcfce7; color: #166534; border-color: #86efac; }
+    .health-warn { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+    .health-danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
 
     .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .col-group { display: flex; flex-direction: column; gap: 8px; }
@@ -163,6 +186,7 @@
     .tag-toggle-btn.active-shortage { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; font-weight: bold; }
     .tag-toggle-btn.active-disabled { background: #ffebee; border-color: #ef9a9a; color: #c62828; font-weight: bold; }
 
+    @media (min-width: 600px) { .app-title { display: inline-block; } }
     @media (max-width: 850px) { .grid-3col { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -170,16 +194,33 @@
 
   <div id="sandboxBanner">🚧 目前為【沙盒測試模式】(不列入正式報表統計) 🚧</div>
 
+  <!-- 新版角色登入畫面 -->
   <div id="globalLoginOverlay">
     <div class="login-box">
       <h2>💊 藥局點藥系統 📋</h2>
-      <p>門禁管制 🔒</p>
+      <p>請先選擇您的工作身分 🔒</p>
       
-      <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入密碼" onkeydown="if(event.key==='Enter') verifyGlobalCode()">
-      <div style="font-size:11px; color:#888; margin-bottom:12px;">※測試人員請輸入測試專用密碼</div>
+      <!-- 角色切換區塊 -->
+      <div class="role-selector">
+        <button id="btnRolePharm" class="role-btn active" onclick="selectRole('pharmacist')">
+          <span class="icon">👨‍⚕️</span><span>藥師</span>
+        </button>
+        <button id="btnRoleAsst" class="role-btn" onclick="selectRole('assistant')">
+          <span class="icon">📦</span><span>助理</span>
+        </button>
+        <button id="btnRoleAdmin" class="role-btn" onclick="selectRole('admin')">
+          <span class="icon">⚙️</span><span>主管</span>
+        </button>
+      </div>
+
+      <!-- 密碼輸入與提示 -->
+      <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入 藥師 共用密碼" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
+      <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
-      <button class="btn-act btn-submit" style="width:100%; font-size:16px; padding:10px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="verifyGlobalCode()">
-        <span style="font-size:18px;">🔗</span> 連線
+      <div style="font-size:11px; color:#888; margin-bottom:8px;">※ 實務測試專區請輸入 99999 (免選身分)</div>
+      
+      <button id="btnLoginAction" class="btn-act btn-submit" style="width:100%; font-size:16px; padding:12px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="executeFirebaseLogin()">
+        <span style="font-size:18px;">🔗</span> 身分驗證並連線
       </button>
     </div>
   </div>
@@ -195,7 +236,6 @@
         <option value="藍籃">藍籃</option>
         <option value="專用區">專用區</option>
       </select>
-      <span id="cloudBadge" class="cloud-status">未連線</span>
     </div>
 
     <div class="mode-tabs">
@@ -203,8 +243,13 @@
       <button class="mode-tab" id="tabAssistant" onclick="promptAssistantAccess()">📦 助理取藥</button>
     </div>
 
-    <!-- 🔒 第二道門：主管專用鎖 -->
-    <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="attemptOpenAdminPanel()" title="主管設定與數據 (需密碼)">⚙️</button>
+    <div class="nav-right">
+      <span id="cloudBadge" class="cloud-status">未連線</span>
+      <!-- 🔒 第二道門：主管專用鎖 -->
+      <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="openConfigModal()" title="主管設定與數據">⚙️</button>
+      <!-- 🚪 登出按鈕 -->
+      <button class="btn-icon" onclick="executeLogout()" title="登出切換身分" style="font-size: 14px; border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px; margin-left: 4px;">登出</button>
+    </div>
   </div>
 
   <div class="container">
@@ -213,7 +258,13 @@
         <div class="shortfall-banner-header"><span>📢 助理實出調整通知</span><button style="border:none;background:none;font-size:14px;color:#92400e;cursor:pointer;" onclick="dismissShortfallBanner()">✕ 關閉</button></div>
         <div id="shortfallBannerContent"></div>
       </div>
-      <div class="sheet-title" id="currentStationTitle">【 藍籃 - 藥品劃記看板 】</div>
+      
+      <!-- 加入了低庫存比例徽章 -->
+      <div class="sheet-title" id="currentStationTitle">
+        【 藍籃 <span style="vertical-align:middle;">- 藥品劃記看板</span> 】
+        <span id="healthRatioBadge" class="health-badge" style="display:none;">庫存健康度</span>
+      </div>
+      
       <div class="sheet-subtitle-hint">💡 操作提示：點擊藥品 +1（達上限自動歸零循環）｜ 長按 1 秒可直接歸零 ｜ 點擊數量格可直接打字輸入</div>
       <div class="grid-3col" id="pharmacistBoard"></div>
     </div>
@@ -226,7 +277,7 @@
         </div>
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" onclick="openHistoryModal()">📋 員工送單紀錄</button>
-          <button class="btn-act btn-clear" style="background:#e0e7ff; color:#3730a3; font-weight:bold;" onclick="openBiDashboardModal()">📊 數據分析與歷史匯出</button>
+          <button class="btn-act btn-clear" id="btnBiDashboard" style="background:#e0e7ff; color:#3730a3; font-weight:bold; display:none;" onclick="openBiDashboardModal()">📊 數據分析與歷史匯出</button>
           <button class="btn-act btn-clear" style="background:#e8f5e9; color:#2e7d32;" onclick="clearDoneItems()">確認取藥並清空</button>
         </div>
       </div>
@@ -264,7 +315,7 @@
   <div class="modal-overlay" id="authModal">
     <div class="modal-box" style="max-width:340px; text-align:center;">
       <div class="modal-header"><span>🔒 助理取藥權限驗證</span><button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeAuthModal()">✕</button></div>
-      <p style="font-size:13px; color:#555; margin:4px 0 10px;">請輸入授權代碼進入助理取藥畫面：</p>
+      <p style="font-size:13px; color:#555; margin:4px 0 10px;">您目前的角色無權進入助理面板。<br>請輸入現場助理專屬代碼臨時進入：</p>
       <input type="password" inputmode="numeric" id="authCodeInput" class="staff-input" placeholder="請輸入授權代碼">
       <div style="display:flex; justify-content:flex-end; gap:8px;"><button class="btn-act btn-clear" onclick="closeAuthModal()">取消</button><button class="btn-act btn-submit" onclick="confirmAssistantAccess()">驗證進入</button></div>
     </div>
@@ -391,6 +442,7 @@
     </div>
   </div>
 
+
   <script>
     // ==========================================
     // 🚀 1. 設定檔與全域變數宣告
@@ -402,26 +454,32 @@
       projectId: "pharmacy-order-20f00" 
     };
 
-    const GLOBAL_PASS = "53690"; 
+    // Firebase 對應帳號信箱
+    const ACCOUNTS = {
+        pharmacist: 'pharm@cch.tw',
+        assistant: 'asst@cch.tw',
+        admin: 'admin@cch.tw'
+    };
+
     const TEST_PASS = "99999"; 
-    const ADMIN_PASS = "0000";   
-
-    const DEFAULT_STAFF_CONFIG = { pharmacists: [], assistants: [] };
-    const DEFAULT_GENERAL_MEDS = [
-      { col: 1, group: "GZA", isWarn: false, items: [] },
-      { col: 2, group: "GZE", isWarn: false, items: [] },
-      { col: 3, group: "GZK", isWarn: false, items: [] }
-    ];
-    const DEFAULT_SPECIAL_MEDS = [];
-
-    let isTestMode = false;
     
-    // 【修補】動態變數：正式環境與測試環境的節點切換
+    // UI 控制變數
+    let currentSelectedRole = 'pharmacist';
+    let currentUserRole = null; 
+
+    // 其他全域變數
+    let isTestMode = false;
     let nodeActiveOrders = "active_orders_p2";
     let nodeOrderHistory = "order_history_p2";
     let nodeShortfalls = "shortfalls_p2";
     let nodeStaffConfig = "staff_config_p2"; 
     let nodeMenuConfig = "menu_config_p2";   
+
+    const DEFAULT_STAFF_CONFIG = { pharmacists: [], assistants: [] };
+    const DEFAULT_GENERAL_MEDS = [
+      { col: 1, group: "GZA", isWarn: false, items: [] }, { col: 2, group: "GZE", isWarn: false, items: [] }, { col: 3, group: "GZK", isWarn: false, items: [] }
+    ];
+    const DEFAULT_SPECIAL_MEDS = [];
 
     let generalMedData = []; 
     let specialMedData = []; 
@@ -446,38 +504,114 @@
     }
 
     // ==========================================
-    // 🚀 3. 前端密碼登入邏輯 (退回純前端版)
+    // 🚀 3. Phase 2.2 角色登入邏輯 (Email/Password)
     // ==========================================
     function checkGlobalAuth() {
-      const storedAuth = sessionStorage.getItem("pharmacy_global_auth") || localStorage.getItem("pharmacy_global_auth");
-      const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
-      
-      if (storedAuth === "true") {
-        document.getElementById("globalLoginOverlay").style.display = "none";
-        if (storedMode === "true") { enableTestModeEnvironment(); }
-        // 【退回】直接呼叫 initSync()
-        initSync(); 
-      } else {
-        document.getElementById("globalLoginOverlay").style.display = "flex";
-      }
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // 已登入
+                document.getElementById("globalLoginOverlay").style.display = "none";
+                
+                // 判斷角色身分
+                if (user.email === ACCOUNTS.admin) currentUserRole = 'admin';
+                else if (user.email === ACCOUNTS.pharmacist) currentUserRole = 'pharmacist';
+                else if (user.email === ACCOUNTS.assistant) currentUserRole = 'assistant';
+                else currentUserRole = 'unknown';
+
+                applyRolePermissions();
+
+                const storedMode = sessionStorage.getItem("pharmacy_test_mode") || localStorage.getItem("pharmacy_test_mode");
+                if (storedMode === "true") enableTestModeEnvironment();
+                
+                initSync();
+            } else {
+                // 未登入或已登出
+                document.getElementById("globalLoginOverlay").style.display = "flex";
+                document.getElementById("btnAdminGear").style.display = "none";
+                document.getElementById("btnBiDashboard").style.display = "none";
+                currentUserRole = null;
+            }
+        });
     }
 
-    function verifyGlobalCode() {
-      const val = document.getElementById("globalCodeInput").value.trim();
-      if (val === GLOBAL_PASS || val === TEST_PASS) {
-        localStorage.setItem("pharmacy_global_auth", "true"); 
-        
-        if (val === TEST_PASS) {
-            localStorage.setItem("pharmacy_test_mode", "true");
-            enableTestModeEnvironment();
-        } else {
-            localStorage.removeItem("pharmacy_test_mode");
+    function selectRole(role) {
+      currentSelectedRole = role;
+      document.getElementById('btnRolePharm').classList.remove('active');
+      document.getElementById('btnRoleAsst').classList.remove('active');
+      document.getElementById('btnRoleAdmin').classList.remove('active');
+      
+      const input = document.getElementById('globalCodeInput');
+      const hint = document.getElementById('loginHint');
+      
+      if (role === 'pharmacist') {
+        document.getElementById('btnRolePharm').classList.add('active');
+        input.placeholder = "請輸入 藥師 共用密碼";
+        hint.style.color = "#0369a1"; hint.style.backgroundColor = "#e0f2fe"; hint.innerText = "※ 藥師權限：可建立藥單、查閱歷史紀錄";
+      } else if (role === 'assistant') {
+        document.getElementById('btnRoleAsst').classList.add('active');
+        input.placeholder = "請輸入 助理 共用密碼";
+        hint.style.color = "#b45309"; hint.style.backgroundColor = "#fef3c7"; hint.innerText = "※ 助理權限：可處理藥單實出、切換低庫存";
+      } else if (role === 'admin') {
+        document.getElementById('btnRoleAdmin').classList.add('active');
+        input.placeholder = "請輸入 主管 專用密碼";
+        hint.style.color = "#4c1d95"; hint.style.backgroundColor = "#ede9fe"; hint.innerText = "※ 主管權限：全系統讀寫、菜單與人員設定";
+      }
+      input.value = ""; input.focus();
+    }
+
+    function executeFirebaseLogin() {
+      const pass = document.getElementById("globalCodeInput").value.trim();
+      if(!pass) { alert("請先輸入密碼！"); return; }
+
+      if (pass === TEST_PASS) {
+          localStorage.setItem("pharmacy_test_mode", "true");
+          alert("測試模式需要對應信箱登入，請使用正常身分登入後，切換測試網址。");
+          return;
+      }
+      
+      localStorage.removeItem("pharmacy_test_mode");
+      const email = ACCOUNTS[currentSelectedRole];
+      const btn = document.getElementById("btnLoginAction");
+      btn.innerHTML = `<span style="font-size:18px;">⏳</span> 驗證中...`; btn.disabled = true;
+
+      firebase.auth().signInWithEmailAndPassword(email, pass)
+          .then((userCredential) => {
+              // 成功登入後，onAuthStateChanged 會自動接手處理畫面切換
+              btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
+          })
+          .catch((error) => {
+              alert(`登入失敗：密碼錯誤或網路異常。\n(${error.message})`);
+              btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
+          });
+    }
+
+    function executeLogout() {
+        if(confirm("確定要登出並回到身分選擇畫面嗎？")) {
+            firebase.auth().signOut().then(() => {
+                localStorage.removeItem("pharmacy_test_mode");
+                appMode = 'pharmacist'; 
+            });
         }
-        
-        document.getElementById("globalLoginOverlay").style.display = "none";
-        // 【退回】直接呼叫 initSync()
-        initSync();
-      } else { alert("啟動密碼錯誤！系統拒絕連線。"); }
+    }
+
+    function applyRolePermissions() {
+        if (currentUserRole === 'admin') {
+            document.getElementById("btnAdminGear").style.display = "block";
+            document.getElementById("btnBiDashboard").style.display = "block";
+            isAssistantAuthenticated = true; 
+            switchMode('pharmacist');
+        } else if (currentUserRole === 'assistant') {
+            document.getElementById("btnAdminGear").style.display = "none";
+            document.getElementById("btnBiDashboard").style.display = "none";
+            isAssistantAuthenticated = true; 
+            switchMode('assistant'); 
+        } else {
+            // Pharmacist 或其他
+            document.getElementById("btnAdminGear").style.display = "none";
+            document.getElementById("btnBiDashboard").style.display = "none";
+            isAssistantAuthenticated = false; 
+            switchMode('pharmacist');
+        }
     }
 
     function enableTestModeEnvironment() {
@@ -485,7 +619,6 @@
         nodeActiveOrders = "active_orders_test";
         nodeOrderHistory = "order_history_test";
         nodeShortfalls = "shortfalls_test";
-        // 【修補】隔離測試節點
         nodeStaffConfig = "staff_config_test"; 
         nodeMenuConfig = "menu_config_test";   
         document.getElementById("sandboxBanner").style.display = "block";
@@ -494,7 +627,7 @@
     window.onload = checkGlobalAuth;
 
     // ==========================================
-    // 🚀 4. 資料庫連線與同步
+    // 🚀 4. 資料庫連線與同步 
     // ==========================================
     function initSync() {
       document.getElementById("cloudBadge").innerText = "🔑 連線中...";
@@ -502,7 +635,6 @@
 
       try {
         const db = firebase.database();
-        
         db.ref(".info/connected").on("value", (snap) => {
             isFirebaseConnected = snap.val() === true;
             const badge = document.getElementById("cloudBadge");
@@ -510,15 +642,10 @@
             else { badge.innerText = "❌ 離線 (禁止操作)"; badge.className = "cloud-status"; badge.style.backgroundColor = "#fecaca"; badge.style.color = "#991b1b"; }
         });
 
-        // 讀取動態節點 (正式或測試)
         db.ref(nodeStaffConfig).on("value", (snap) => {
           const val = snap.val();
-          if (val) { 
-            staffConfig = { pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [], assistants: val.assistants ? Object.values(val.assistants) : [] };
-            localStorage.setItem("pharmacy_staff_config", JSON.stringify(staffConfig)); 
-          } else { 
-            db.ref(nodeStaffConfig).set(DEFAULT_STAFF_CONFIG); staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); 
-          } 
+          if (val) { staffConfig = { pharmacists: val.pharmacists ? Object.values(val.pharmacists) : [], assistants: val.assistants ? Object.values(val.assistants) : [] }; } 
+          else { staffConfig = JSON.parse(JSON.stringify(DEFAULT_STAFF_CONFIG)); } 
         });
 
         db.ref(nodeMenuConfig).on("value", (snap) => {
@@ -527,7 +654,6 @@
             generalMedData = (val.general || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
             specialMedData = (val.special || []).map(g => ({...g, items: g.items ? Object.values(g.items) : []})); 
           } else { 
-            db.ref(nodeMenuConfig).set({general: DEFAULT_GENERAL_MEDS, special: DEFAULT_SPECIAL_MEDS}); 
             generalMedData = JSON.parse(JSON.stringify(DEFAULT_GENERAL_MEDS)); specialMedData = JSON.parse(JSON.stringify(DEFAULT_SPECIAL_MEDS)); 
           }
           renderAll();
@@ -540,31 +666,48 @@
         db.ref(nodeShortfalls).on("value", (snap) => { latestShortfalls = snap.val() || {}; checkAndRenderShortfallBanner(); });
 
       } catch (err) { 
-          console.error("Firebase 連線失敗:", err); 
-          document.getElementById("cloudBadge").innerText = "❌ 連線錯誤";
+          console.error("Firebase 連線失敗:", err); document.getElementById("cloudBadge").innerText = "❌ 連線錯誤";
       }
-
       updateSelectCapsule(currentStation); updateStationHeader();
     }
 
-    // ==========================================
-    // 🚀 5. 主管按鈕功能
-    // ==========================================
-    function attemptOpenAdminPanel() {
-      const code = prompt("請輸入主管密碼 (預設為 0000)：");
-      if (code === ADMIN_PASS) {
-        openConfigModal();
-      } else if (code !== null) {
-        alert("密碼錯誤，拒絕存取！");
-      }
-    }
-
-    // 【修補】防 XSS 工具函數
+    // 防 XSS 工具函數
     function escapeHtml(unsafe) {
       if(!unsafe) return "";
       return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
+    // ==========================================
+    // 📊 低庫存比例運算 (新功能)
+    // ==========================================
+    function calculateInventoryHealth() {
+        const targetMenu = (currentStation === "專用區") ? specialMedData : generalMedData;
+        let totalItems = 0;
+        let shortageItems = 0;
+
+        targetMenu.forEach(group => {
+            (group.items || []).forEach(med => {
+                totalItems++;
+                if (med.shortage) shortageItems++;
+            });
+        });
+
+        const badge = document.getElementById("healthRatioBadge");
+        if (totalItems === 0) {
+            badge.style.display = "none";
+            return;
+        }
+
+        const ratio = (shortageItems / totalItems) * 100;
+        let healthClass = "health-good";
+        if (ratio >= 30) healthClass = "health-danger";
+        else if (ratio >= 10) healthClass = "health-warn";
+
+        badge.innerText = `庫存健康度: 短缺 ${ratio.toFixed(0)}%`;
+        badge.className = `health-badge ${healthClass}`;
+        badge.style.display = "inline-flex";
+    }
+    
     function updateSelectCapsule(val) {
       const sel = document.getElementById("stationSelect"); let bg = "#f1f5f9", col = "#475569", border = "#cbd5e1";
       if(val.includes("黃")) { bg = "#fef9c3"; col = "#854d0e"; border = "#fde047"; }
@@ -596,7 +739,7 @@
       const actualSelected = document.getElementById("stationSelect").value; currentStation = actualSelected;
       const sameStationCount = activeOrdersList.filter(o => o.station === currentStation).length;
       let displayTitle = currentStation; if (sameStationCount > 0) displayTitle = `${currentStation}${sameStationCount + 1}`;
-      document.getElementById("currentStationTitle").innerHTML = `【 ${getBasketBadge(displayTitle)} <span style="vertical-align:middle;">- 藥品劃記看板</span> 】`;
+      document.getElementById("currentStationTitle").innerHTML = `【 ${getBasketBadge(displayTitle)} <span style="vertical-align:middle;">- 藥品劃記看板</span> 】 <span id="healthRatioBadge" class="health-badge" style="display:none;">庫存健康度</span>`;
     }
 
     function checkAndRenderShortfallBanner() {
@@ -645,7 +788,7 @@
       else { let num = parseInt(valStr, 10); if (num <= 0) delete draftOrders[medId]; else { if (num > (maxLimit || 5)) num = (maxLimit || 5); draftOrders[medId] = num; } }
       editingMedId = null; renderPharmacistBoard();
     }
-
+    
     let asstPressTimer = null; let isAsstLongPress = false;
 
     function handleAsstCellClick(orderId, medId) {
@@ -730,7 +873,7 @@
     function closeAuthModal() { document.getElementById("authModal").style.display = "none"; }
     function confirmAssistantAccess() {
       const code = document.getElementById("authCodeInput").value.trim(); const validAssistant = (staffConfig.assistants || []).find(a => a.code === code);
-      if (validAssistant) { isAssistantAuthenticated = true; closeAuthModal(); switchMode('assistant'); } else { alert("授權代碼錯誤！"); }
+      if (validAssistant) { isAssistantAuthenticated = true; closeAuthModal(); switchMode('assistant'); } else { alert("臨時授權代碼錯誤！"); }
     }
 
     function switchMode(mode) {
@@ -740,11 +883,18 @@
       document.getElementById("viewPharmacist").style.display = mode === 'pharmacist' ? 'block' : 'none';
       document.getElementById("pharmacistBottomBar").style.display = mode === 'pharmacist' ? 'flex' : 'none';
       document.getElementById("viewAssistant").style.display = mode === 'assistant' ? 'block' : 'none';
-      document.getElementById("btnAdminGear").style.display = mode === 'assistant' ? 'block' : 'none';
+      
       checkAndRenderShortfallBanner(); renderAll();
     }
 
-    function renderAll() { updateStationHeader(); if (appMode === "pharmacist") renderPharmacistBoard(); else renderAssistantMatrix(); }
+    function renderAll() { 
+        updateStationHeader(); 
+        if (appMode === "pharmacist") {
+            renderPharmacistBoard(); 
+        } else {
+            renderAssistantMatrix(); 
+        }
+    }
 
     function renderPharmacistBoard() {
       const board = document.getElementById("pharmacistBoard"); board.innerHTML = ""; const currentMenu = getCurrentMenuData();
@@ -791,6 +941,8 @@
       const summaryEl = document.getElementById("stationSummaryText");
       if (activeList.length === 0) { summaryEl.innerText = "未點選藥品"; } 
       else { summaryEl.innerText = `草稿 (${activeList.length}項)：${activeList.map(([id, qty]) => `${escapeHtml(findMedAcrossAll(id)?.name||id)}×${qty}`).join("、")}`; }
+
+      calculateInventoryHealth();
     }
 
     function renderAssistantMatrix() {
@@ -904,7 +1056,6 @@
         }
 
         if (archivedItems.length > 0) {
-          // 【修補】防撞單：使用 push().key 產生唯一的 ID
           const recId = firebase.database().ref().child(nodeOrderHistory).push().key;
           updates[`${nodeOrderHistory}/${recId}`] = {
             id: recId, orderId: order.id || "unknown", station: order.station || "未分類", 
@@ -975,7 +1126,6 @@
         try {
             cloudBadge.innerText = "⏳ 寫入雲端中..."; cloudBadge.style.backgroundColor = "#fef08a";
             const db = firebase.database();
-            // 【修補】動態寫入測試或正式節點
             if (newMenuData) pendingArchiveData[nodeMenuConfig] = newMenuData; 
             
             await db.ref().update(pendingArchiveData);
@@ -1000,7 +1150,6 @@
       const seq = existingCount + 1; const displayLabel = `${targetStation}${seq > 1 ? seq : ''}`;
       const now = new Date();
       
-      // 【修補】防撞單：使用 push().key 產生唯一的 ID
       const newOrderId = firebase.database().ref().child(nodeActiveOrders).push().key;
 
       const newOrder = {
@@ -1164,8 +1313,8 @@
     function deleteMed(gIdx, mIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].items[mIdx].name}」嗎？`)) { t[gIdx].items.splice(mIdx, 1); renderVisualEditor(); } }
 
     function saveVisualConfigs() {
-      firebase.database().ref(nodeMenuConfig).set({ general: generalMedData, special: specialMedData }); // 【修補】動態節點寫入
-      firebase.database().ref(nodeStaffConfig).set(staffConfig); // 【修補】動態節點寫入
+      firebase.database().ref(nodeMenuConfig).set({ general: generalMedData, special: specialMedData }); 
+      firebase.database().ref(nodeStaffConfig).set(staffConfig); 
       alert("設定已儲存並同步至雲端！"); closeConfigModal();
     }
 
@@ -1197,7 +1346,6 @@
       }).catch(() => { alert("請直接長按或按 Ctrl+C / ⌘+C 複製框內文字！"); }); 
     }
 
-    // 時間處理函式
     function getTwTime(d, withSeconds=false) {
       let hh = d.getHours().toString().padStart(2, '0');
       let mm = d.getMinutes().toString().padStart(2, '0');
