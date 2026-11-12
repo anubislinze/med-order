@@ -51,7 +51,7 @@
     .login-box p { font-size: 14px; color: #64748b; margin-bottom: 16px; font-weight: bold;}
     
     .login-input {
-      width: 100%; font-size: 18px; text-align: center; letter-spacing: 2px; padding: 12px;
+      width: 100%; font-size: 24px; text-align: center; letter-spacing: 4px; padding: 12px; font-weight: bold;
       border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 12px; outline: none; transition: border-color 0.2s; box-sizing: border-box;
     }
     .login-input:focus { border-color: var(--primary-green); }
@@ -77,7 +77,7 @@
 
     .nav-bar { position: sticky; top: 0; z-index: 100; background: var(--paper-bg); border-bottom: 2px solid var(--border-color); padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); gap: 8px;}
     .nav-left { display: flex; align-items: center; gap: 6px; }
-    .app-title { font-size: 16px; font-weight: 900; color: var(--primary-green); display: none; } /* 手機版隱藏避免太擠 */
+    .app-title { font-size: 16px; font-weight: 900; color: var(--primary-green); display: none; }
     .station-select { font-size: 14px; font-weight: bold; padding: 4px 10px; border-radius: 12px; border: 1.5px solid var(--primary-green); background: #fff; color: #1b5e20; outline: none; transition: all 0.2s ease; }
     .mode-tabs { display: flex; gap: 4px; background: #e0e0e0; padding: 3px; border-radius: 8px; }
     .mode-tab { padding: 6px 12px; font-size: 13px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; background: transparent; color: #555; }
@@ -200,7 +200,7 @@
       <h2>💊 藥局點藥系統 📋</h2>
       <p>請先選擇您的工作身分 🔒</p>
       
-      <!-- 角色切換區塊 -->
+      <!-- 角色切換區塊 (乾淨俐落) -->
       <div class="role-selector">
         <button id="btnRolePharm" class="role-btn active" onclick="selectRole('pharmacist')">
           <span class="icon">👨‍⚕️</span><span>藥師</span>
@@ -209,12 +209,12 @@
           <span class="icon">📦</span><span>助理</span>
         </button>
         <button id="btnRoleAdmin" class="role-btn" onclick="selectRole('admin')">
-          <span class="icon">⚙️</span><span>主管</span>
+          <span class="icon">⚙️</span><span>管理員</span>
         </button>
       </div>
 
-      <!-- 密碼輸入與提示 -->
-      <input type="password" id="globalCodeInput" class="login-input" placeholder="請輸入 藥師 共用密碼" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
+      <!-- 密碼輸入與提示 (使用 inputmode="numeric" 呼叫手機數字鍵盤) -->
+      <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入 53690" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
       <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
       <div style="font-size:11px; color:#888; margin-bottom:8px;">※ 實務測試專區請輸入 99999 (免選身分)</div>
@@ -245,8 +245,8 @@
 
     <div class="nav-right">
       <span id="cloudBadge" class="cloud-status">未連線</span>
-      <!-- 🔒 第二道門：主管專用鎖 -->
-      <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="openConfigModal()" title="主管設定與數據">⚙️</button>
+      <!-- 🔒 第二道門：管理員設定 -->
+      <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="openConfigModal()" title="管理員設定與數據">⚙️</button>
       <!-- 🚪 登出按鈕 -->
       <button class="btn-icon" onclick="executeLogout()" title="登出切換身分" style="font-size: 14px; border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px; margin-left: 4px;">登出</button>
     </div>
@@ -259,7 +259,7 @@
         <div id="shortfallBannerContent"></div>
       </div>
       
-      <!-- 加入了低庫存比例徽章 -->
+      <!-- 低庫存比例徽章 -->
       <div class="sheet-title" id="currentStationTitle">
         【 藍籃 <span style="vertical-align:middle;">- 藥品劃記看板</span> 】
         <span id="healthRatioBadge" class="health-badge" style="display:none;">庫存健康度</span>
@@ -419,7 +419,7 @@
 
   <div class="modal-overlay" id="configModal">
     <div class="modal-box">
-      <div class="modal-header"><span>⚙️ 系統設定與架構管理 (主管模式)</span><button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeConfigModal()">✕</button></div>
+      <div class="modal-header"><span>⚙️ 系統設定與架構管理 (管理員模式)</span><button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeConfigModal()">✕</button></div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
         <div style="display:flex; gap:6px;">
           <button class="btn-act btn-clear" id="btnEditGeneral" onclick="switchEditorTab('general')" style="background:#e8f5e9; color:#2e7d32;">一般台菜單</button>
@@ -504,15 +504,13 @@
     }
 
     // ==========================================
-    // 🚀 3. Phase 2.2 角色登入邏輯 (Email/Password)
+    // 🚀 3. Phase 2.2 角色登入邏輯 (Email/Password + 魔法字首)
     // ==========================================
     function checkGlobalAuth() {
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                // 已登入
                 document.getElementById("globalLoginOverlay").style.display = "none";
                 
-                // 判斷角色身分
                 if (user.email === ACCOUNTS.admin) currentUserRole = 'admin';
                 else if (user.email === ACCOUNTS.pharmacist) currentUserRole = 'pharmacist';
                 else if (user.email === ACCOUNTS.assistant) currentUserRole = 'assistant';
@@ -525,7 +523,6 @@
                 
                 initSync();
             } else {
-                // 未登入或已登出
                 document.getElementById("globalLoginOverlay").style.display = "flex";
                 document.getElementById("btnAdminGear").style.display = "none";
                 document.getElementById("btnBiDashboard").style.display = "none";
@@ -545,25 +542,25 @@
       
       if (role === 'pharmacist') {
         document.getElementById('btnRolePharm').classList.add('active');
-        input.placeholder = "請輸入 藥師 共用密碼";
+        input.placeholder = "輸入密碼 (預設: 53690)";
         hint.style.color = "#0369a1"; hint.style.backgroundColor = "#e0f2fe"; hint.innerText = "※ 藥師權限：可建立藥單、查閱歷史紀錄";
       } else if (role === 'assistant') {
         document.getElementById('btnRoleAsst').classList.add('active');
-        input.placeholder = "請輸入 助理 共用密碼";
+        input.placeholder = "輸入密碼 (預設: 53690)";
         hint.style.color = "#b45309"; hint.style.backgroundColor = "#fef3c7"; hint.innerText = "※ 助理權限：可處理藥單實出、切換低庫存";
       } else if (role === 'admin') {
         document.getElementById('btnRoleAdmin').classList.add('active');
-        input.placeholder = "請輸入 主管 專用密碼";
-        hint.style.color = "#4c1d95"; hint.style.backgroundColor = "#ede9fe"; hint.innerText = "※ 主管權限：全系統讀寫、菜單與人員設定";
+        input.placeholder = "輸入密碼 (預設: 53690)";
+        hint.style.color = "#4c1d95"; hint.style.backgroundColor = "#ede9fe"; hint.innerText = "※ 管理員權限：全系統讀寫、菜單與人員設定";
       }
       input.value = ""; input.focus();
     }
 
     function executeFirebaseLogin() {
-      const pass = document.getElementById("globalCodeInput").value.trim();
-      if(!pass) { alert("請先輸入密碼！"); return; }
+      const inputPass = document.getElementById("globalCodeInput").value.trim();
+      if(!inputPass) { alert("請先輸入密碼！"); return; }
 
-      if (pass === TEST_PASS) {
+      if (inputPass === TEST_PASS) {
           localStorage.setItem("pharmacy_test_mode", "true");
           alert("測試模式需要對應信箱登入，請使用正常身分登入後，切換測試網址。");
           return;
@@ -571,16 +568,23 @@
       
       localStorage.removeItem("pharmacy_test_mode");
       const email = ACCOUNTS[currentSelectedRole];
+      
+      // 💡 密碼魔法拼湊：將畫面上輸入的數字，跟角色前綴自動組合
+      let finalPass = "";
+      if (currentSelectedRole === 'pharmacist') finalPass = "pharm" + inputPass;
+      else if (currentSelectedRole === 'assistant') finalPass = "asst" + inputPass;
+      else if (currentSelectedRole === 'admin') finalPass = "admin" + inputPass;
+
       const btn = document.getElementById("btnLoginAction");
       btn.innerHTML = `<span style="font-size:18px;">⏳</span> 驗證中...`; btn.disabled = true;
 
-      firebase.auth().signInWithEmailAndPassword(email, pass)
+      firebase.auth().signInWithEmailAndPassword(email, finalPass)
           .then((userCredential) => {
-              // 成功登入後，onAuthStateChanged 會自動接手處理畫面切換
               btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
           })
           .catch((error) => {
-              alert(`登入失敗：密碼錯誤或網路異常。\n(${error.message})`);
+              // 防呆提醒：如果密碼不對，提醒要重建帳號
+              alert(`登入失敗：密碼錯誤！\n\n(若您尚未在 Firebase 重建為 pharm53690 等複合密碼，請先至後台刪除並重建)\n\n錯誤代碼: ${error.message}`);
               btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
           });
     }
@@ -671,7 +675,6 @@
       updateSelectCapsule(currentStation); updateStationHeader();
     }
 
-    // 防 XSS 工具函數
     function escapeHtml(unsafe) {
       if(!unsafe) return "";
       return unsafe.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
