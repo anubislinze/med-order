@@ -214,10 +214,10 @@
       </div>
 
       <!-- 密碼輸入與提示 (使用 inputmode="numeric" 呼叫手機數字鍵盤) -->
-      <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入 53690" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
+      <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入單位名稱" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
       <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
-      <div style="font-size:11px; color:#888; margin-bottom:8px;">※ 實務測試專區請輸入 99999 (免選身分)</div>
+      <div style="font-size:11px; color:#888; margin-bottom:8px;">※ 測試模式專區請輸入 測試碼 (免選身分)</div>
       
       <button id="btnLoginAction" class="btn-act btn-submit" style="width:100%; font-size:16px; padding:12px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="executeFirebaseLogin()">
         <span style="font-size:18px;">🔗</span> 身分驗證並連線
@@ -542,15 +542,15 @@
       
       if (role === 'pharmacist') {
         document.getElementById('btnRolePharm').classList.add('active');
-        input.placeholder = "輸入密碼 (預設: 53690)";
+        input.placeholder = "單位名稱";
         hint.style.color = "#0369a1"; hint.style.backgroundColor = "#e0f2fe"; hint.innerText = "※ 藥師權限：可建立藥單、查閱歷史紀錄";
       } else if (role === 'assistant') {
         document.getElementById('btnRoleAsst').classList.add('active');
-        input.placeholder = "輸入密碼 (預設: 53690)";
+        input.placeholder = "單位名稱";
         hint.style.color = "#b45309"; hint.style.backgroundColor = "#fef3c7"; hint.innerText = "※ 助理權限：可處理藥單實出、切換低庫存";
       } else if (role === 'admin') {
         document.getElementById('btnRoleAdmin').classList.add('active');
-        input.placeholder = "輸入密碼 (預設: 53690)";
+        input.placeholder = "單位名稱";
         hint.style.color = "#4c1d95"; hint.style.backgroundColor = "#ede9fe"; hint.innerText = "※ 管理員權限：全系統讀寫、菜單與人員設定";
       }
       input.value = ""; input.focus();
