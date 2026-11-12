@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <title>藥局點藥系統 (Phase 2.2 角色共用帳號版)</title>
+  <title>藥局點藥系統 (Phase 2.2 企業安全版)</title>
   
   <meta name="description" content="專為醫院藥局設計的即時點藥與調劑矩陣系統。">
   <meta property="og:title" content="藥局點藥系統">
@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK (包含 Auth，用於角色登入) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -38,7 +38,6 @@
     .bi-custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .bi-custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 
-    /* ================= 新版登入畫面 UI ================= */
     #globalLoginOverlay {
       position: fixed; inset: 0; background: url('https://www.transparenttextures.com/patterns/cubes.png'), #2e7d32; z-index: 99999; 
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
@@ -68,7 +67,6 @@
       box-shadow: 0 4px 10px rgba(46,125,50,0.15); transform: translateY(-2px);
     }
     #loginHint { font-size: 11.5px; color: #0369a1; background: #e0f2fe; padding: 6px; border-radius: 4px; margin-bottom: 16px; font-weight: bold; }
-    /* =================================================== */
 
     #sandboxBanner {
       display: none; background: #f59e0b; color: #fff; text-align: center; font-size: 12px; font-weight: bold; 
@@ -91,7 +89,6 @@
     .sheet-title { text-align: center; font-size: 21px; font-weight: 900; margin: 6px 0 6px; color: var(--border-color); letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;}
     .sheet-subtitle-hint { text-align: center; font-size: 11.5px; color: #64748b; margin-bottom: 10px; font-weight: 500; }
 
-    /* 低庫存比例徽章 */
     .health-badge { font-size: 12px; padding: 2px 8px; border-radius: 12px; font-weight: bold; display: inline-flex; align-items: center; border: 1.5px solid #ccc; background: #f5f5f5; color: #666; }
     .health-good { background: #dcfce7; color: #166534; border-color: #86efac; }
     .health-warn { background: #fef9c3; color: #854d0e; border-color: #fde047; }
@@ -200,7 +197,7 @@
       <h2>💊 藥局點藥系統 📋</h2>
       <p>請先選擇您的工作身分 🔒</p>
       
-      <!-- 角色切換區塊 (乾淨俐落) -->
+      <!-- 角色切換區塊 -->
       <div class="role-selector">
         <button id="btnRolePharm" class="role-btn active" onclick="selectRole('pharmacist')">
           <span class="icon">👨‍⚕️</span><span>藥師</span>
@@ -213,10 +210,11 @@
         </button>
       </div>
 
-      <!-- 密碼輸入與提示 (使用 inputmode="numeric" 呼叫手機數字鍵盤) -->
-      <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入單位名稱" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
+      <!-- 密碼輸入與提示 (移除露骨提示，改為單位名稱) -->
+      <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入名稱 / 單位名稱" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
       <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
+      <!-- 測試模式提示詞修改 -->
       <div style="font-size:11px; color:#888; margin-bottom:8px;">※ 測試模式專區請輸入 測試碼 (免選身分)</div>
       
       <button id="btnLoginAction" class="btn-act btn-submit" style="width:100%; font-size:16px; padding:12px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="executeFirebaseLogin()">
@@ -245,9 +243,7 @@
 
     <div class="nav-right">
       <span id="cloudBadge" class="cloud-status">未連線</span>
-      <!-- 🔒 第二道門：管理員設定 -->
       <button id="btnAdminGear" class="btn-icon" style="display: none;" onclick="openConfigModal()" title="管理員設定與數據">⚙️</button>
-      <!-- 🚪 登出按鈕 -->
       <button class="btn-icon" onclick="executeLogout()" title="登出切換身分" style="font-size: 14px; border: 1px solid #ccc; border-radius: 4px; padding: 2px 6px; margin-left: 4px;">登出</button>
     </div>
   </div>
@@ -454,7 +450,6 @@
       projectId: "pharmacy-order-20f00" 
     };
 
-    // Firebase 對應帳號信箱
     const ACCOUNTS = {
         pharmacist: 'pharm@cch.tw',
         assistant: 'asst@cch.tw',
@@ -463,11 +458,9 @@
 
     const TEST_PASS = "99999"; 
     
-    // UI 控制變數
     let currentSelectedRole = 'pharmacist';
     let currentUserRole = null; 
 
-    // 其他全域變數
     let isTestMode = false;
     let nodeActiveOrders = "active_orders_p2";
     let nodeOrderHistory = "order_history_p2";
@@ -504,7 +497,7 @@
     }
 
     // ==========================================
-    // 🚀 3. Phase 2.2 角色登入邏輯 (Email/Password + 魔法字首)
+    // 🚀 3. Phase 2.2 角色登入邏輯 (UI 優化版)
     // ==========================================
     function checkGlobalAuth() {
         firebase.auth().onAuthStateChanged((user) => {
@@ -540,17 +533,17 @@
       const input = document.getElementById('globalCodeInput');
       const hint = document.getElementById('loginHint');
       
+      // 將 placeholder 統一改為使用者要求的提示詞
+      input.placeholder = "單位名稱";
+      
       if (role === 'pharmacist') {
         document.getElementById('btnRolePharm').classList.add('active');
-        input.placeholder = "單位名稱";
         hint.style.color = "#0369a1"; hint.style.backgroundColor = "#e0f2fe"; hint.innerText = "※ 藥師權限：可建立藥單、查閱歷史紀錄";
       } else if (role === 'assistant') {
         document.getElementById('btnRoleAsst').classList.add('active');
-        input.placeholder = "單位名稱";
         hint.style.color = "#b45309"; hint.style.backgroundColor = "#fef3c7"; hint.innerText = "※ 助理權限：可處理藥單實出、切換低庫存";
       } else if (role === 'admin') {
         document.getElementById('btnRoleAdmin').classList.add('active');
-        input.placeholder = "單位名稱";
         hint.style.color = "#4c1d95"; hint.style.backgroundColor = "#ede9fe"; hint.innerText = "※ 管理員權限：全系統讀寫、菜單與人員設定";
       }
       input.value = ""; input.focus();
@@ -558,7 +551,7 @@
 
     function executeFirebaseLogin() {
       const inputPass = document.getElementById("globalCodeInput").value.trim();
-      if(!inputPass) { alert("請先輸入密碼！"); return; }
+      if(!inputPass) { alert("請先輸入名稱/密碼！"); return; }
 
       if (inputPass === TEST_PASS) {
           localStorage.setItem("pharmacy_test_mode", "true");
@@ -569,7 +562,6 @@
       localStorage.removeItem("pharmacy_test_mode");
       const email = ACCOUNTS[currentSelectedRole];
       
-      // 💡 密碼魔法拼湊：將畫面上輸入的數字，跟角色前綴自動組合
       let finalPass = "";
       if (currentSelectedRole === 'pharmacist') finalPass = "pharm" + inputPass;
       else if (currentSelectedRole === 'assistant') finalPass = "asst" + inputPass;
@@ -583,7 +575,6 @@
               btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
           })
           .catch((error) => {
-              // 防呆提醒：如果密碼不對，提醒要重建帳號
               alert(`登入失敗：密碼錯誤！\n\n(若您尚未在 Firebase 重建為 pharm53690 等複合密碼，請先至後台刪除並重建)\n\n錯誤代碼: ${error.message}`);
               btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
           });
@@ -681,7 +672,7 @@
     }
 
     // ==========================================
-    // 📊 低庫存比例運算 (新功能)
+    // 📊 低庫存比例運算
     // ==========================================
     function calculateInventoryHealth() {
         const targetMenu = (currentStation === "專用區") ? specialMedData : generalMedData;
