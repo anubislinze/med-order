@@ -1159,6 +1159,7 @@
           
           // 只有確定 Firebase 回報寫入成功後，才會清空草稿
           draftOrders = {}; editingMedId = null;
+          renderPharmacistBoard(); // 👈 補上這一行，強制畫面重繪清空草稿！
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
           closeSubmitModal(); 
       } catch (err) { 
