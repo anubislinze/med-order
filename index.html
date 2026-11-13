@@ -197,7 +197,7 @@
       <h2>💊 藥局點藥系統 📋</h2>
       <p>請先選擇您的工作身分 🔒</p>
       
-      <!-- 角色切換區塊 -->
+      <!-- 角色切換區塊 (乾淨俐落) -->
       <div class="role-selector">
         <button id="btnRolePharm" class="role-btn active" onclick="selectRole('pharmacist')">
           <span class="icon">👨‍⚕️</span><span>藥師</span>
@@ -210,7 +210,7 @@
         </button>
       </div>
 
-      <!-- 密碼輸入與提示 (移除露骨提示，改為單位名稱) -->
+      <!-- 密碼輸入與提示 (隱藏密碼，改為單位名稱) -->
       <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入名稱 / 單位名稱" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
       <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
@@ -1129,7 +1129,8 @@
         } catch (err) {
             console.error("Archive Error Detailed:", err);
             cloudBadge.innerText = "❌ 連線失敗"; cloudBadge.className = "cloud-status"; cloudBadge.style.backgroundColor = "#fecaca";
-            alert("歸檔發生異常！(通常是資料庫更新衝突，請重新整理網頁後再試)");
+            // ★ 修改這裡：把真正的權限阻擋訊息印出來給我們看！
+            alert(`歸檔發生異常！\n詳細錯誤訊息：${err.message}\n(通常是資料庫 Rules 權限不足，請重新整理網頁後再試)`);
         }
     }
 
@@ -1156,10 +1157,14 @@
           document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中..."; document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
           await firebase.database().ref(`${nodeActiveOrders}/${newOrder.id}`).set(newOrder);
           
+          // 只有確定 Firebase 回報寫入成功後，才會清空草稿
           draftOrders = {}; editingMedId = null;
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
           closeSubmitModal(); 
-      } catch (err) { alert("送單失敗！請檢查網路連線。"); }
+      } catch (err) { 
+          // ★ 修改這裡：把真正的權限阻擋訊息印出來給我們看！
+          alert(`送單失敗！請檢查網路連線或 UID 權限。\n詳細錯誤：${err.message}`); 
+      }
     }
 
     function openSubmitModal() {
