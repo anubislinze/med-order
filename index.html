@@ -94,6 +94,9 @@
     .health-warn { background: #fef9c3; color: #854d0e; border-color: #fde047; }
     .health-danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
 
+    /* 🥪 對合標籤樣式 */
+    .paired-badge { font-size: 10px; padding: 1px 3px; border-radius: 3px; border: 1px solid #fde68a; background: #fffbeb; color: #b45309; margin-right: 2px; font-weight: bold; }
+
     .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .col-group { display: flex; flex-direction: column; gap: 8px; }
     .med-block { border: 1.5px solid var(--border-color); background: #fff; border-radius: 4px; overflow: hidden; }
@@ -182,6 +185,8 @@
     .tag-toggle-btn.active-pkg { background: #fff8e1; border-color: #ffe082; color: #b78103; font-weight: bold; }
     .tag-toggle-btn.active-shortage { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; font-weight: bold; }
     .tag-toggle-btn.active-disabled { background: #ffebee; border-color: #ef9a9a; color: #c62828; font-weight: bold; }
+    /* 🥪 新增的對合編輯標籤顏色 */
+    .tag-toggle-btn.active-paired { background: #fffbeb; border-color: #fde68a; color: #b45309; font-weight: bold; }
 
     @media (min-width: 600px) { .app-title { display: inline-block; } }
     @media (max-width: 850px) { .grid-3col { grid-template-columns: 1fr; } }
@@ -197,7 +202,7 @@
       <h2>💊 藥局點藥系統 📋</h2>
       <p>請先選擇您的工作身分 🔒</p>
       
-      <!-- 角色切換區塊 (乾淨俐落) -->
+      <!-- 角色切換區塊 -->
       <div class="role-selector">
         <button id="btnRolePharm" class="role-btn active" onclick="selectRole('pharmacist')">
           <span class="icon">👨‍⚕️</span><span>藥師</span>
@@ -210,11 +215,10 @@
         </button>
       </div>
 
-      <!-- 密碼輸入與提示 (隱藏密碼，改為單位名稱) -->
+      <!-- 密碼輸入與提示 -->
       <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入名稱 / 單位名稱" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
       <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
-      <!-- 測試模式提示詞修改 -->
       <div style="font-size:11px; color:#888; margin-bottom:8px;">※ 測試模式專區請輸入 測試碼 (免選身分)</div>
       
       <button id="btnLoginAction" class="btn-act btn-submit" style="width:100%; font-size:16px; padding:12px; display:flex; justify-content:center; align-items:center; gap:6px;" onclick="executeFirebaseLogin()">
@@ -297,7 +301,7 @@
   <div class="modal-overlay" id="shortageSuggestModal">
     <div class="modal-box" style="max-width:400px; padding:20px;">
       <div class="modal-header" style="margin-bottom:16px;">
-        <span style="font-size:18px; color:#0f172a;">💡 智慧低庫存狀態建議</span><button style="border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;" onclick="skipShortageSuggestions()">✕</button>
+        <span style="font-size:18px; color:#0f172a;">💡 智慧低庫存狀態建議</span><button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="skipShortageSuggestions()">✕</button>
       </div>
       <p style="font-size:12px; color:#64748b; margin-bottom:12px; line-height:1.5;">系統偵測到剛才取藥批次中有異常短缺率，是否要同步一鍵更新後台的【低庫存】標籤以提醒後續點餐同仁？</p>
       <div id="shortageSuggestContent" class="bi-custom-scrollbar" style="max-height:60vh; overflow-y:auto; margin-bottom:16px; padding-right:4px;"></div>
@@ -533,7 +537,6 @@
       const input = document.getElementById('globalCodeInput');
       const hint = document.getElementById('loginHint');
       
-      // 將 placeholder 統一改為使用者要求的提示詞
       input.placeholder = "單位名稱";
       
       if (role === 'pharmacist') {
@@ -601,7 +604,6 @@
             isAssistantAuthenticated = true; 
             switchMode('assistant'); 
         } else {
-            // Pharmacist 或其他
             document.getElementById("btnAdminGear").style.display = "none";
             document.getElementById("btnBiDashboard").style.display = "none";
             isAssistantAuthenticated = false; 
@@ -923,7 +925,13 @@
             if (med.disabled) badgesHtml += `<span class="status-badge badge-ban">🚫禁點</span>`;
 
             let badgeContent = isEditingThis ? `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">` : `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
-            itemDiv.innerHTML = `<div class="med-name">${escapeHtml(med.name)}</div><div class="med-status-icons">${badgesHtml}</div>${med.unit ? `<div class="med-unit-badge">${escapeHtml(med.unit)}</div>` : ''}<div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})">${badgeContent}</div>`;
+            
+            // 🥪 對合標籤的顯示邏輯 (直接把圖示塞在單位前面)
+            let unitHtml = "";
+            if (med.paired) unitHtml += `<span style="font-size:10px; color:#b45309; background:#fffbeb; padding:1px 3px; border-radius:3px; border:1px solid #fde68a; margin-right:2px; font-weight:bold;">🥪 對合</span>`;
+            if (med.unit) unitHtml += escapeHtml(med.unit);
+
+            itemDiv.innerHTML = `<div class="med-name">${escapeHtml(med.name)}</div><div class="med-status-icons">${badgesHtml}</div>${unitHtml ? `<div class="med-unit-badge">${unitHtml}</div>` : ''}<div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})">${badgeContent}</div>`;
             block.appendChild(itemDiv);
           });
           colDiv.appendChild(block);
@@ -985,7 +993,13 @@
           if (totalReqQty > 0) {
             hasAnyOrder = true; const isDone = !!checkedItems[med.id];
             const tr = document.createElement("tr"); tr.className = `matrix-row ${isDone ? 'done' : ''}`;
-            let rowHtml = `<td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td><td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${escapeHtml(group.group.split(' ')[0])}</td><td class="col-name">${escapeHtml(med.name)}</td><td>${escapeHtml(med.unit) || '-'}</td><td><div class="matrix-total-cell" onmousedown="startAsstTotalLongPress('${med.id}')" onmouseup="cancelAsstTotalLongPress()" onmouseleave="cancelAsstTotalLongPress()" ontouchstart="startAsstTotalLongPress('${med.id}')" ontouchend="cancelAsstTotalLongPress()"><span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}</div></td>`;
+            
+            // 🥪 對合標籤的顯示邏輯 (助理矩陣版)
+            let unitHtml = "";
+            if (med.paired) unitHtml += `<span class="paired-badge">🥪 對合</span><br>`;
+            if (med.unit) unitHtml += escapeHtml(med.unit);
+            
+            let rowHtml = `<td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td><td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${escapeHtml(group.group.split(' ')[0])}</td><td class="col-name">${escapeHtml(med.name)}</td><td>${unitHtml || '-'}</td><td><div class="matrix-total-cell" onmousedown="startAsstTotalLongPress('${med.id}')" onmouseup="cancelAsstTotalLongPress()" onmouseleave="cancelAsstTotalLongPress()" ontouchstart="startAsstTotalLongPress('${med.id}')" ontouchend="cancelAsstTotalLongPress()"><span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}</div></td>`;
 
             colData.forEach(c => {
               if (c.req > 0) {
@@ -1129,7 +1143,6 @@
         } catch (err) {
             console.error("Archive Error Detailed:", err);
             cloudBadge.innerText = "❌ 連線失敗"; cloudBadge.className = "cloud-status"; cloudBadge.style.backgroundColor = "#fecaca";
-            // ★ 修改這裡：把真正的權限阻擋訊息印出來給我們看！
             alert(`歸檔發生異常！\n詳細錯誤訊息：${err.message}\n(通常是資料庫 Rules 權限不足，請重新整理網頁後再試)`);
         }
     }
@@ -1157,13 +1170,13 @@
           document.getElementById("cloudBadge").innerText = "⏳ 寫入雲端中..."; document.getElementById("cloudBadge").style.backgroundColor = "#fef08a";
           await firebase.database().ref(`${nodeActiveOrders}/${newOrder.id}`).set(newOrder);
           
-          // 只有確定 Firebase 回報寫入成功後，才會清空草稿
           draftOrders = {}; editingMedId = null;
-          renderPharmacistBoard(); // 👈 補上這一行，強制畫面重繪清空草稿！
+          // 👈 補上這一行：強制畫面重繪清空草稿
+          renderPharmacistBoard(); 
+          
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
           closeSubmitModal(); 
       } catch (err) { 
-          // ★ 修改這裡：把真正的權限阻擋訊息印出來給我們看！
           alert(`送單失敗！請檢查網路連線或 UID 權限。\n詳細錯誤：${err.message}`); 
       }
     }
@@ -1246,7 +1259,10 @@
 
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div"); row.className = "editor-med-row"; row.draggable = true; row.dataset.gidx = gIdx; row.dataset.midx = mIdx;
-          row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${escapeHtml(med.name)}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${escapeHtml(med.unit || '')}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
+          
+          // 🥪 新增的對合切換按鈕
+          row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${escapeHtml(med.name)}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${escapeHtml(med.unit || '')}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.paired ? 'active-paired' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'paired')">🥪對合</button><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
+          
           row.ondragstart = (e) => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx })); }; row.ondragend = () => row.classList.remove("dragging"); row.ondragover = (e) => e.preventDefault();
           
           row.ondrop = (e) => { 
@@ -1280,7 +1296,10 @@
     function addNewGroup() { const name = prompt("請輸入新櫃位名稱 (例如 GZX 或 專用特區)："); if (!name) return; const t = editorTab === 'general' ? generalMedData : specialMedData; t.push({ col: 1, group: name.trim(), isWarn: false, items: [] }); renderVisualEditor(); }
     function deleteGroup(gIdx) { const t = editorTab === 'general' ? generalMedData : specialMedData; if (confirm(`確定要刪除「${t[gIdx].group}」整個櫃位及其所有藥品嗎？`)) { t.splice(gIdx, 1); renderVisualEditor(); } }
     function updateMedField(gIdx, mIdx, field, val) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][field] = val; }
+    
+    // 支援新的 paired 標籤切換
     function toggleMedFlag(gIdx, mIdx, flag) { const t = editorTab === 'general' ? generalMedData : specialMedData; t[gIdx].items[mIdx][flag] = !t[gIdx].items[mIdx][flag]; renderVisualEditor(); }
+    
     function moveMed(gIdx, mIdx, dir) { 
       const t = editorTab === 'general' ? generalMedData : specialMedData; 
       if (!t[gIdx].items) return;
@@ -1306,7 +1325,7 @@
       const name = prompt("請輸入藥品名稱 (例：Med / 中文名)："); 
       if (!name) return; 
       if (!t[gIdx].items) t[gIdx].items = []; 
-      t[gIdx].items.push({ id: "custom_" + Date.now(), name: name.trim(), unit: "", max: 5, pkgChange: false, shortage: false, disabled: false }); 
+      t[gIdx].items.push({ id: "custom_" + Date.now(), name: name.trim(), unit: "", max: 5, pkgChange: false, shortage: false, disabled: false, paired: false }); 
       renderVisualEditor(); 
     }
     
