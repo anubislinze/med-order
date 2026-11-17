@@ -94,7 +94,6 @@
     .health-warn { background: #fef9c3; color: #854d0e; border-color: #fde047; }
     .health-danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
 
-    /* 🥪 對合標籤樣式 */
     .paired-badge { font-size: 10px; padding: 1px 3px; border-radius: 3px; border: 1px solid #fde68a; background: #fffbeb; color: #b45309; margin-right: 2px; font-weight: bold; }
 
     .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -185,7 +184,6 @@
     .tag-toggle-btn.active-pkg { background: #fff8e1; border-color: #ffe082; color: #b78103; font-weight: bold; }
     .tag-toggle-btn.active-shortage { background: #e0f2fe; border-color: #bae6fd; color: #0369a1; font-weight: bold; }
     .tag-toggle-btn.active-disabled { background: #ffebee; border-color: #ef9a9a; color: #c62828; font-weight: bold; }
-    /* 🥪 新增的對合編輯標籤顏色 */
     .tag-toggle-btn.active-paired { background: #fffbeb; border-color: #fde68a; color: #b45309; font-weight: bold; }
 
     @media (min-width: 600px) { .app-title { display: inline-block; } }
@@ -196,13 +194,11 @@
 
   <div id="sandboxBanner">🚧 目前為【沙盒測試模式】(不列入正式報表統計) 🚧</div>
 
-  <!-- 新版角色登入畫面 -->
   <div id="globalLoginOverlay">
     <div class="login-box">
       <h2>💊 藥局點藥系統 📋</h2>
       <p>請先選擇您的工作身分 🔒</p>
       
-      <!-- 角色切換區塊 -->
       <div class="role-selector">
         <button id="btnRolePharm" class="role-btn active" onclick="selectRole('pharmacist')">
           <span class="icon">👨‍⚕️</span><span>藥師</span>
@@ -215,7 +211,6 @@
         </button>
       </div>
 
-      <!-- 密碼輸入與提示 -->
       <input type="password" id="globalCodeInput" class="login-input" inputmode="numeric" pattern="[0-9]*" placeholder="請輸入名稱 / 單位名稱" onkeydown="if(event.key==='Enter') executeFirebaseLogin()">
       <div id="loginHint">※ 藥師權限：可建立藥單、查閱歷史紀錄</div>
       
@@ -259,7 +254,6 @@
         <div id="shortfallBannerContent"></div>
       </div>
       
-      <!-- 低庫存比例徽章 -->
       <div class="sheet-title" id="currentStationTitle">
         【 藍籃 <span style="vertical-align:middle;">- 藥品劃記看板</span> 】
         <span id="healthRatioBadge" class="health-badge" style="display:none;">庫存健康度</span>
@@ -501,7 +495,7 @@
     }
 
     // ==========================================
-    // 🚀 3. Phase 2.2 角色登入邏輯 (UI 優化版)
+    // 🚀 3. Phase 2.2 角色登入邏輯 (代碼化升級版)
     // ==========================================
     function checkGlobalAuth() {
         firebase.auth().onAuthStateChanged((user) => {
@@ -554,7 +548,7 @@
 
     function executeFirebaseLogin() {
       const inputPass = document.getElementById("globalCodeInput").value.trim();
-      if(!inputPass) { alert("請先輸入名稱/密碼！"); return; }
+      if(!inputPass) { alert("操作失敗 (代碼: E102)"); return; }
 
       if (inputPass === TEST_PASS) {
           localStorage.setItem("pharmacy_test_mode", "true");
@@ -578,7 +572,8 @@
               btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
           })
           .catch((error) => {
-              alert(`登入失敗：密碼錯誤！\n\n(若您尚未在 Firebase 重建為 pharm53690 等複合密碼，請先至後台刪除並重建)\n\n錯誤代碼: ${error.message}`);
+              // ★ 隱藏敏感字眼，改用 E101 代碼
+              alert(`操作失敗 (代碼: E101)`);
               btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
           });
     }
@@ -788,7 +783,7 @@
     let asstPressTimer = null; let isAsstLongPress = false;
 
     function handleAsstCellClick(orderId, medId) {
-      if (!isFirebaseConnected) { alert("⛔ 系統離線中！"); return; }
+      if (!isFirebaseConnected) { alert("操作失敗 (代碼: E301)"); return; }
       if (isAsstLongPress) { isAsstLongPress = false; return; }
       const order = activeOrdersList.find(o => o.id === orderId); if (!order) return;
       const reqQty = order.items?.[medId] || 0; const cur = (order.fulfilled && order.fulfilled[medId] !== undefined) ? order.fulfilled[medId] : reqQty;
@@ -926,9 +921,8 @@
 
             let badgeContent = isEditingThis ? `<input type="number" id="badgeInput_${med.id}" class="med-badge-input" inputmode="numeric" min="0" max="${maxLimit}" value="${count > 0 ? count : ''}" onclick="event.stopPropagation()" onblur="finishDirectEditQty('${med.id}', this.value, ${maxLimit})" onkeydown="if(event.key==='Enter'){ finishDirectEditQty('${med.id}', this.value, ${maxLimit}); }">` : `${count > 0 ? count : ''}${count > 0 && isAtMax ? '<span class="max-hint">滿</span>' : ''}`;
             
-            // 🥪 對合標籤的顯示邏輯 (直接把圖示塞在單位前面)
             let unitHtml = "";
-            if (med.paired) unitHtml += `<span style="font-size:10px; color:#b45309; background:#fffbeb; padding:1px 3px; border-radius:3px; border:1px solid #fde68a; margin-right:2px; font-weight:bold;">🥪 對合</span>`;
+            if (med.paired) unitHtml += `<span class="paired-badge">🥪對合</span>`;
             if (med.unit) unitHtml += escapeHtml(med.unit);
 
             itemDiv.innerHTML = `<div class="med-name">${escapeHtml(med.name)}</div><div class="med-status-icons">${badgesHtml}</div>${unitHtml ? `<div class="med-unit-badge">${unitHtml}</div>` : ''}<div class="med-badge" onclick="startDirectEditQty(event, '${med.id}', ${med.disabled || false})">${badgeContent}</div>`;
@@ -994,9 +988,8 @@
             hasAnyOrder = true; const isDone = !!checkedItems[med.id];
             const tr = document.createElement("tr"); tr.className = `matrix-row ${isDone ? 'done' : ''}`;
             
-            // 🥪 對合標籤的顯示邏輯 (助理矩陣版)
             let unitHtml = "";
-            if (med.paired) unitHtml += `<span class="paired-badge">🥪 對合</span><br>`;
+            if (med.paired) unitHtml += `<span class="paired-badge">🥪對合</span><br>`;
             if (med.unit) unitHtml += escapeHtml(med.unit);
             
             let rowHtml = `<td class="sticky-col-check"><button class="check-btn" onclick="toggleCheck('${med.id}')">${isDone ? '✓' : ''}</button></td><td class="sticky-col-shelf" style="font-weight:bold; color:#444;">${escapeHtml(group.group.split(' ')[0])}</td><td class="col-name">${escapeHtml(med.name)}</td><td>${unitHtml || '-'}</td><td><div class="matrix-total-cell" onmousedown="startAsstTotalLongPress('${med.id}')" onmouseup="cancelAsstTotalLongPress()" onmouseleave="cancelAsstTotalLongPress()" ontouchstart="startAsstTotalLongPress('${med.id}')" ontouchend="cancelAsstTotalLongPress()"><span class="matrix-total ${hasAdjustedInRow ? 'adjusted' : ''}">${totalActualQty}</span>${hasAdjustedInRow ? `<span class="origin-total-hint">(原:${totalReqQty})</span>` : ''}</div></td>`;
@@ -1018,7 +1011,7 @@
     function toggleCheck(medId) { checkedItems[medId] = !checkedItems[medId]; renderAssistantMatrix(); }
 
     function clearDoneItems() {
-      if (!isFirebaseConnected) { alert("⛔ 系統離線中！"); return; }
+      if (!isFirebaseConnected) { alert("操作失敗 (代碼: E301)"); return; }
       const doneIds = Object.keys(checkedItems).filter(k => checkedItems[k]);
       if (doneIds.length === 0) { alert("尚未勾選項目！"); return; }
 
@@ -1110,7 +1103,7 @@
     function toggleAllSuggest(type, isChecked) { document.querySelectorAll(`.chk-suggest-${type}`).forEach(chk => chk.checked = isChecked); }
 
     async function submitShortageSuggestions() {
-        if (!isFirebaseConnected) { alert("⛔ 系統目前處於離線狀態！"); return; }
+        if (!isFirebaseConnected) { alert("操作失敗 (代碼: E301)"); return; }
         const onChecked = Array.from(document.querySelectorAll('.chk-suggest-on:checked')).map(c => c.value);
         const offChecked = Array.from(document.querySelectorAll('.chk-suggest-off:checked')).map(c => c.value);
 
@@ -1143,12 +1136,15 @@
         } catch (err) {
             console.error("Archive Error Detailed:", err);
             cloudBadge.innerText = "❌ 連線失敗"; cloudBadge.className = "cloud-status"; cloudBadge.style.backgroundColor = "#fecaca";
-            alert(`歸檔發生異常！\n詳細錯誤訊息：${err.message}\n(通常是資料庫 Rules 權限不足，請重新整理網頁後再試)`);
+            // ★ 使用代碼隱蔽真實錯誤
+            let code = "E401";
+            if(err.message.includes("Permission denied")) code = "E201";
+            alert(`操作失敗 (代碼: ${code})`);
         }
     }
 
     async function confirmSubmitOrder() {
-      if (!isFirebaseConnected) { alert("⛔ 系統目前處於離線狀態！"); return; }
+      if (!isFirebaseConnected) { alert("操作失敗 (代碼: E301)"); return; }
       const staffCode = document.getElementById("staffCodeInput").value.trim();
       const validPharmacist = (staffConfig.pharmacists || []).find(p => p.code === staffCode);
       if (!validPharmacist) { alert("查無此點餐員工代碼！"); return; }
@@ -1171,13 +1167,14 @@
           await firebase.database().ref(`${nodeActiveOrders}/${newOrder.id}`).set(newOrder);
           
           draftOrders = {}; editingMedId = null;
-          // 👈 補上這一行：強制畫面重繪清空草稿
           renderPharmacistBoard(); 
           
           document.getElementById("cloudBadge").innerText = "☁️ 雲端同步中"; document.getElementById("cloudBadge").className = "cloud-status online"; document.getElementById("cloudBadge").style.backgroundColor = "#e8f5e9";
           closeSubmitModal(); 
       } catch (err) { 
-          alert(`送單失敗！請檢查網路連線或 UID 權限。\n詳細錯誤：${err.message}`); 
+          let code = "E401";
+          if(err.message.includes("Permission denied")) code = "E201";
+          alert(`操作失敗 (代碼: ${code})`); 
       }
     }
 
@@ -1260,7 +1257,6 @@
         (group.items || []).forEach((med, mIdx) => {
           const row = document.createElement("div"); row.className = "editor-med-row"; row.draggable = true; row.dataset.gidx = gIdx; row.dataset.midx = mIdx;
           
-          // 🥪 新增的對合切換按鈕
           row.innerHTML = `<span class="drag-handle" title="按住拖曳排序">☰</span><input type="text" value="${escapeHtml(med.name)}" style="flex:1; font-size:11.5px; padding:2px 4px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'name', this.value)" placeholder="藥名"><input type="text" value="${escapeHtml(med.unit || '')}" style="width:36px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'unit', this.value)" placeholder="單位"><input type="number" min="1" max="9" value="${med.max || 5}" style="width:34px; font-size:11px; text-align:center; padding:2px; border:1px solid #cbd5e1; border-radius:3px;" onchange="updateMedField(${gIdx}, ${mIdx}, 'max', parseInt(this.value))" title="上限數"><div style="display:flex; gap:2px;"><button class="tag-toggle-btn ${med.paired ? 'active-paired' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'paired')">🥪對合</button><button class="tag-toggle-btn ${med.pkgChange ? 'active-pkg' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'pkgChange')">換包裝</button><button class="tag-toggle-btn ${med.shortage ? 'active-shortage' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'shortage')">低庫存</button><button class="tag-toggle-btn ${med.disabled ? 'active-disabled' : ''}" onclick="toggleMedFlag(${gIdx}, ${mIdx}, 'disabled')">禁點</button></div><button class="move-btn" onclick="moveMed(${gIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled' : ''}>▲</button><button class="move-btn" onclick="moveMed(${gIdx}, 1)" ${mIdx === group.items.length - 1 ? 'disabled' : ''}>▼</button><button class="move-btn" style="color:#d32f2f;" onclick="deleteMed(${gIdx}, ${mIdx})">✕</button>`;
           
           row.ondragstart = (e) => { row.classList.add("dragging"); e.dataTransfer.setData("text/plain", JSON.stringify({ gIdx, mIdx })); }; row.ondragend = () => row.classList.remove("dragging"); row.ondragover = (e) => e.preventDefault();
