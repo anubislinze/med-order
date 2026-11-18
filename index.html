@@ -521,6 +521,15 @@
                 document.getElementById("btnAdminGear").style.display = "none";
                 document.getElementById("btnBiDashboard").style.display = "none";
                 currentUserRole = null;
+
+                // 👈 登出時，強制把橫幅收起來，並把連線切回正式區 (避免殘影)
+                document.getElementById("sandboxBanner").style.display = "none";
+                isTestMode = false;
+                nodeActiveOrders = "active_orders_p2";
+                nodeOrderHistory = "order_history_p2";
+                nodeShortfalls = "shortfalls_p2";
+                nodeStaffConfig = "staff_config_p2"; 
+                nodeMenuConfig = "menu_config_p2";
             }
         });
     }
@@ -558,12 +567,15 @@
 
       // 💡 99999 魔法：自動登入測試帳號並進入沙盒
       if (inputPass === TEST_PASS) {
+          // 👈 提早在開門前就把沙盒標籤貼好
+          localStorage.setItem("pharmacy_test_mode", "true"); 
+          
           firebase.auth().signInWithEmailAndPassword('test@cch.tw', 'test99999')
             .then(() => {
-                localStorage.setItem("pharmacy_test_mode", "true");
                 btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
             })
             .catch((error) => {
+                localStorage.removeItem("pharmacy_test_mode"); // 登入失敗要把標籤撕掉
                 alert(`沙盒登入失敗 (代碼: E101)`);
                 btn.innerHTML = `<span style="font-size:18px;">🔗</span> 身分驗證並連線`; btn.disabled = false;
             });
