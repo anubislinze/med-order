@@ -630,11 +630,16 @@
 
     function enableTestModeEnvironment() {
         isTestMode = true;
+
+        // 訂單、歷史紀錄、短缺通知：切換到獨立的測試區 (避免弄髒正式報表)
         nodeActiveOrders = "active_orders_test";
         nodeOrderHistory = "order_history_test";
         nodeShortfalls = "shortfalls_test";
-        nodeStaffConfig = "staff_config_test"; 
-        nodeMenuConfig = "menu_config_test";   
+
+        // 💡 刪除或註解掉下面這兩行，讓沙盒模式繼續沿用「正式區」的菜單與人員！
+        // nodeStaffConfig = "staff_config_test"; 
+        // nodeMenuConfig = "menu_config_test";
+
         document.getElementById("sandboxBanner").style.display = "block";
     }
 
