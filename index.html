@@ -15,10 +15,60 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2e7d32">
   
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Firebase Modular SDK + Phase 2.4 App Check (Fraud Defense) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getDatabase, ref, child, onValue, set, update, push, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyBMGEK8-0otJVkKWSoJQiWGhJ5JD54Wbyg",
+      authDomain: "pharmacy-order-20f00.firebaseapp.com",
+      databaseURL: "https://pharmacy-order-20f00-default-rtdb.firebaseio.com",
+      projectId: "pharmacy-order-20f00",
+      appId: "1:63871065469:web:7851ee6eca4c87cf200014"
+    };
+
+    const app = initializeApp(FIREBASE_CONFIG);
+
+    // 啟動 Phase 2.4 App Check (Fraud Defense / reCAPTCHA Enterprise)
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider("6Lem7CcuAAAAADd-eHeKGpS_xEfvxG9QFQ6hFSdy"),
+      isTokenAutoRefreshEnabled: true
+    });
+
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    function wrapRef(dbRef) {
+      return {
+        on: (eventType, callback) => onValue(dbRef, callback),
+        set: (value) => set(dbRef, value),
+        update: (values) => update(dbRef, values),
+        child: (subPath) => wrapRef(child(dbRef, subPath)),
+        push: () => push(dbRef),
+        once: (eventType, callback) => get(dbRef).then((snap) => { if (callback) callback(snap); return snap; }),
+        limitToLast: (n) => ({
+          once: (eventType, callback) => get(query(dbRef, limitToLast(n))).then((snap) => { if (callback) callback(snap); return snap; })
+        })
+      };
+    }
+
+    // 相容橋接層：讓下方現有程式碼無需改寫即可正常運作
+    window.firebase = {
+      apps: [app],
+      initializeApp: () => app,
+      auth: () => ({
+        onAuthStateChanged: (cb) => onAuthStateChanged(auth, cb),
+        signInWithEmailAndPassword: (email, pass) => signInWithEmailAndPassword(auth, email, pass),
+        signOut: () => signOut(auth)
+      }),
+      database: () => ({
+        ref: (path) => wrapRef(path ? ref(db, path) : ref(db))
+      })
+    };
+  </script>
   
   <!-- SheetJS SDK -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -185,6 +235,13 @@
 
     @media (min-width: 600px) { .app-title { display: inline-block; } }
     @media (max-width: 850px) { .grid-3col { grid-template-columns: 1fr; } }
+  CSS
+    /* 避免 reCAPTCHA 徽章擋住底部送單按鈕 */
+    .grecaptcha-badge {
+      bottom: 70px !important;
+      z-index: 50 !important;
+      opacity: 0.75;
+    }
   </style>
 </head>
 <body>
@@ -492,9 +549,10 @@
     // ==========================================
     // 🚀 2. 喚醒 Firebase
     // ==========================================
-    if (!firebase.apps.length) {
-      firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
-    }
+    //初始化已經移到上方 <script type="module"> 裡完成
+    //if (!firebase.apps.length) {
+    //  firebase.initializeApp(BUILTIN_FIREBASE_CONFIG);
+    //}
 
     // ==========================================
     // 🚀 3. Phase 2.2 角色登入邏輯 (代碼化升級 + 魔法沙盒)
